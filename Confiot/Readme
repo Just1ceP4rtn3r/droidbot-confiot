@@ -1,0 +1,25 @@
+# input: droidbot device1 result, droidbot device2 result
+# output: UI element change, configuration capability change (help infer resource and permission change)
+#
+# 1. walk configurations in configuration list on device 1
+  # configuration, activity list
+  # walk to state
+
+# 2. for every configuration, find the corresponding policy on device 2
+  # 2.1 identify UI change
+    # - identify which state changes
+    # - identify what elements change
+  # 2.2 identify configuration capability change [check do configuration (event?) sucessfully]
+    # - identify the configurations with the same resource (maybe chatgpt)
+    # - whether can do the configuration sucessfully
+      # - if yes, then the capability is the same
+
+
+# Confiot API:
+# go_to_state
+# input: state_str
+# output: event path to target state
+
+# check_configure_success
+# 1. go_to_state(target_state)
+# 2. do events capture alert
