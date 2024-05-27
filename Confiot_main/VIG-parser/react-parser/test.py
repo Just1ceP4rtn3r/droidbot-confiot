@@ -10,7 +10,7 @@ PY_LANGUAGE = Language(tsjavascript.language())
 parser = Parser(PY_LANGUAGE)
 
 code = None
-with open(BASE_DIR + "/javascript/test.js", "r", encoding="utf-8") as f:
+with open(BASE_DIR + "/javascript/test/test.js", "r", encoding="utf-8") as f:
     code = f.read().encode('utf-8')
 
 
@@ -49,4 +49,4 @@ def query():
 
 
 if __name__ == "__main__":
-    query()
+    dump_tree()

@@ -25,8 +25,10 @@ digraph G {
 	<_reactNative.View text=`{}` onPress=`[]`>
 		<_ui.TitleBarBlack text=`{`title`: `setting`}` onPress=`[]`/>
 		<_reactNative.View text=`{}` onPress=`[]`/>
+		<_SettingItem2.default text=`{`title`: `device_more_activity_scence`}` onPress=`[`openIftttAutoPage`]`/>
 		<_SettingItem2.default text=`{`title`: `Curtain_reversal`}` onPress=`[]`/>
 		<_SettingItem2.default text=`{`title`: `Curtaincalibration`}` onPress=`[]`/>
+		<_SettingItem2.default text=`{`title`: `shareDevice`}` onPress=`[`openShareDevicePage`]`/>
 		<_SettingItem2.default text=`{`title`: `commonSetting`}` onPress=`[]`/>
 		<_SettingItem2.default text=`{`title`: `device_more_activity_help_feedback`}` onPress=`[`openHelpPage`]`/>
 		<_SettingItem2.default text=`{`title`: `licenseAndPolicy`}` onPress=`[]`/>
@@ -39,6 +41,7 @@ digraph G {
 	<_reactNative.View text=`{}` onPress=`[]`>
 		<_ui.TitleBarBlack text=`{`title`: `device_more_activity_common_setting`}` onPress=`[]`/>
 		<_reactNative.View text=`{}` onPress=`[]`/>
+		<_SettingItem2.default text=`{`title`: `device_more_activity_rename`}` onPress=`[`openChangeDeviceName`]`/>
 		<_SettingItem2.default text=`{`title`: `device_more_activity_firmware_update`}` onPress=`[`openDeviceUpgradePage`]`/>
 		<_SettingItem2.default text=`{`title`: `device_more_activity_unbind`}` onPress=`[`openDeleteDevice`]`/>
 		<_SettingItem2.default text=`{`title`: `addToDesktop`}` onPress=`[`openAddToDesktopPage`]`/>
@@ -60,8 +63,10 @@ digraph G {
 	<_reactNative.View text=`{}` onPress=`[]`>
 		<_ui.TitleBarBlack text=`{`title`: `setting`}` onPress=`[]`/>
 		<_reactNative.View text=`{}` onPress=`[]`/>
+		<_SettingItem2.default text=`{`title`: `device_more_activity_scence`}` onPress=`[`openIftttAutoPage`]`/>
 		<_SettingItem2.default text=`{`title`: `Curtain_reversal`}` onPress=`[]`/>
 		<_SettingItem2.default text=`{`title`: `Curtaincalibration`}` onPress=`[]`/>
+		<_SettingItem2.default text=`{`title`: `shareDevice`}` onPress=`[`openShareDevicePage`]`/>
 		<_SettingItem2.default text=`{`title`: `commonSetting`}` onPress=`[]`/>
 		<_SettingItem2.default text=`{`title`: `device_more_activity_help_feedback`}` onPress=`[`openHelpPage`]`/>
 		<_SettingItem2.default text=`{`title`: `licenseAndPolicy`}` onPress=`[]`/>

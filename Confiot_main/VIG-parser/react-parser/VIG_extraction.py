@@ -5,6 +5,7 @@ from tree_sitter import Language, Parser, Node
 from xml.dom import minidom
 from graphviz import Source
 import copy
+import csv
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
@@ -93,34 +94,38 @@ class ASTParser:
         matches = q.matches(node)
         return matches
 
-    def elements_to_XML(self, elements):
+    def elements_to_XML(self, elements, delete_elements=[]):
         dom = minidom.Document()
         root_node = dom.createElement('UIHierarchy')
         dom.appendChild(root_node)
 
         worklist = []
         for idx, e in enumerate(elements):
-            if (not e["parent"]):
-                n = dom.createElement(e['tag'])
+            if (not e["parent"] and e not in delete_elements):
+                n = dom.createElement(decode_bytes(e['tag']))
                 n.setAttribute("text", str(e["text"]))
+                n.setAttribute("onPress", str(e["onPress"]))
                 root_node.appendChild(n)
-                worklist.append(e)
+                worklist.append((e, n))
 
         while (worklist):
-            e = worklist.pop()
+            e, father = worklist.pop()
             for child_id in e["childrens"]:
                 child = elements[child_id]
-                n = dom.createElement(child['tag'])
+                if (child in delete_elements):
+                    continue
+                n = dom.createElement(decode_bytes(child['tag']))
                 n.setAttribute("text", str(child["text"]))
-                root_node.appendChild(n)
-                worklist.append(child)
+                n.setAttribute("onPress", str(child["onPress"]))
+                father.appendChild(n)
+                worklist.append((child, n))
 
         return dom
 
     def get_text_from_element(self, options, Paras):
         results = {}
         # 1. 通过options获取
-        match = re.findall(r'(title|text|name|message):\s*([\'"])(.*?)\2', decode_bytes(options), re.DOTALL)
+        match = re.findall(r'(title|text|name|message):.*?([\'"])(.*?)\2', decode_bytes(options))
         for m in match:
             if (len(m) == 3):
                 results[m[0]] = m[2]
@@ -129,6 +134,47 @@ class ASTParser:
         for p in Paras:
             if (p.type == "string"):
                 results["textElement"] = decode_bytes(p.text.replace(b'"', b'').replace(b"'", b''))
+
+        return results
+
+    def get_navigations_from_element(self, options):
+        results = []
+        # 1. 直接提取函数名
+        query = """
+        (pair
+            key: (property_identifier) @opt (#match? @opt ".*onPress")
+            .
+            value: (_) @val
+        )
+        """
+        matches = self.query(query, options)
+
+        on_press = None
+        for m in matches:
+            if (m[1]):
+                on_press = m[1]["val"]
+
+                if (not on_press):
+                    return results
+
+                # 分析onPress中的函数调用信息
+                query_call = """
+                (call_expression
+                    function: [
+                        ((identifier) @function (#any-of? @function ".*open.*" ".*goBack.*" ".*exit.*"))
+                        (member_expression property: ((property_identifier) @function (#match? @function ".*open.*")))
+                        (parenthesized_expression (sequence_expression (member_expression property: ((property_identifier) @function (#any-of? @function ".*open.*" ".*goBack.*" ".*exit.*")))))
+                        ]
+                )
+                """
+                matches = self.query(query_call, on_press)
+                for m in matches:
+                    if (m[1]):
+                        func = m[1]["function"]
+                        results.append(decode_bytes(func.text))
+
+        # TODO: 2. 使用静态分析获取
+        pass
 
         return results
 
@@ -155,17 +201,19 @@ class ASTParser:
                 function = m[1]["function"]
                 CALL = m[1]["CALL"]
                 element_type = m[1]["element_type"].text
-                element_options = m[1]["element_options"].text
+                element_options = m[1]["element_options"]
                 leftParas = []
                 if ("leftParas" in m[1]):
                     leftParas = m[1]["leftParas"]
 
-                related_texts = self.get_text_from_element(element_options, leftParas)
+                related_texts = self.get_text_from_element(element_options.text, leftParas)
+                on_press = self.get_navigations_from_element(element_options)
 
                 elements.append({
                     "identifier": CALL.start_point.row,
                     "tag": element_type,
                     "text": related_texts,
+                    "onPress": on_press,
                     "childrens": [],
                     "parent": None,
                     "options": element_options,
@@ -335,6 +383,22 @@ class ASTParser:
 
         node = self.resources[resource_id]["node"]
         # [byte, Node]
+        navigations = self.get_navigations_from_node(node)
+
+        for dep in self.resources[resource_id]["dependencies"]:
+            if (dep not in self.resources):
+                continue
+            if ("navigations" in self.resources[dep]):
+                navigations.extend(self.resources[dep]["navigations"])
+            else:
+                dep_navigations = self.get_navigations(dep)
+                navigations.extend(dep_navigations)
+
+        self.resources[resource_id]["navigations"] = navigations
+        return navigations
+
+    # 由于缺乏静态分析，暂时直接获取resource中的navigation
+    def get_navigations_from_node(self, node):
         navigations = []
 
         query = """
@@ -359,29 +423,31 @@ class ASTParser:
                     navigations.append(dest)
                 else:
                     navigations.append(m[1]["destination"])
-
-        for dep in self.resources[resource_id]["dependencies"]:
-            if (dep not in self.resources):
-                continue
-            if ("navigations" in self.resources[dep]):
-                navigations.extend(self.resources[dep]["navigations"])
-            else:
-                dep_navigations = self.get_navigations(dep)
-                navigations.extend(dep_navigations)
-
-        self.resources[resource_id]["navigations"] = navigations
         return navigations
 
-    def construct_UITree(self, out_dir):
+    def construct_UITree(self, out_dir, UITree_file, shared_contents=None):
         self.uiTree = UITree()
 
+        delete_screens = []
         for screen in self.screens:
+            delete_elements = []
+            if (shared_contents and shared_contents["navigations"]):
+                if (screen in shared_contents["navigations"]):
+                    delete_screens.append(screen)
+                    continue
+
             resource_id, node = self.screens[screen]
             if (node):
                 elements = self.get_elements(node)
-                xml = self.elements_to_XML(elements)
-                self.screens[screen] = (resource_id, node, elements, xml)
-                n = Node(screen, description=resource_id)
+                if (shared_contents and shared_contents["elements"]):
+                    for se in shared_contents["elements"]:
+                        for e in elements:
+                            if (se["tag"] == e["tag"] and se["onPress"] == e["onPress"]):
+                                delete_elements.append(e)
+
+                xml = self.elements_to_XML(elements, delete_elements)
+                # self.screens[screen] = (resource_id, node, elements, xml)
+                n = Node(screen, description=xml.toprettyxml().replace("\"", "`").replace("'", "`"))
                 self.uiTree.add_node(n)
             else:
                 n = Node(screen, description=screen)
@@ -394,7 +460,7 @@ class ASTParser:
                 continue
             for nav in self.resources[resource_id]["navigations"]:
                 if (isinstance(nav, bytes)):
-                    if (nav not in self.uiTree.nodes_dict):
+                    if (nav not in self.uiTree.nodes_dict and nav not in delete_screens):
                         n = Node(nav, description=nav)
                         self.uiTree.add_node(n)
 
@@ -406,7 +472,7 @@ class ASTParser:
                 continue
             for nav in self.resources[resource_id]["navigations"]:
                 if (isinstance(nav, bytes)):
-                    if (nav in self.uiTree.nodes_dict):
+                    if (nav in self.uiTree.nodes_dict and nav not in delete_screens):
                         e = Edge(start_node, self.uiTree.nodes_dict[nav], None)
                         self.uiTree.add_edge(e)
 
@@ -417,15 +483,39 @@ class ASTParser:
         dot = Source(dot_content)
 
         # 渲染图并保存为 PNG 文件
-        dot.render(f'{out_dir}/UITree', format='png', view=False)
+        dot.render(f'{out_dir}/{UITree_file}', format='png', view=False)
 
     # 获取每个resource内的interactions
     def get_interactions(s):
         pass
 
+    # 获取由shared 角色区分的elements/navigations
+    def get_shared_elements_and_navigations(self, static_analysis_results_csv, out_dir, UITree):
+        # try:
+        shared_contents = {"navigations": [], "elements": []}
+        with open(static_analysis_results_csv, newline='', encoding='utf-8') as csvfile:
+            csvreader = csv.reader(csvfile)
+            # 读取并打印每一行
+            for content in csvreader:
+                start_line, start_column, end_line, end_column = int(content[5]), int(content[6]), int(content[7]), int(
+                    content[8])
+                shared_code_block = b"\n".join(self.raw_code.split(b"\n")[start_line - 1:end_line])
+                root_node = self.parser.parse(shared_code_block).root_node
+
+                shared_elements = self.get_elements(root_node)
+                shared_navigations = self.get_navigations_from_node(root_node)
+
+                shared_contents["elements"] += shared_elements
+                shared_contents["navigations"] += shared_navigations
+
+            self.construct_UITree(out_dir, UITree, shared_contents)
+
+    # except Exception as e:
+    #     print("[ERR]: ", e)
+
 
 if __name__ == '__main__':
-    parser = ASTParser(BASE_DIR + "/javascript/test/main.bundle")
+    parser = ASTParser(BASE_DIR + "/javascript/test/090615.curtain.1mcu01.js")
     parser.start_parser()
 
     # parser.get_elements(parser.resources[10007]["node"])
@@ -442,4 +532,8 @@ if __name__ == '__main__':
         # if (nav):
         #     print(nav)
 
-    parser.construct_UITree(BASE_DIR + "/javascript/test/")
+    parser.construct_UITree(out_dir=BASE_DIR + "/javascript/test/", UITree_file="host_UITree")
+
+    parser.get_shared_elements_and_navigations(static_analysis_results_csv=BASE_DIR + "/javascript/test/codeql/result.csv",
+                                               out_dir=BASE_DIR + "/javascript/test/",
+                                               UITree="guest_UITree")

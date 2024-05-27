@@ -1,69 +1,70 @@
 digraph G {
-  "b'Home'" -> "b'RouterPluginCommonSetting'"
-  "b'Home'" -> "b'Devices'"
-  "b'Home'" -> "b'WiFiSetting'"
-  "b'Home'" -> "b'ResetPassword'"
-  "b'Devices'" -> "b'Detail'"
-  "b'TimeSetting'" -> "b'HealthMode'"
-  "b'RestartPlan'" -> "b'RestartTimeSetting'"
-  "b'QosEntry'" -> "b'QosGuest'"
-  "b'RestartTimeSetting'" -> "b'RestartPlan'"
-  "b'HealthMode'" -> "b'TimeSetting'"
-  "b'Feedback'" -> "b'ProblemType'"
-  "b'TimeZone'" -> "b'ZoneList'"
-  "b'ZoneList'" -> "b'TimeZone'"
-  "b'ProblemType'" -> "b'SelectProblem'"
-  "b'SelectProblem'" -> "b'Feedback'"
-  "b'NetworkMode'" -> "b'NetModeWireRelay'"
-  "b'NetworkMode'" -> "b'NetModeWirelessRelay'"
-  "b'NetworkMode'" -> "b'NetModePppoe'"
-  "b'NetworkMode'" -> "b'NetModeDhcp'"
-  "b'NetworkMode'" -> "b'NetModeStaticIP'"
-  "b'ToolBox'" -> "b'WiFiSetting'"
-  "b'NetModeWirelessRelay'" -> "b'NetworkModeWirelessSelectWifi'"
-  "b'ChildProtectHomePage'" -> "b'CPDeviceList'"
-  "b'CPDeviceList'" -> "b'CPDLAddDevice'"
-  "b'RouterSetting'" -> "b'NetworkMode'"
-  "b'Home'" [label="b'Home'\n10082"]
-  "b'Devices'" [label="b'Devices'\n10142"]
-  "b'DevicesDetails'" [label="b'DevicesDetails'\n10148"]
-  "b'WiFiSetting'" [label="b'WiFiSetting'\n10151"]
-  "b'TimeSetting'" [label="b'TimeSetting'\n10046"]
-  "b'RestartPlan'" [label="b'RestartPlan'\n10049"]
-  "b'ResetPassword'" [label="b'ResetPassword'\n10055"]
-  "b'MpkWebPage'" [label="b'MpkWebPage'\n10166"]
-  "b'QosEntry'" [label="b'QosEntry'\n10172"]
-  "b'QosGuest'" [label="b'QosGuest'\n10181"]
-  "b'NetworkOptimizeTool'" [label="b'NetworkOptimizeTool'\n10187"]
-  "b'RestartTimeSetting'" [label="b'RestartTimeSetting'\n10223"]
-  "b'RestarRouter'" [label="b'RestarRouter'\n10154"]
-  "b'HealthMode'" [label="b'HealthMode'\n10007"]
-  "b'GeneralSettings'" [label="b'GeneralSettings'\n10226"]
-  "b'DeviceName'" [label="b'DeviceName'\n10235"]
-  "b'DeviceShare'" [label="b'DeviceShare'\n10238"]
-  "b'LocationManage'" [label="b'LocationManage'\n10247"]
-  "b'FirmwareUpdate'" [label="b'FirmwareUpdate'\n10286"]
-  "b'UsingHelp'" [label="b'UsingHelp'\n10289"]
-  "b'LawInfo'" [label="b'LawInfo'\n10292"]
-  "b'Feedback'" [label="b'Feedback'\n10370"]
-  "b'TimeZone'" [label="b'TimeZone'\n10394"]
-  "b'ZoneList'" [label="b'ZoneList'\n10391"]
-  "b'ProblemType'" [label="b'ProblemType'\n10382"]
-  "b'SelectProblem'" [label="b'SelectProblem'\n10385"]
-  "b'NetworkMode'" [label="b'NetworkMode'\n10397"]
-  "b'ToolBox'" [label="b'ToolBox'\n10427"]
-  "b'NetModeWireRelay'" [label="b'NetModeWireRelay'\n10406"]
-  "b'NetModePppoe'" [label="b'NetModePppoe'\n10409"]
-  "b'NetModeDhcp'" [label="b'NetModeDhcp'\n10418"]
-  "b'NetModeStaticIP'" [label="b'NetModeStaticIP'\n10421"]
-  "b'NetModeWirelessRelay'" [label="b'NetModeWirelessRelay'\n10424"]
-  "b'ChildProtectHomePage'" [label="b'ChildProtectHomePage'\n10493"]
-  "b'CPDeviceList'" [label="b'CPDeviceList'\n10499"]
-  "b'CPDLAddDevice'" [label="b'CPDLAddDevice'\n10505"]
-  "b'RouterPluginCommonSetting'" [label="b'RouterPluginCommonSetting'\n10508"]
-  "b'FirmwareUpgrade'" [label="b'FirmwareUpgrade'\nb'FirmwareUpgrade'"]
+  "b'App'" -> "b'MoreMenu2'"
+  "b'App'" -> "b'CommonSetting'"
+  "b'MoreMenu'" -> "b'CommonSetting'"
+  "b'MoreMenu2'" -> "b'CommonSetting'"
+  "b'App'" [label="b'App'\n<?xml version=`1.0` ?>
+<UIHierarchy>
+	<_reactNative.ImageBackground text=`{}` onPress=`[]`/>
+	<_NavigationBar2.default text=`{}` onPress=`[]`/>
+	<_reactNative.ImageBackground text=`{}` onPress=`[]`/>
+	<_reactNative.ImageBackground text=`{}` onPress=`[]`/>
+	<_ControllerView2.default text=`{}` onPress=`[]`/>
+	<_ui.LoadingDialog text=`{`message`: `loading...`}` onPress=`[]`/>
+	<_reactNative.Slider text=`{}` onPress=`[]`/>
+	<_reactNative.Text text=`{}` onPress=`[]`/>
+</UIHierarchy>
+"]
+  "b'MoreMenu'" [label="b'MoreMenu'\n<?xml version=`1.0` ?>
+<UIHierarchy>
+	<_reactNative.Image text=`{}` onPress=`[]`/>
+	<_reactNative.Image text=`{}` onPress=`[]`/>
+	<_reactNative.View text=`{}` onPress=`[]`/>
+	<_ui.TitleBarBlack text=`{`title`: `setting`}` onPress=`[]`/>
+	<_reactNative.View text=`{}` onPress=`[]`/>
+	<_SettingItem2.default text=`{`title`: `device_more_activity_scence`}` onPress=`[`openIftttAutoPage`]`/>
+	<_SettingItem2.default text=`{`title`: `Curtain_reversal`}` onPress=`[]`/>
+	<_SettingItem2.default text=`{`title`: `Curtaincalibration`}` onPress=`[]`/>
+	<_SettingItem2.default text=`{`title`: `shareDevice`}` onPress=`[`openShareDevicePage`]`/>
+	<_SettingItem2.default text=`{`title`: `commonSetting`}` onPress=`[]`/>
+	<_SettingItem2.default text=`{`title`: `device_more_activity_help_feedback`}` onPress=`[`openHelpPage`]`/>
+	<_SettingItem2.default text=`{`title`: `licenseAndPolicy`}` onPress=`[]`/>
+	<_ui.LoadingDialog text=`{}` onPress=`[]`/>
+</UIHierarchy>
+"]
+  "b'CommonSetting'" [label="b'CommonSetting'\n<?xml version=`1.0` ?>
+<UIHierarchy>
+	<_reactNative.View text=`{}` onPress=`[]`/>
+	<_ui.TitleBarBlack text=`{`title`: `device_more_activity_common_setting`}` onPress=`[]`/>
+	<_reactNative.View text=`{}` onPress=`[]`/>
+	<_SettingItem2.default text=`{`title`: `device_more_activity_rename`}` onPress=`[`openChangeDeviceName`]`/>
+	<_SettingItem2.default text=`{`title`: `device_more_activity_firmware_update`}` onPress=`[`openDeviceUpgradePage`]`/>
+	<_SettingItem2.default text=`{`title`: `device_more_activity_unbind`}` onPress=`[`openDeleteDevice`]`/>
+	<_SettingItem2.default text=`{`title`: `addToDesktop`}` onPress=`[`openAddToDesktopPage`]`/>
+	<_SettingItem2.default text=`{`title`: `device_time_zone`}` onPress=`[`openDeviceTimeZoneSettingPage`]`/>
+	<_SettingItem2.default text=`{`title`: `device_more_activity_feedback`}` onPress=`[`openFeedbackInput`]`/>
+	<_reactNative.View text=`{}` onPress=`[]`/>
+	<_reactNative.View text=`{}` onPress=`[]`/>
+	<_reactNative.View text=`{}` onPress=`[]`/>
+	<_reactNative.Text text=`{}` onPress=`[]`/>
+</UIHierarchy>
+"]
+  "b'MoreMenu2'" [label="b'MoreMenu2'\n<?xml version=`1.0` ?>
+<UIHierarchy>
+	<_reactNative.Image text=`{}` onPress=`[]`/>
+	<_reactNative.Image text=`{}` onPress=`[]`/>
+	<_reactNative.View text=`{}` onPress=`[]`/>
+	<_ui.TitleBarBlack text=`{`title`: `setting`}` onPress=`[]`/>
+	<_reactNative.View text=`{}` onPress=`[]`/>
+	<_SettingItem2.default text=`{`title`: `device_more_activity_scence`}` onPress=`[`openIftttAutoPage`]`/>
+	<_SettingItem2.default text=`{`title`: `Curtain_reversal`}` onPress=`[]`/>
+	<_SettingItem2.default text=`{`title`: `Curtaincalibration`}` onPress=`[]`/>
+	<_SettingItem2.default text=`{`title`: `shareDevice`}` onPress=`[`openShareDevicePage`]`/>
+	<_SettingItem2.default text=`{`title`: `commonSetting`}` onPress=`[]`/>
+	<_SettingItem2.default text=`{`title`: `device_more_activity_help_feedback`}` onPress=`[`openHelpPage`]`/>
+	<_SettingItem2.default text=`{`title`: `licenseAndPolicy`}` onPress=`[]`/>
+	<_ui.LoadingDialog text=`{}` onPress=`[]`/>
+</UIHierarchy>
+"]
   "b'MoreSetting'" [label="b'MoreSetting'\nb'MoreSetting'"]
-  "b'RouterSetting'" [label="b'RouterSetting'\n10511"]
-  "b'NetworkModeWirelessSelectWifi'" [label="b'NetworkModeWirelessSelectWifi'\n10523"]
-  "b'Detail'" [label="b'Detail'\nb'Detail'"]
 }
