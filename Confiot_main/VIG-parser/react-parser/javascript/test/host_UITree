@@ -1,0 +1,78 @@
+digraph G {
+  "b'App'" -> "b'MoreMenu2'"
+  "b'App'" -> "b'CommonSetting'"
+  "b'MoreMenu'" -> "b'CommonSetting'"
+  "b'MoreMenu2'" -> "b'CommonSetting'"
+  "b'App'" [label="b'App'\n<?xml version=`1.0` ?>
+<UIHierarchy>
+	<_reactNative.ImageBackground>
+		<_NavigationBar2.default text=`{`title`: `_miot.Device.name`}` onPress=`[`exit`]`/>
+		<_reactNative.ImageBackground>
+			<_reactNative.Text/>
+		</_reactNative.ImageBackground>
+		<_reactNative.ImageBackground>
+			<_reactNative.Slider/>
+		</_reactNative.ImageBackground>
+		<_ControllerView2.default/>
+		<_ui.LoadingDialog text=`{`message`: `loading...`}`/>
+	</_reactNative.ImageBackground>
+</UIHierarchy>
+"]
+  "b'MoreMenu'" [label="b'MoreMenu'\n<?xml version=`1.0` ?>
+<UIHierarchy>
+	<_reactNative.Image/>
+	<_reactNative.Image/>
+	<_reactNative.View>
+		<_ui.TitleBarBlack text=`{`title`: `setting`}` onPress=`[`goBack`]`/>
+		<_reactNative.View/>
+		<_SettingItem2.default text=`{`title`: `device_more_activity_scence`}` onPress=`[`openIftttAutoPage`]`/>
+		<_SettingItem2.default text=`{`title`: `Curtain_reversal`}`/>
+		<_SettingItem2.default text=`{`title`: `Curtaincalibration`}`/>
+		<_SettingItem2.default text=`{`title`: `shareDevice`}` onPress=`[`openShareDevicePage`]`/>
+		<_SettingItem2.default text=`{`title`: `commonSetting`}`/>
+		<_SettingItem2.default text=`{`title`: `device_more_activity_help_feedback`}` onPress=`[`openHelpPage`]`/>
+		<_SettingItem2.default text=`{`title`: `licenseAndPolicy`}`/>
+		<_ui.LoadingDialog text=`{`message`: `this.state.dialogMessage`}`/>
+	</_reactNative.View>
+</UIHierarchy>
+"]
+  "b'CommonSetting'" [label="b'CommonSetting'\n<?xml version=`1.0` ?>
+<UIHierarchy>
+	<_reactNative.View>
+		<_ui.TitleBarBlack text=`{`title`: `device_more_activity_common_setting`}` onPress=`[`goBack`]`/>
+		<_reactNative.View/>
+		<_SettingItem2.default text=`{`title`: `device_more_activity_rename`}` onPress=`[`openChangeDeviceName`]`/>
+		<_SettingItem2.default text=`{`title`: `device_more_activity_firmware_update`}` onPress=`[`openDeviceUpgradePage`]`/>
+		<_SettingItem2.default text=`{`title`: `device_more_activity_unbind`}` onPress=`[`openDeleteDevice`]`/>
+		<_SettingItem2.default text=`{`title`: `addToDesktop`}` onPress=`[`openAddToDesktopPage`]`/>
+		<_SettingItem2.default text=`{`title`: `device_time_zone`}` onPress=`[`openDeviceTimeZoneSettingPage`]`/>
+		<_SettingItem2.default text=`{`title`: `device_more_activity_feedback`}` onPress=`[`openFeedbackInput`]`/>
+		<_reactNative.View>
+			<_reactNative.View>
+				<_reactNative.Text/>
+			</_reactNative.View>
+			<_reactNative.View/>
+		</_reactNative.View>
+	</_reactNative.View>
+</UIHierarchy>
+"]
+  "b'MoreMenu2'" [label="b'MoreMenu2'\n<?xml version=`1.0` ?>
+<UIHierarchy>
+	<_reactNative.Image/>
+	<_reactNative.Image/>
+	<_reactNative.View>
+		<_ui.TitleBarBlack text=`{`title`: `setting`}` onPress=`[`goBack`]`/>
+		<_reactNative.View/>
+		<_SettingItem2.default text=`{`title`: `device_more_activity_scence`}` onPress=`[`openIftttAutoPage`]`/>
+		<_SettingItem2.default text=`{`title`: `Curtain_reversal`}`/>
+		<_SettingItem2.default text=`{`title`: `Curtaincalibration`}`/>
+		<_SettingItem2.default text=`{`title`: `shareDevice`}` onPress=`[`openShareDevicePage`]`/>
+		<_SettingItem2.default text=`{`title`: `commonSetting`}`/>
+		<_SettingItem2.default text=`{`title`: `device_more_activity_help_feedback`}` onPress=`[`openHelpPage`]`/>
+		<_SettingItem2.default text=`{`title`: `licenseAndPolicy`}`/>
+		<_ui.LoadingDialog text=`{`message`: `this.state.dialogMessage`}`/>
+	</_reactNative.View>
+</UIHierarchy>
+"]
+  "b'MoreSetting'" [label="b'MoreSetting'\nb'MoreSetting'"]
+}

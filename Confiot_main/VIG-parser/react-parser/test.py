@@ -26,13 +26,10 @@ def query():
 
         # querying the tree
         query = PY_LANGUAGE.query("""
-        (call_expression
-            function: [
-                ((identifier) @function (#match? @function ".*createElement"))
-                (member_expression property: ((property_identifier) @function (#match? @function ".*createElement")))
-                ]
+        (pair
+            key: (_) @key
             .
-            arguments: (arguments . (_) @element_type . (_) @element_options . _* @others )@auguments
+            value: (string) @val
         )
         """)
 
@@ -49,4 +46,4 @@ def query():
 
 
 if __name__ == "__main__":
-    dump_tree()
+    query()

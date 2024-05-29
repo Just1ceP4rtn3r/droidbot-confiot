@@ -45,6 +45,7 @@ class ASTParser:
         self.screens = None
         self.initialRouteName = None
         self.screen_in_resources = []
+        self.strings = {}
 
         # Initialize parameters
         self.plugin_file = plugin_file
@@ -89,6 +90,21 @@ class ASTParser:
             return self.resources
         return None
 
+    # def get_strings(self):
+    #     query = """
+    #     (pair
+    #         key: (_) @key
+    #         .
+    #         value: (string) @val
+    #     )
+    #     """
+    #     matches = self.query(query, self.root_node)
+    #     for m in matches:
+    #         if (m[1]):
+    #             key = m[1]["key"]
+    #             val = m[1]["val"]
+    #             if()
+
     def query(self, query, node):
         q = self.PY_LANGUAGE.query(query)
         matches = q.matches(node)
@@ -103,8 +119,10 @@ class ASTParser:
         for idx, e in enumerate(elements):
             if (not e["parent"] and e not in delete_elements):
                 n = dom.createElement(decode_bytes(e['tag']))
-                n.setAttribute("text", str(e["text"]))
-                n.setAttribute("onPress", str(e["onPress"]))
+                if (e["text"]):
+                    n.setAttribute("text", str(e["text"]))
+                if (e["onPress"]):
+                    n.setAttribute("onPress", str(e["onPress"]))
                 root_node.appendChild(n)
                 worklist.append((e, n))
 
@@ -115,8 +133,10 @@ class ASTParser:
                 if (child in delete_elements):
                     continue
                 n = dom.createElement(decode_bytes(child['tag']))
-                n.setAttribute("text", str(child["text"]))
-                n.setAttribute("onPress", str(child["onPress"]))
+                if (child["text"]):
+                    n.setAttribute("text", str(child["text"]))
+                if (child["onPress"]):
+                    n.setAttribute("onPress", str(child["onPress"]))
                 father.appendChild(n)
                 worklist.append((child, n))
 
@@ -125,10 +145,27 @@ class ASTParser:
     def get_text_from_element(self, options, Paras):
         results = {}
         # 1. 通过options获取
-        match = re.findall(r'(title|text|name|message):.*?([\'"])(.*?)\2', decode_bytes(options))
+        match = re.findall(r'(title|text|name|message):.*?([\'"])(.*?)\2', decode_bytes(options.text))
         for m in match:
             if (len(m) == 3):
                 results[m[0]] = m[2]
+        if (not match):
+            my_query = """
+            (pair
+                key: ((property_identifier) @opt (#match? @opt "(title|text|name|message)"
+                ))
+                .
+                value: ((_) @val)
+            )
+            """
+            query_matches = self.query(my_query, options)
+
+            title = None
+            for m in query_matches:
+                if (m[1]):
+                    key = m[1]["opt"]
+                    title = m[1]["val"]
+                    results[decode_bytes(key.text)] = decode_bytes(title.text)
 
         # 2. 通过Paras获取
         for p in Paras:
@@ -142,9 +179,9 @@ class ASTParser:
         # 1. 直接提取函数名
         query = """
         (pair
-            key: (property_identifier) @opt (#match? @opt ".*onPress")
+            key: ((property_identifier) @opt (#match? @opt ".*onPress"))
             .
-            value: (_) @val
+            value: ((_) @val)
         )
         """
         matches = self.query(query, options)
@@ -161,9 +198,9 @@ class ASTParser:
                 query_call = """
                 (call_expression
                     function: [
-                        ((identifier) @function (#any-of? @function ".*open.*" ".*goBack.*" ".*exit.*"))
-                        (member_expression property: ((property_identifier) @function (#match? @function ".*open.*")))
-                        (parenthesized_expression (sequence_expression (member_expression property: ((property_identifier) @function (#any-of? @function ".*open.*" ".*goBack.*" ".*exit.*")))))
+                        ((identifier) @function (#match? @function ".*open.*|.*goBack.*|.*exit.*"))
+                        (member_expression property: ((property_identifier) @function (#match? @function ".*open.*|.*goBack.*|.*exit.*")))
+                        (parenthesized_expression (sequence_expression (member_expression property: ((property_identifier) @function (#match? @function ".*open.*|.*goBack.*|.*exit.*")))))
                         ]
                 )
                 """
@@ -206,7 +243,7 @@ class ASTParser:
                 if ("leftParas" in m[1]):
                     leftParas = m[1]["leftParas"]
 
-                related_texts = self.get_text_from_element(element_options.text, leftParas)
+                related_texts = self.get_text_from_element(element_options, leftParas)
                 on_press = self.get_navigations_from_element(element_options)
 
                 elements.append({
