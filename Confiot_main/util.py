@@ -87,10 +87,11 @@ class Node:
 
 class Edge:
 
-    def __init__(self, start_node, end_node, event_strs: list):
+    def __init__(self, start_node, end_node, event_strs: list, description=None):
         self.start_node = start_node
         self.end_node = end_node
         self.event_strs = event_strs
+        self.description = description
 
 
 class DirectedGraph:
@@ -126,8 +127,10 @@ class DirectedGraph:
             for event in edge.event_strs:
                 self.edges_dict[edge.start_node.name][edge.end_node.name].append(event)
 
-    def find_shortest_path(self, node_1: str, node_2: str):
+        if (edge.description):
+            self.edges_dict[edge.start_node.name][edge.end_node.name].append(edge.description)
 
+    def find_shortest_path(self, node_1: str, node_2: str):
         if node_1 not in self.nodes_dict or node_2 not in self.nodes_dict:
             print("[ERR]: Cannot find node")
             return None
@@ -165,7 +168,10 @@ class DirectedGraph:
         added_edges = set()
 
         for edge in graph.edges:
-            edge_str = f'  "{edge.start_node.name}" -> "{edge.end_node.name}"'
+            if edge.description:
+                edge_str = f'  "{edge.start_node.name}" -> "{edge.end_node.name}" [label="{edge.description}"]'
+            else:
+                edge_str = f'  "{edge.start_node.name}" -> "{edge.end_node.name}"'
             if edge_str not in added_edges:
                 dot_content += edge_str + "\n"
                 added_edges.add(edge_str)

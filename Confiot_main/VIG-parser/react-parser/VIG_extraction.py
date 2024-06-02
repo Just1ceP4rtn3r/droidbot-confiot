@@ -43,6 +43,7 @@ class ASTParser:
         # }
         self.resources = {}
         self.screens = None
+        self.Elements = {}
         self.initialRouteName = None
         self.screen_in_resources = []
         self.strings = {}
@@ -119,6 +120,7 @@ class ASTParser:
         for idx, e in enumerate(elements):
             if (not e["parent"] and e not in delete_elements):
                 n = dom.createElement(decode_bytes(e['tag']))
+                n.setAttribute("ID", str(e["ID"]))
                 if (e["text"]):
                     n.setAttribute("text", str(e["text"]))
                 if (e["onPress"]):
@@ -133,6 +135,7 @@ class ASTParser:
                 if (child in delete_elements):
                     continue
                 n = dom.createElement(decode_bytes(child['tag']))
+                n.setAttribute("ID", str(child["ID"]))
                 if (child["text"]):
                     n.setAttribute("text", str(child["text"]))
                 if (child["onPress"]):
@@ -176,7 +179,13 @@ class ASTParser:
 
     def get_navigations_from_element(self, options):
         results = []
-        # 1. 直接提取函数名
+
+        # 1. 提取options中涉及到的navitate
+        results += self.get_navigations_from_node(options)
+        if (results):
+            return results
+
+        # 2. 提取onPress方法中调用的函数名
         query = """
         (pair
             key: ((property_identifier) @opt (#match? @opt ".*onPress"))
@@ -247,6 +256,7 @@ class ASTParser:
                 on_press = self.get_navigations_from_element(element_options)
 
                 elements.append({
+                    "ID": len(elements),
                     "identifier": CALL.start_point.row,
                     "tag": element_type,
                     "text": related_texts,
@@ -462,8 +472,13 @@ class ASTParser:
                     navigations.append(m[1]["destination"])
         return navigations
 
+    ##########################################
+    # UI Tree & UITree_paths
+    ##########################################
     def construct_UITree(self, out_dir, UITree_file, shared_contents=None):
         self.uiTree = UITree()
+        # {node_name: elements}
+        self.Elements = {}
 
         delete_screens = []
         for screen in self.screens:
@@ -476,6 +491,7 @@ class ASTParser:
             resource_id, node = self.screens[screen]
             if (node):
                 elements = self.get_elements(node)
+                self.Elements[screen] = elements
                 if (shared_contents and shared_contents["elements"]):
                     for se in shared_contents["elements"]:
                         for e in elements:
@@ -501,30 +517,40 @@ class ASTParser:
                         n = Node(nav, description=nav)
                         self.uiTree.add_node(n)
 
-        for screen, start_node in self.uiTree.nodes_dict.items():
-            if (screen not in self.screens):
+        indegree = {}
+        for n in self.uiTree.nodes:
+            indegree[n] = 0
+        for start_node_name, start_node in self.uiTree.nodes_dict.items():
+            if (start_node_name not in self.screens):
                 continue
-            resource_id = self.screens[screen][0]
+            resource_id = self.screens[start_node_name][0]
             if (resource_id not in self.resources):
                 continue
-            for nav in self.resources[resource_id]["navigations"]:
-                if (isinstance(nav, bytes)):
-                    if (nav in self.uiTree.nodes_dict and nav not in delete_screens):
-                        e = Edge(start_node, self.uiTree.nodes_dict[nav], None)
+            for dest_node_name in self.resources[resource_id]["navigations"]:
+                if (isinstance(dest_node_name, bytes)):
+                    if (dest_node_name in self.uiTree.nodes_dict and dest_node_name not in delete_screens):
+                        description = None
+                        for element in self.Elements[start_node_name]:
+                            if (dest_node_name in element["onPress"]):
+                                description = str(element['ID'])
+                                break
+                        e = Edge(start_node, self.uiTree.nodes_dict[dest_node_name], None, description=description)
                         self.uiTree.add_edge(e)
+                        indegree[self.uiTree.nodes_dict[dest_node_name]] += 1
+
+        # uiTree的head节点
+        self.uiTree.start_node = []
+        for n in indegree:
+            if (indegree[n] == 0):
+                self.uiTree.start_node.append(n)
 
         UITree.draw(self.uiTree, out_dir)
         with open(f'{out_dir}/UITree.dot', 'r') as file:
             dot_content = file.read()
         # 使用 Source 创建图对象
         dot = Source(dot_content)
-
         # 渲染图并保存为 PNG 文件
         dot.render(f'{out_dir}/{UITree_file}', format='png', view=False)
-
-    # 获取每个resource内的interactions
-    def get_interactions(s):
-        pass
 
     # 获取由shared 角色区分的elements/navigations
     def get_shared_elements_and_navigations(self, static_analysis_results_csv, out_dir, UITree):
@@ -550,6 +576,74 @@ class ASTParser:
     # except Exception as e:
     #     print("[ERR]: ", e)
 
+    def device_map_config_resource(self, out_dir):
+        config_paths = []
+        _element_ids = set()
+        path_to_node = {}
+
+        for s in self.uiTree.start_node:
+            for n in self.uiTree.nodes:
+                p = self.uiTree.find_shortest_path(s.name, n.name)
+                if (not p or p == []):
+                    continue
+                pred = None
+                succ = None
+                path = []
+                for p_node in p:
+                    if (not succ):
+                        succ = p_node
+                    else:
+                        pred = succ
+                        succ = p_node
+
+                    if (pred and succ):
+                        if (self.uiTree.edges_dict[pred.name][succ.name]):
+                            eid = int(self.uiTree.edges_dict[pred.name][succ.name][0])
+                            element = self.Elements[pred.name][eid]
+                            desc = f"<ElementType:`{element['tag']}`, "
+                            if (element['text']):
+                                desc += f"Text:`{element['text']}`,"
+                            if (element['onPress']):
+                                desc += f"NavigationPage:`{element['onPress']}`"
+                            desc += ">"
+                            path.append(desc)
+                            _element_ids.add(eid)
+                    path.append(f"<text:`{p_node.name}`>")
+                path_to_node[n] = path
+                config_paths.append(path)
+
+        for n in self.uiTree.nodes:
+            if (n.name in self.Elements):
+                elements = self.Elements[n.name]
+                for element in elements:
+                    eid = element["ID"]
+                    if (eid in _element_ids or (not element['text'] and not element['onPress'])):
+                        continue
+                    path = copy.deepcopy(path_to_node[n])
+                    desc = f"<ElementType:`{element['tag']}`, "
+                    if (element['text']):
+                        desc += f"Text:`{element['text']}`,"
+                    if (element['onPress']):
+                        desc += f"NavigationPage:`{element['onPress']}`"
+                    desc += ">"
+                    path.append(desc)
+                    config_paths.append(path)
+
+        with open(f'{out_dir}/ActionPaths.txt', 'w') as file:
+            for idx, p in enumerate(config_paths):
+                file.write(str(idx) + ": " + str(p) + "\n")
+
+        # paths_str_list = []
+        # paths_frags = []
+        # frags_size = (len(paths["text_paths"]) // 20) + 1
+        # id = 0
+        # for p in paths["text_paths"]:
+        #     p_str = "\",\"".join(p)
+        #     p_str = p_str.replace("\n", ' ')
+        #     paths_str_list.append(f"{id}: [\"{p_str}\"]\n")
+        #     id += 1
+        # pass
+
 
 if __name__ == '__main__':
     parser = ASTParser(BASE_DIR + "/javascript/test/090615.curtain.1mcu01.js")
@@ -569,8 +663,12 @@ if __name__ == '__main__':
         # if (nav):
         #     print(nav)
 
+    # STEP-1: 获取host的UITree
     parser.construct_UITree(out_dir=BASE_DIR + "/javascript/test/", UITree_file="host_UITree")
 
+    parser.device_map_config_resource(out_dir=BASE_DIR + "/javascript/test/")
+
+    # STEP-3: 获取guest的UITree
     parser.get_shared_elements_and_navigations(static_analysis_results_csv=BASE_DIR + "/javascript/test/codeql/result.csv",
                                                out_dir=BASE_DIR + "/javascript/test/",
                                                UITree="guest_UITree")
