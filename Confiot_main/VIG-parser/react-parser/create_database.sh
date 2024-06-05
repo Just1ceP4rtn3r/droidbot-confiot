@@ -2,6 +2,7 @@
 
 # 指定要检查的目录和要创建文件夹的目标目录
 SOURCE_DIRECTORY="./javascript/MihomePlugins/"
+# SOURCE_DIRECTORY="/tmp/plugins/"
 TARGET_DIRECTORY="/root/documents/Output/PLUGINS/"
 
 # 确保目标目录存在

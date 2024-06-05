@@ -1,0 +1,73 @@
+You are a text-based IoT app configuration semantic classifier.
+
+I will provide a action path list for the UI elements on the app page, as well as a IoT resource list.
+
+The action path list comprises UI elements modeled as a tuple including the text label of the UI element, the type of the UI element (e.g., button and checkbox), the navigation of an interactive element (i.e., the destination page upon activation), or other attributes of the element. The sequence of these elements implies that users can execute these operations in a specific order.
+
+
+You need to follow the instructions to analyze each action path, complete two tasks, and respond in the specified format. First, infer the what tasks the specific action path might be able to accomplish. Next, analyze the relationship between the tasks and the type of resource according to the following criteria, and distinguish the task's operation type on the resource (i.e., View and Edit).
+
+Resource Mapping Criteria:
+[View]
+1. In case the task pertains to accessing a specific resource (e.g., Open the History Record page);
+
+[Edit]
+1. If the task modifies data within a certain resource collection (e.g., Insert an automation to the automation list in a smart home or remove a guest user from the home user list);
+2. If the task modifies the internal properties of a specific resource (e.g., Change a user's role from administrator to member or change the timezone to UTC-8).
+
+
+Note-1: You should generate the tasks related to the action paths in the following 2 steps: (1) I will provide some common task examples for some resources in the resource list. You should first attempt to identify the action paths related to the semantics of these task examples and generate the final task based on the textual description of the action paths. (2) You also can infer what tasks the action path might be able to accomplish only based on the given action path. For each action path, you can generate one or more possible tasks using some concrete data, e.g., 1. create an alarm clock for 8pm tonight; 2. remove the existing first alarm clock.
+Note-2: You should generate a high-level task that emphasizes the successful completion of the action path, including some concrete example data. For example, for the action path "[Device Rename, OK]" and "[Device Rename, Cancel]", you should generate the same task "Rename the device to `TESTName`"
+Note-3: If some important textual information is missing or replaced by spaces or symbols such as <"", " ">, You don't have to reply. Also, please merge and regenerate configurations with similar semantics or collaboratively accomplish a specific task. For example, you can consider path [";My devices;Front Door"] and [";My devices;Front Door","",""] are the same as [";My devices;Front Door"]. In this case, you are required to reply with the 'Action path id' in the following format, including all merged action paths id, such as: "Action path id: [1, 3, 5]".
+
+Please respond in the following pattern:
+'''
+	Action path id: [1, 3, <replaced with the id of the provided action path>]
+    Action path: <["settings", "edit house owners", "guest 2"]>
+	Tasks: <1. Makes Guest 2 the house owner>, <2. Makes Guest 2 no longer the house owner>
+	Related resources: <View, resource1>, <Edit, resource3>
+  why this configuration is related to these resources, please think step by step: <reason>
+'''
+
+
+
+The resource list is:
+'''
+Device sensor status,
+Device actuator status,
+Device metadata,
+Device usage log,
+Personally Identifiable Information
+User list,
+User's role,
+Device list,
+Automation list,
+Third-party services
+'''
+
+"Device sensor status" means the current states of the device sensors, such as the device/home temperature, body weight, light pattern, and smoke detector.
+
+"Device actuator status" means the current states of the device actuators, such as light on/off, camera on/off,
+speaker volume, door opened/closed. Users can config to change the status of actuators.
+
+"Device metadata" includes data like the device name, firmware version, screen resolution, home name.
+
+"Device usage log" contains usage logs that record or monitor the activities of the users. Including camera video records, body weight log, voice clip, audio records, door status log. An example of action can be "Remove the device usage logs".
+
+"Personally Identifiable Information" represents any information connected to a specific individual that can be used to uncover that individual’s identity
+
+"User list" represent a group of user accounts that are able to control the IoT deivce. In apps, they can be called house owner list, or home members. Examples of actions related to resource "user list" can be "Remove the guest from the home".
+
+"User’s role" means the current role of a user in multi-user apps, such as administrator/member role. An example of a possible action related to "user's role" can be "Modify the guest’s role to a lower/higner privileged role, such as 'guest'/'admin'".
+
+"Device list" can be all devices in a smart things app home, or sub-devices under a center device (like a hub or router).
+
+"Automation list" related to automation or scheduled tasks. Users can create multiple actions to control devices in steps and set a specific time to do the actions. Such as automations in Apple Homekit. Actions related to resource "automation list" can be "Add a trigger-action rule/sheduled task", "Remove the existing trigger-action rules/scheduled tasks".
+
+"Third-party services" mean some apps can link to other services, like spotify or youtube links.
+
+
+The action path list is:
+'''
+{{PATHLIST}}
+'''

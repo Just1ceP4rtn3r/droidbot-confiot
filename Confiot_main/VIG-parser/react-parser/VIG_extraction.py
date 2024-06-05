@@ -6,6 +6,7 @@ from xml.dom import minidom
 from graphviz import Source
 import copy
 import csv
+import json
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
@@ -151,7 +152,10 @@ class ASTParser:
         match = re.findall(r'(title|text|name|message):.*?([\'"])(.*?)\2', decode_bytes(options.text))
         for m in match:
             if (len(m) == 3):
-                results[m[0]] = m[2]
+                if (m[0] in results):
+                    results[m[0]] += ", " + m[2]
+                else:
+                    results[m[0]] = m[2]
         if (not match):
             my_query = """
             (pair
@@ -188,7 +192,7 @@ class ASTParser:
         # 2. 提取onPress方法中调用的函数名
         query = """
         (pair
-            key: ((property_identifier) @opt (#match? @opt ".*onPress"))
+            key: ((property_identifier) @opt (#match? @opt ".*(onPress|onConfirm)"))
             .
             value: ((_) @val)
         )
@@ -297,6 +301,44 @@ class ASTParser:
                     elements[idx]["childrens"].append(target_element)
                     elements[target_element]["parent"] = idx
 
+        new_query = """
+            (object
+                (pair
+                    key: ((string) @key (#match? @key "(title|text|name)"
+                    ))
+                    .
+                    value: ((_) @key_val)
+                )
+                .
+                (pair
+                    key: ((string) @nav (#match? @nav "(func|onPress|press|Press|navigation)"
+                    ))
+                    .
+                    value: ((_) @nav_val)
+                )
+            )
+            """
+        matches = self.query(new_query, node)
+
+        for m in matches:
+            if (m[1]):
+                name = m[1]["key_val"]
+                nav_val = m[1]["nav_val"]
+
+                related_texts = {'title': decode_bytes(name.text)}
+                on_press = self.get_navigations_from_element(nav_val)
+
+                elements.append({
+                    "ID": len(elements),
+                    "identifier": name.start_point.row,
+                    "tag": b"Text",
+                    "text": related_texts,
+                    "onPress": on_press,
+                    "childrens": [],
+                    "parent": 0,
+                    "options": nav_val,
+                    "paras": nav_val
+                })
         return elements
 
         # print(elements)
@@ -480,6 +522,8 @@ class ASTParser:
         # {node_name: elements}
         self.Elements = {}
 
+        delete_elements_map = {}
+
         delete_screens = []
         for screen in self.screens:
             delete_elements = []
@@ -495,8 +539,18 @@ class ASTParser:
                 if (shared_contents and shared_contents["elements"]):
                     for se in shared_contents["elements"]:
                         for e in elements:
-                            if (se["tag"] == e["tag"] and se["onPress"] == e["onPress"]):
+                            if (se["tag"] == e["tag"] and se["onPress"] == e["onPress"] and
+                                    se["options"].text == e["options"].text):
                                 delete_elements.append(e)
+                                if (decode_bytes(screen) not in delete_elements_map):
+                                    delete_elements_map[decode_bytes(screen)] = []
+                                json_e = {
+                                    'tag': str(e['tag']),
+                                    "ID": str(e["ID"]),
+                                    "text": str(e["text"]),
+                                    "onPress": str(e["onPress"])
+                                }
+                                delete_elements_map[decode_bytes(screen)].append(json_e)
 
                 xml = self.elements_to_XML(elements, delete_elements)
                 # self.screens[screen] = (resource_id, node, elements, xml)
@@ -552,8 +606,10 @@ class ASTParser:
         # 渲染图并保存为 PNG 文件
         dot.render(f'{out_dir}/{UITree_file}', format='png', view=False)
 
+        return delete_elements_map
+
     # 获取由shared 角色区分的elements/navigations
-    def get_shared_elements_and_navigations(self, static_analysis_results_csv, out_dir, UITree):
+    def get_shared_elements_and_navigations(self, static_analysis_results_csv, out_dir, UITree=None):
         # try:
         shared_contents = {"navigations": [], "elements": []}
         with open(static_analysis_results_csv, newline='', encoding='utf-8') as csvfile:
@@ -571,7 +627,9 @@ class ASTParser:
                 shared_contents["elements"] += shared_elements
                 shared_contents["navigations"] += shared_navigations
 
-            self.construct_UITree(out_dir, UITree, shared_contents)
+            delete_elements = self.construct_UITree(out_dir, UITree, shared_contents)
+            with open(out_dir + "Role_comaparsion.txt", 'w', encoding="UTF-8") as json_file:
+                json.dump(delete_elements, json_file)
 
     # except Exception as e:
     #     print("[ERR]: ", e)
@@ -629,24 +687,47 @@ class ASTParser:
                     path.append(desc)
                     config_paths.append(path)
 
+        paths_str_list = []
+        frags_size = len(config_paths) // 20 if len(config_paths) % 20 == 0 else (len(config_paths) // 20) + 1
+
         with open(f'{out_dir}/ActionPaths.txt', 'w') as file:
             for idx, p in enumerate(config_paths):
                 file.write(str(idx) + ": " + str(p) + "\n")
+                paths_str_list.append(str(idx) + ": " + str(p) + "\n")
 
-        # paths_str_list = []
-        # paths_frags = []
-        # frags_size = (len(paths["text_paths"]) // 20) + 1
-        # id = 0
-        # for p in paths["text_paths"]:
-        #     p_str = "\",\"".join(p)
-        #     p_str = p_str.replace("\n", ' ')
-        #     paths_str_list.append(f"{id}: [\"{p_str}\"]\n")
-        #     id += 1
-        # pass
+        with open(out_dir + "/ConfigResourceMappingResponse.txt", "w") as f:
+            f.write('')
+
+        mapper = []
+        for i in range(frags_size):
+            if (i == frags_size - 1):
+                paths_str = ''.join(paths_str_list[i * 20:])
+            else:
+                paths_str = ''.join(paths_str_list[i * 20:(i + 1) * 20])
+
+            prompt = ''
+            with open(BASE_DIR + "/../../prompt/ConfigResourceMapping_2.txt") as f:
+                prompt = f.read()
+
+            prompt = prompt.replace("{{PATHLIST}}", paths_str)
+            print(prompt)
+            print(
+                "----------------------------------------------------------------------------------------------------------------------------------------------"
+            )
+            # os.environ["https_proxy"] = "http://192.168.72.1:1083"
+            res = query_config_resource_mapping(prompt)
+
+            with open(out_dir + "/ConfigResourceMappingResponse.txt", "a") as f:
+                f.write(paths_str + "\n")
+                f.write(res + "\n")
 
 
 if __name__ == '__main__':
-    parser = ASTParser(BASE_DIR + "/javascript/test/090615.curtain.1mcu01.js")
+    model = "cleargrass.sensor_ht.dk1"
+
+    parser = ASTParser(
+        f"/root/documents/droidbot-confiot/Confiot_main/VIG-parser/react-parser/javascript/MihomePlugins/{model}/{model}.js")
+    output_dir = f"/root/documents/Output/PLUGINS/{model}/"
     parser.start_parser()
 
     # parser.get_elements(parser.resources[10007]["node"])
@@ -664,11 +745,10 @@ if __name__ == '__main__':
         #     print(nav)
 
     # STEP-1: 获取host的UITree
-    parser.construct_UITree(out_dir=BASE_DIR + "/javascript/test/", UITree_file="host_UITree")
+    parser.construct_UITree(out_dir=output_dir, UITree_file="host_UITree")
 
-    parser.device_map_config_resource(out_dir=BASE_DIR + "/javascript/test/")
-
-    # STEP-3: 获取guest的UITree
-    parser.get_shared_elements_and_navigations(static_analysis_results_csv=BASE_DIR + "/javascript/test/codeql/result.csv",
-                                               out_dir=BASE_DIR + "/javascript/test/",
+    parser.device_map_config_resource(out_dir=output_dir)
+    # STEP-2: 获取guest的UITree
+    parser.get_shared_elements_and_navigations(static_analysis_results_csv=output_dir + "js-results.csv",
+                                               out_dir=output_dir,
                                                UITree="guest_UITree")
