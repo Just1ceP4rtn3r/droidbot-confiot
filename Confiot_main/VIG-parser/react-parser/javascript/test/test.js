@@ -1,50 +1,29 @@
-if (!_miot.Device.isOwner) {
-    this._menuData = [{
-        'name': _ZKCommonString2.default.modifyDeviceName,
-        'func': function func() {
-            _miot.Host.ui.openChangeDeviceName();
-        }
-    }, {
-        'name': _ZKCommonString2.default.locationManagement,
-        'func': function func() {
-            _miot.Host.ui.openRoomManagementPage();
-        }
-    }, {
-        'name': _ZKCommonString2.default.securitySettings,
-        'func': function func() {
-            _miot.Host.ui.openSecuritySetting();
-        }
-    }, {
-        'name': _ZKCommonString2.default.faq,
-        'func': function func() {
-            _miot.Host.ui.openHelpPage();
-        }
-    }, {
-        'name': _ZKCommonString2.default.feedback,
-        'func': function func() {
-            _miot.Host.ui.openFeedbackInput();
-        }
-    }, {
-        'name': _ZKCommonString2.default.addToDesktop,
-        'func': function func() {
-            _miot.Host.ui.openAddToDesktopPage();
-        }
-    }, {
-        'name': _ZKCommonString2.default.cksytkhysxy,
-        'func': function func() {
-            var licenseURL = _require(_dependencyMap[5]);
-
-            var policyURL = _require(_dependencyMap[6]);
-
-            var slasa = _ZKCommonString2.default.slasa;
-            var priAgree = _ZKCommonString2.default.privacyAgreement;
-
-            _miot.Host.ui.privacyAndProtocolReview(slasa, licenseURL, priAgree, policyURL);
-        }
-    }, {
-        'name': _ZKCommonString2.default.delDevice,
-        'func': function func() {
-            _miot.Host.ui.openDeleteDevice();
-        }
-    }];
-}
+var APP = (0, _LHCommonUI.LHInitPage)({
+    LHMainPage: _LHMainPage.default,
+    LHSettingPage: _LHSettingPage.default,
+    LHVolumePage: _LHVolumePage.default,
+    LHDoorBellPage: _LHDoorBellPage.default,
+    LHDoorBellTonePage: _LHDoorBellTonePage.default,
+    LHNightLightDelayPage: _LHNightLightDelayPage.default,
+    LHNightLightDevicePage: _LHNightLightDevicePage.default,
+    LHSubDevicesListPage: _LHCommonUI.LHSubDevicesListPage,
+    LHGuardSettingPage: _LHGuardSettingPage.default,
+    LHNightLightTimerPage: _LHNightLightTimerPage.default,
+    LHGatewayLanguage: _LHGatewayLanguage.default,
+    LHLogPage: _LHLogPage.default,
+    LHDelayEffectivePage: _LHDelayEffectivePage.default,
+    LHGatewayIFTTTPage: _LHGatewayIFTTTPage.default,
+    LHAlarmSettingPage: _LHAlarmSettingPage.default,
+    LHAlarmTonePage: _LHAlarmTonePage.default,
+    LHTimerPage: _LHCommonUI.LHTimerPage,
+    LHNewTimerPage: _LHCommonUI.LHNewTimerPage,
+    LHLazyAlarmClockPage: _LHLazyAlarmClockPage.default,
+    LHLazyClockTimerListPage: _LHLazyClockTimerListPage.default,
+    LHTimeLightListPage: _LHTimeLightListPage.default,
+    LHTimeLightEditPage: _LHTimeLightEditPage.default,
+    LHLazyClockTimerAddPage: _LHLazyClockTimerAddPage.default,
+    LHLinkageAlarmPage: _LHLinkageAlarmPage.default,
+    LHLazyClockRingPage: _LHLazyClockRingPage.default,
+    LHCustomScenePage: _LHCustomScenePage.default,
+    LHMoreSettingPage: _LHCommonUI.LHMoreSettingPage
+}, _miot.Entrance.Scene === _miot.Package.entrance ? 'LHCustomScenePage' : 'LHMainPage', store);

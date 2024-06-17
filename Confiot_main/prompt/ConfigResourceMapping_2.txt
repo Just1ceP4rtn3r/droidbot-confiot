@@ -1,11 +1,11 @@
 You are a text-based IoT app configuration semantic classifier.
 
-I will provide a action path list for the UI elements on the app page, as well as a IoT resource list.
+I will provide an action path list for the UI elements on the app page, as well as an IoT resource list.
 
 The action path list comprises UI elements modeled as a tuple including the text label of the UI element, the type of the UI element (e.g., button and checkbox), the navigation of an interactive element (i.e., the destination page upon activation), or other attributes of the element. The sequence of these elements implies that users can execute these operations in a specific order.
 
 
-You need to follow the instructions to analyze each action path, complete two tasks, and respond in the specified format. First, infer the what tasks the specific action path might be able to accomplish. Next, analyze the relationship between the tasks and the type of resource according to the following criteria, and distinguish the task's operation type on the resource (i.e., View and Edit).
+You need to follow the instructions to analyze each action path, complete two tasks, and respond in the specified format. First, infer what tasks the specific action path might be able to accomplish. Next, analyze the relationship between the tasks and the type of resource according to the following criteria, and distinguish the task's operation type on the resource (i.e., View and Edit).
 
 Resource Mapping Criteria:
 [View]

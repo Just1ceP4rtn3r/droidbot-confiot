@@ -26,10 +26,14 @@ def query():
 
         # querying the tree
         query = PY_LANGUAGE.query("""
-        (pair
-            key: (_) @key
+        (call_expression
+            function: [
+                ((identifier) @function (#match? @function ".*createStackNavigator"))
+                (member_expression property: ((property_identifier) @function_1 (#match? @function_1 ".*createStackNavigator")))
+                (parenthesized_expression (sequence_expression (member_expression property: ((property_identifier) @function_2 (#match? @function_2 ".*(createStackNavigator|LHInitPage)")))))
+                ]
             .
-            value: (string) @val
+            arguments: (arguments . (_) @screens . (object . (pair key: (_) value: (_) @initialRouteName))? . (_)*)
         )
         """)
 
@@ -46,4 +50,4 @@ def query():
 
 
 if __name__ == "__main__":
-    dump_tree()
+    query()

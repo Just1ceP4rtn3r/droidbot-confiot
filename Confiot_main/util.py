@@ -60,10 +60,24 @@ def png_resize(file, resol_x, resol_y):
         return -1
 
 
+def is_blank_or_empty(s: str):
+    if (not s.strip()):
+        return True
+
+    if (not bool(re.search(r'\b[a-zA-Z\u4e00-\u9fff]+\b', s))):
+        return True
+
+    return False
+
+
 def decode_bytes(byte_data):
     try:
         # 尝试用UTF-8解码
         decoded_str = byte_data.decode('utf-8')
+
+        if (bool(re.search(r'\\[uU]{1}[0-9a-fA-F]+', decoded_str))):
+            decoded_str = decoded_str.encode('utf-8').decode('unicode_escape')
+
         return decoded_str
     except UnicodeDecodeError:
         try:
@@ -282,8 +296,6 @@ def parse_config_resource_mapping(text):
         "----------------------------------------------------------------------------------------------------------------------------------------------"
     )
     return ConfigResourceMapper
-
-
 
 
 def query_config_resource_mapping(prompt):

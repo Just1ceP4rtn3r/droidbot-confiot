@@ -30,5 +30,9 @@ def is_file_empty(file_path):
     return os.path.getsize(file_path) == 0
 
 
+def 
+
+
+
 if __name__ == "__main__":
     analyze_sharing_content("/root/documents/Output/PLUGINS/")

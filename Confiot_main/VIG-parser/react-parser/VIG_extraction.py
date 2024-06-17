@@ -86,7 +86,7 @@ class ASTParser:
                 self.resources[id]["raw"] = raw
                 self.resources[id]["dependencies"] = dependencies
 
-                if ("createStackNavigator" in raw):
+                if ("createStackNavigator" in raw or "LHInitPage" in raw):
                     self.screen_in_resources.append(id)
 
             return self.resources
@@ -108,9 +108,12 @@ class ASTParser:
     #             if()
 
     def query(self, query, node):
-        q = self.PY_LANGUAGE.query(query)
-        matches = q.matches(node)
-        return matches
+        try:
+            q = self.PY_LANGUAGE.query(query)
+            matches = q.matches(node)
+            return matches
+        except Exception as e:
+            return []
 
     def elements_to_XML(self, elements, delete_elements=[]):
         dom = minidom.Document()
@@ -152,6 +155,8 @@ class ASTParser:
         match = re.findall(r'(title|text|name|message):.*?([\'"])(.*?)\2', decode_bytes(options.text))
         for m in match:
             if (len(m) == 3):
+                if (is_blank_or_empty(m[2]) or bool(re.search('(style|font|props|align)', m[0].lower()))):
+                    continue
                 if (m[0] in results):
                     results[m[0]] += ", " + m[2]
                 else:
@@ -172,12 +177,17 @@ class ASTParser:
                 if (m[1]):
                     key = m[1]["opt"]
                     title = m[1]["val"]
+                    if (is_blank_or_empty(decode_bytes(title.text)) or
+                            bool(re.search('(style|font|props|align)',
+                                           decode_bytes(key.text).lower()))):
+                        continue
                     results[decode_bytes(key.text)] = decode_bytes(title.text)
 
         # 2. 通过Paras获取
         for p in Paras:
-            if (p.type == "string"):
-                results["textElement"] = decode_bytes(p.text.replace(b'"', b'').replace(b"'", b''))
+            p_text = decode_bytes(p.text.replace(b'"', b'').replace(b"'", b''))
+            if (p.type == "string" and not is_blank_or_empty(p_text)):
+                results["textElement"] = p_text
 
         return results
 
@@ -351,11 +361,11 @@ class ASTParser:
         (call_expression
             function: [
                 ((identifier) @function (#match? @function ".*createStackNavigator"))
-                (member_expression property: ((property_identifier) @function (#match? @function ".*createStackNavigator")))
-                (parenthesized_expression (sequence_expression (member_expression property: ((property_identifier) @function (#match? @function ".*createStackNavigator")))))
+                (member_expression property: ((property_identifier) @function_1 (#match? @function_1 ".*createStackNavigator")))
+                (parenthesized_expression (sequence_expression (member_expression property: ((property_identifier) @function_2 (#match? @function_2 ".*(createStackNavigator|LHInitPage)")))))
                 ]
             .
-            arguments: (arguments . (_) @screens . (object . (pair key: (_) value: (_) @initialRouteName)) . (_)*)
+            arguments: (arguments . (_) @screens . (object . (pair key: (_) value: (_) @initialRouteName))? . (_)*)
         )
         '''
 
@@ -419,9 +429,16 @@ class ASTParser:
 
         for m in navigator_stack:
             if (m[1]):
-                function = m[1]["function"]
+                if ("function" in m[1]):
+                    function = m[1]["function"]
+                elif ("function_1" in m[1]):
+                    function = m[1]["function_1"]
+                elif ("function_2" in m[1]):
+                    function = m[1]["function_2"]
                 screens_node = m[1]["screens"]
-                initialRouteName = m[1]["initialRouteName"].text.replace(b'"', b'').replace(b"'", b'')
+                initialRouteName = None
+                if ("initialRouteName" in m[1]):
+                    initialRouteName = m[1]["initialRouteName"].text.replace(b'"', b'').replace(b"'", b'')
 
                 query_pairs = '''
                 (object (pair key: (_) @key value: (member_expression object:(identifier)@object property:(property_identifier)@property)))
@@ -475,7 +492,7 @@ class ASTParser:
         navigations = self.get_navigations_from_node(node)
 
         for dep in self.resources[resource_id]["dependencies"]:
-            if (dep not in self.resources):
+            if (dep not in self.resources or resource_id in self.resources[dep]["dependencies"]):
                 continue
             if ("navigations" in self.resources[dep]):
                 navigations.extend(self.resources[dep]["navigations"])
@@ -609,7 +626,7 @@ class ASTParser:
         return delete_elements_map
 
     # 获取由shared 角色区分的elements/navigations
-    def get_shared_elements_and_navigations(self, static_analysis_results_csv, out_dir, UITree=None):
+    def construct_shared_UITree(self, static_analysis_results_csv, out_dir, UITree=None):
         # try:
         shared_contents = {"navigations": [], "elements": []}
         with open(static_analysis_results_csv, newline='', encoding='utf-8') as csvfile:
@@ -723,7 +740,7 @@ class ASTParser:
 
 
 if __name__ == '__main__':
-    model = "cleargrass.sensor_ht.dk1"
+    model = "cuco.plug.co1"
 
     parser = ASTParser(
         f"/root/documents/droidbot-confiot/Confiot_main/VIG-parser/react-parser/javascript/MihomePlugins/{model}/{model}.js")
@@ -744,11 +761,13 @@ if __name__ == '__main__':
         # if (nav):
         #     print(nav)
 
+    if (os.path.exists(f'{output_dir}/host_UITree.png')):
+        exit()
     # STEP-1: 获取host的UITree
     parser.construct_UITree(out_dir=output_dir, UITree_file="host_UITree")
 
     parser.device_map_config_resource(out_dir=output_dir)
     # STEP-2: 获取guest的UITree
-    parser.get_shared_elements_and_navigations(static_analysis_results_csv=output_dir + "js-results.csv",
-                                               out_dir=output_dir,
-                                               UITree="guest_UITree")
+    parser.construct_shared_UITree(static_analysis_results_csv=output_dir + "js-results.csv",
+                                   out_dir=output_dir,
+                                   UITree="guest_UITree")
