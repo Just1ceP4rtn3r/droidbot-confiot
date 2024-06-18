@@ -65,6 +65,13 @@ class ASTParser:
 
         self.root_node = self.init_tree_sitter(self.raw_code)
 
+        # UITree
+        self.uiTree = None
+        # [{"ElementsID": (n.name, eid), "Screens": []},]
+        self.action_paths = []
+        #
+        self.shared_contents = {"delete_elements": {}, "delete_screens": []}
+
     def start_parser(self):
         self.get_resources()
         for id in self.resources:
@@ -446,7 +453,7 @@ class ASTParser:
                 s = self.query(query_pairs, screens_node)
                 for i in s:
                     if (i[1]):
-                        key = i[1]["key"].text
+                        key = decode_bytes(i[1]["key"].text)
                         object = i[1]["object"].text
                         property = i[1]["property"].text
 
@@ -559,15 +566,16 @@ class ASTParser:
                             if (se["tag"] == e["tag"] and se["onPress"] == e["onPress"] and
                                     se["options"].text == e["options"].text):
                                 delete_elements.append(e)
-                                if (decode_bytes(screen) not in delete_elements_map):
-                                    delete_elements_map[decode_bytes(screen)] = []
+                                if (screen not in delete_elements_map):
+                                    delete_elements_map[screen] = []
                                 json_e = {
                                     'tag': str(e['tag']),
                                     "ID": str(e["ID"]),
                                     "text": str(e["text"]),
                                     "onPress": str(e["onPress"])
                                 }
-                                delete_elements_map[decode_bytes(screen)].append(json_e)
+                                if (json_e not in delete_elements_map[screen]):
+                                    delete_elements_map[screen].append(json_e)
 
                 xml = self.elements_to_XML(elements, delete_elements)
                 # self.screens[screen] = (resource_id, node, elements, xml)
@@ -623,7 +631,7 @@ class ASTParser:
         # 渲染图并保存为 PNG 文件
         dot.render(f'{out_dir}/{UITree_file}', format='png', view=False)
 
-        return delete_elements_map
+        return delete_elements_map, delete_screens
 
     # 获取由shared 角色区分的elements/navigations
     def construct_shared_UITree(self, static_analysis_results_csv, out_dir, UITree=None):
@@ -644,9 +652,10 @@ class ASTParser:
                 shared_contents["elements"] += shared_elements
                 shared_contents["navigations"] += shared_navigations
 
-            delete_elements = self.construct_UITree(out_dir, UITree, shared_contents)
+            self.shared_contents["delete_elements"], self.shared_contents["delete_screens"] = self.construct_UITree(
+                out_dir, UITree, shared_contents)
             with open(out_dir + "Role_comaparsion.txt", 'w', encoding="UTF-8") as json_file:
-                json.dump(delete_elements, json_file)
+                json.dump(self.shared_contents, json_file)
 
     # except Exception as e:
     #     print("[ERR]: ", e)
@@ -715,30 +724,42 @@ class ASTParser:
                     desc += ">"
                     path.append(desc)
                     config_paths.append(path)
+                    self.action_paths.append({"Path": path, "ElementsID": (n.name, eid), "Screens": []})
+                    for p in path:
+                        if ("Screen" in p):
+                            screen = p.replace("<Screen:`", '').replace("`>", "")
+                            self.action_paths[-1]["Screens"].append(screen)
 
         # TODO: 如果path太多了，就省略一些
-        if (len(config_paths) > 80):
-            config_paths = [[
-                f"<Screen:`{n.name}`>",
-            ] for n in self.uiTree.nodes]
+        if (len(config_paths) > 120):
+            config_paths = config_paths[:100]
+        # if (len(config_paths) > 80):
+        #     config_paths = [[
+        #         f"<Screen:`{n.name}`>",
+        #     ] for n in self.uiTree.nodes]
+        #     self.action_paths = [{
+        #         "Path": [f"<Screen:`{n.name}`>",],
+        #         "ElementsID": (None, None),
+        #         "Screens": [n.name,]
+        #     } for n in self.uiTree.nodes]
 
         paths_str_list = []
-        frags_size = len(config_paths) // 20 if len(config_paths) % 20 == 0 else (len(config_paths) // 20) + 1
+        frags_size = len(config_paths) // 50 if len(config_paths) % 50 == 0 else (len(config_paths) // 50) + 1
 
         with open(f'{out_dir}/ActionPaths.txt', 'w') as file:
-            for idx, p in enumerate(config_paths):
-                file.write(str(idx) + ": " + str(p) + "\n")
-                paths_str_list.append(str(idx) + ": " + str(p) + "\n")
+            json.dump(self.action_paths, file)
 
+        for idx, p in enumerate(config_paths):
+            paths_str_list.append(str(idx) + ": " + str(p) + "\n")
         with open(out_dir + "/ConfigResourceMappingResponse.txt", "w") as f:
             f.write('')
 
         mapper = []
         for i in range(frags_size):
             if (i == frags_size - 1):
-                paths_str = ''.join(paths_str_list[i * 20:])
+                paths_str = ''.join(paths_str_list[i * 50:])
             else:
-                paths_str = ''.join(paths_str_list[i * 20:(i + 1) * 20])
+                paths_str = ''.join(paths_str_list[i * 50:(i + 1) * 50])
 
             prompt = ''
             with open(BASE_DIR + "/../../prompt/ConfigResourceMapping_2.txt") as f:
@@ -758,34 +779,35 @@ class ASTParser:
 
 
 if __name__ == '__main__':
-    model = "xiaomi.router.rm1800"
+    model = "cuco.plug.co1"
 
     parser = ASTParser(
         f"/root/documents/droidbot-confiot/Confiot_main/VIG-parser/react-parser/javascript/MihomePlugins/{model}/{model}.js")
     output_dir = f"/root/documents/Output/PLUGINS/{model}/"
-    parser.start_parser()
 
-    # parser.get_elements(parser.resources[10007]["node"])
-    # 获取所有的pages/screens
-    parser.get_Navigator()
+    if (not os.path.exists(f'{output_dir}/ConfigResourceMappingResponse.txt')):
+        parser.start_parser()
 
-    if (not parser.screens or not parser.initialRouteName):
-        print("[ERR]: Get Navigator failed")
-        sys.exit(1)
+        # parser.get_elements(parser.resources[10007]["node"])
+        # 获取所有的pages/screens
+        parser.get_Navigator()
 
-    # 获取navigations
-    for id in parser.resources:
-        nav = parser.get_navigations(id)
-        # if (nav):
-        #     print(nav)
+        if (not parser.screens or not parser.initialRouteName):
+            print("[ERR]: Get Navigator failed")
+            sys.exit(1)
 
-    if (os.path.exists(f'{output_dir}/host_UITree.png')):
-        exit()
-    # STEP-1: 获取host的UITree
-    parser.construct_UITree(out_dir=output_dir, UITree_file="host_UITree")
+        # 获取navigations
+        for id in parser.resources:
+            nav = parser.get_navigations(id)
+            # if (nav):
+            #     print(nav)
 
-    parser.device_map_config_resource(model=model, out_dir=output_dir)
-    # STEP-2: 获取guest的UITree
-    parser.construct_shared_UITree(static_analysis_results_csv=output_dir + "js-results.csv",
-                                   out_dir=output_dir,
-                                   UITree="guest_UITree")
+        # STEP-1: 获取host的UITree
+        parser.construct_UITree(out_dir=output_dir, UITree_file="host_UITree")
+
+        parser.device_map_config_resource(model=model, out_dir=output_dir)
+
+        # STEP-2: 获取guest的UITree
+        parser.construct_shared_UITree(static_analysis_results_csv=output_dir + "js-results.csv",
+                                       out_dir=output_dir,
+                                       UITree="guest_UITree")

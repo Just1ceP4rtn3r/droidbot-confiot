@@ -298,6 +298,48 @@ def parse_config_resource_mapping(text):
     return ConfigResourceMapper
 
 
+# 解析GPT返回的mapping
+def Plugin_parse_config_resource_mapping(text):
+    ConfigResourceMapper = []
+
+    pattern = re.compile(r'Action path id: (.*?)\n.*?Action path: (.*?)\n.*?Tasks: (.*?)\n.*?Related resources: (.*?)\n',
+                         re.DOTALL)
+    matches = pattern.findall(text)
+
+    # print(matches)
+
+    for match in matches:
+        try:
+            config_id = eval(match[0].replace('<', '').replace('>', ''))
+            config_path = match[1].replace('<', '').replace('>', '')  # 使用 eval 将字符串转为列表
+            if ("<" in match[2] and ">" in match[2]):
+                task = match[2].split(">,")
+            elif ("\n" in match[2]):
+                task = match[2].split("\n")
+            else:
+                task = match[2].split(",")
+            related_resources = re.findall("<(.*?)>", match[3])
+            related_resources = [r.strip().split(",") for r in related_resources]
+
+            for i in range(len(task)):
+                task[i] = task[i].replace('<', '').replace('>', '')
+                task[i] = add_testdata_for_task(task[i])
+
+            ConfigResourceMapper.append({"Id": config_id, "Path": config_path, "Tasks": task, "Resources": related_resources})
+
+            print("Configuration Id:", config_id)
+            print("Configuration Path:", config_path)
+            print("Task:", task)
+            print("Related Resources:", related_resources)
+        except Exception as e:
+            print(e)
+
+    print(
+        "----------------------------------------------------------------------------------------------------------------------------------------------"
+    )
+    return ConfigResourceMapper
+
+
 def query_config_resource_mapping(prompt):
     import requests
     api_key = os.environ.get("OPENAI_API_KEY")
