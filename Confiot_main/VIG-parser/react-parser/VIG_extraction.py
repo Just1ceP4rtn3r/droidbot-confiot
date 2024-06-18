@@ -716,6 +716,12 @@ class ASTParser:
                     path.append(desc)
                     config_paths.append(path)
 
+        # TODO: 如果path太多了，就省略一些
+        if (len(config_paths) > 80):
+            config_paths = [[
+                f"<Screen:`{n.name}`>",
+            ] for n in self.uiTree.nodes]
+
         paths_str_list = []
         frags_size = len(config_paths) // 20 if len(config_paths) % 20 == 0 else (len(config_paths) // 20) + 1
 
