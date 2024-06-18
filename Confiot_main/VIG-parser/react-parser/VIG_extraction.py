@@ -651,7 +651,7 @@ class ASTParser:
     # except Exception as e:
     #     print("[ERR]: ", e)
 
-    def device_map_config_resource(self, out_dir):
+    def device_map_config_resource(self, model, out_dir):
         config_paths = []
         _element_ids = set()
         path_to_node = {}
@@ -679,13 +679,25 @@ class ASTParser:
                             if (element['text']):
                                 desc += f"Text:`{element['text']}`,"
                             if (element['onPress']):
-                                desc += f"NavigationPage:`{element['onPress']}`"
+                                desc += f"onPress:`{element['onPress']}`"
                             desc += ">"
                             path.append(desc)
                             _element_ids.add(eid)
-                    path.append(f"<text:`{p_node.name}`>")
-                path_to_node[n] = path
-                config_paths.append(path)
+                    path.append(f"<Screen:`{p_node.name}`>")
+
+                if (n.name in path_to_node):
+                    if (len(path) > len(path_to_node[n.name])):
+                        continue
+                path_to_node[n.name] = path
+                # if (len(path) != 1 and "Screen" in path[-1]):
+                #     continue
+                # config_paths.append(path)
+
+        for n in self.uiTree.nodes:
+            if (n.name not in path_to_node):
+                path_to_node[n.name] = [
+                    f"<Screen:`{n.name}`>",
+                ]
 
         for n in self.uiTree.nodes:
             if (n.name in self.Elements):
@@ -694,12 +706,12 @@ class ASTParser:
                     eid = element["ID"]
                     if (eid in _element_ids or (not element['text'] and not element['onPress'])):
                         continue
-                    path = copy.deepcopy(path_to_node[n])
+                    path = copy.deepcopy(path_to_node[n.name])
                     desc = f"<ElementType:`{element['tag']}`, "
                     if (element['text']):
                         desc += f"Text:`{element['text']}`,"
                     if (element['onPress']):
-                        desc += f"NavigationPage:`{element['onPress']}`"
+                        desc += f"onPress:`{element['onPress']}`"
                     desc += ">"
                     path.append(desc)
                     config_paths.append(path)
@@ -726,7 +738,7 @@ class ASTParser:
             with open(BASE_DIR + "/../../prompt/ConfigResourceMapping_2.txt") as f:
                 prompt = f.read()
 
-            prompt = prompt.replace("{{PATHLIST}}", paths_str)
+            prompt = prompt.replace("{{PATHLIST}}", f"Device Model&Type: {model}" + "\n\n" + paths_str)
             print(prompt)
             print(
                 "----------------------------------------------------------------------------------------------------------------------------------------------"
@@ -740,7 +752,7 @@ class ASTParser:
 
 
 if __name__ == '__main__':
-    model = "cuco.plug.co1"
+    model = "xiaomi.router.rm1800"
 
     parser = ASTParser(
         f"/root/documents/droidbot-confiot/Confiot_main/VIG-parser/react-parser/javascript/MihomePlugins/{model}/{model}.js")
@@ -766,7 +778,7 @@ if __name__ == '__main__':
     # STEP-1: 获取host的UITree
     parser.construct_UITree(out_dir=output_dir, UITree_file="host_UITree")
 
-    parser.device_map_config_resource(out_dir=output_dir)
+    parser.device_map_config_resource(model=model, out_dir=output_dir)
     # STEP-2: 获取guest的UITree
     parser.construct_shared_UITree(static_analysis_results_csv=output_dir + "js-results.csv",
                                    out_dir=output_dir,

@@ -2,10 +2,9 @@ You are a text-based IoT app configuration semantic classifier.
 
 I will provide an action path list for the UI elements on the app page, as well as an IoT resource list.
 
-The action path list comprises UI elements modeled as a tuple including the text label of the UI element, the type of the UI element (e.g., button and checkbox), the navigation of an interactive element (i.e., the destination page upon activation), or other attributes of the element. The sequence of these elements implies that users can execute these operations in a specific order.
+The action path list comprises UI screens (modeled as "<Screen: screen_name>") to indicate navigation to this screen, and operations on specific UI elements modeled as tuples. Each tuple includes the type of the UI element (e.g., button, checkbox), the text label of the UI element, the navigation destination of an interactive element (i.e., the destination page upon activation), or other attributes of the element. The sequence of these elements implies that users can execute these operations in a specific order.
 
-
-You need to follow the instructions to analyze each action path, complete two tasks, and respond in the specified format. First, infer what tasks the specific action path might be able to accomplish. Next, analyze the relationship between the tasks and the type of resource according to the following criteria, and distinguish the task's operation type on the resource (i.e., View and Edit).
+You need to follow the instructions to analyze each action path, complete two tasks, and respond in the specified format. First, infer what tasks the specific action path might be able to accomplish. Next, analyze the relationship between the tasks and the type of resource according to the following criteria, and distinguish the task's operation type on the resource (i.e., View and Edit). Additionally, please provide resource descriptions in the action path following the resource (e.g., Device Actuator status (light on/off)). Note that you should describe the resource based on the text included in the action path (i.e., specify what the Device Actuator status is: light on/off or plug switch, etc.).
 
 Resource Mapping Criteria:
 [View]
@@ -25,24 +24,24 @@ Please respond in the following pattern:
 	Action path id: [1, 3, <replaced with the id of the provided action path>]
     Action path: <["settings", "edit house owners", "guest 2"]>
 	Tasks: <1. Makes Guest 2 the house owner>, <2. Makes Guest 2 no longer the house owner>
-	Related resources: <View, resource1>, <Edit, resource3>
+	Related resources: <View, Device usage log (door status)>, <Edit, Device metadata (device name)>
   why this configuration is related to these resources, please think step by step: <reason>
 '''
 
 
 
-The resource list is:
+The resource list (with examples) is:
 '''
-Device sensor status,
-Device actuator status,
-Device metadata,
-Device usage log,
-Personally Identifiable Information
-User list,
-User's role,
-Device list,
-Automation list,
-Third-party services
+Device Sensor status: device/home temperature, body weight, light pattern, smoke detector status
+Device Actuator status: light on/off, camera on/off, speaker volume, door opened/closed
+Device metadata: device name, firmware version, screen resolution, home name
+Device usage log: camera video records, body weight log, voice clip, audio records, door status log
+Personally Identifiable Information: user name, user account
+User list: house owner list, home members
+User’s role: administrator/member role
+Device list: devices under a smart home, devices under a Bridge/Hub
+Automation list: smart scene, IFTTT, countdonw, scheduled tasks
+Third-party services: linked Spotify app, linked YouTube app
 '''
 
 "Device sensor status" means the current states of the device sensors, such as the device/home temperature, body weight, light pattern, and smoke detector.
@@ -60,7 +59,7 @@ speaker volume, door opened/closed. Users can config to change the status of act
 
 "User’s role" means the current role of a user in multi-user apps, such as administrator/member role. An example of a possible action related to "user's role" can be "Modify the guest’s role to a lower/higner privileged role, such as 'guest'/'admin'".
 
-"Device list" can be all devices in a smart things app home, or sub-devices under a center device (like a hub or router).
+"Device list" can be all devices in a smart things app home, or sub-devices under a center device (like a hub or router), Only add/remove the device from a device list/Home/Hub can edit the device list.
 
 "Automation list" related to automation or scheduled tasks. Users can create multiple actions to control devices in steps and set a specific time to do the actions. Such as automations in Apple Homekit. Actions related to resource "automation list" can be "Add a trigger-action rule/sheduled task", "Remove the existing trigger-action rules/scheduled tasks".
 
