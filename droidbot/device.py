@@ -25,9 +25,16 @@ class Device(object):
     this class describes a connected device
     """
 
-    def __init__(self, device_serial=None, is_emulator=False, output_dir=None,
-                 cv_mode=False, grant_perm=False, telnet_auth_token=None,
-                 enable_accessibility_hard=False, humanoid=None, ignore_ad=False):
+    def __init__(self,
+                 device_serial=None,
+                 is_emulator=False,
+                 output_dir=None,
+                 cv_mode=False,
+                 grant_perm=False,
+                 telnet_auth_token=None,
+                 enable_accessibility_hard=False,
+                 humanoid=None,
+                 ignore_ad=False):
         """
         initialize a device connection
         :param device_serial: serial number of target device
@@ -357,9 +364,7 @@ class Device(object):
         :param phone: str, phonenum
         :return:
         """
-        call_intent = Intent(prefix='start',
-                             action="android.intent.action.CALL",
-                             data_uri="tel:%s" % phone)
+        call_intent = Intent(prefix='start', action="android.intent.action.CALL", data_uri="tel:%s" % phone)
         return self.send_intent(intent=call_intent)
 
     def send_sms(self, phone=DEFAULT_NUM, content=DEFAULT_CONTENT):
@@ -400,9 +405,7 @@ class Device(object):
 
     def set_continuous_gps(self, center_x, center_y, delta_x, delta_y):
         import threading
-        gps_thread = threading.Thread(
-            target=self.set_continuous_gps_blocked,
-            args=(center_x, center_y, delta_x, delta_y))
+        gps_thread = threading.Thread(target=self.set_continuous_gps_blocked, args=(center_x, center_y, delta_x, delta_y))
         gps_thread.start()
         return True
 
@@ -460,8 +463,7 @@ class Device(object):
         """
         db_name = "/data/data/com.android.providers.settings/databases/settings.db"
 
-        self.adb.shell("sqlite3 %s \"update '%s' set value='%s' where name='%s'\""
-                       % (db_name, table_name, value, name))
+        self.adb.shell("sqlite3 %s \"update '%s' set value='%s' where name='%s'\"" % (db_name, table_name, value, name))
         return True
 
     def send_intent(self, intent):
@@ -636,8 +638,8 @@ class Device(object):
                 install_p.terminate()
                 return
 
-        dumpsys_p = subprocess.Popen(["adb", "-s", self.serial, "shell",
-                                      "dumpsys", "package", package_name], stdout=subprocess.PIPE)
+        dumpsys_p = subprocess.Popen(["adb", "-s", self.serial, "shell", "dumpsys", "package", package_name],
+                                     stdout=subprocess.PIPE)
         dumpsys_lines = []
         while True:
             line = dumpsys_p.stdout.readline()
@@ -674,10 +676,7 @@ class Device(object):
             line = line.strip()
             m = activity_line_re.match(line)
             if m:
-                activities[cur_activity] = {
-                    "actions": cur_actions,
-                    "categories": cur_categories
-                }
+                activities[cur_activity] = {"actions": cur_actions, "categories": cur_categories}
                 cur_package = m.group(1)
                 cur_activity = m.group(2)
                 if cur_activity.startswith("."):
@@ -694,10 +693,7 @@ class Device(object):
                         cur_categories.append(m2.group(1))
 
         if cur_activity is not None:
-            activities[cur_activity] = {
-                "actions": cur_actions,
-                "categories": cur_categories
-            }
+            activities[cur_activity] = {"actions": cur_actions, "categories": cur_categories}
 
         for activity in activities:
             if "android.intent.action.MAIN" in activities[activity]["actions"] \
@@ -873,8 +869,11 @@ class Device(object):
         self.adb.shell("reboot -p")
 
     def get_views(self):
+        # print("get views!!!!!!!!!!!!!!!!!!!")
         if self.cv_mode and self.adapters[self.minicap]:
             # Get views using cv module
+            self.logger.info("CV mode")
+            # print("CV mode!!!!!!!!!!!!!!!!!!!!!!")
             views = self.minicap.get_views()
             if views:
                 return views

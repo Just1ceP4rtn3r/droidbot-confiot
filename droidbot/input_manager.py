@@ -30,7 +30,7 @@ class InputManager(object):
     def __init__(self, device, app, policy_name, random_input,
                  event_count, event_interval,
                  script_path=None, profiling_method=None, master=None,
-                 replay_output=None):
+                 replay_output=None, target_activity_name=None):
         """
         manage input event sent to the target device
         :param device: instance of Device
@@ -51,6 +51,7 @@ class InputManager(object):
         self.event_count = event_count
         self.event_interval = event_interval
         self.replay_output = replay_output
+        self.target_activity_name = target_activity_name
 
         self.monkey = None
 
@@ -69,9 +70,9 @@ class InputManager(object):
         elif self.policy_name == POLICY_MONKEY:
             input_policy = None
         elif self.policy_name in [POLICY_NAIVE_DFS, POLICY_NAIVE_BFS]:
-            input_policy = UtgNaiveSearchPolicy(device, app, self.random_input, self.policy_name)
+            input_policy = UtgNaiveSearchPolicy(device, app, self.random_input, self.policy_name, self.target_activity_name)
         elif self.policy_name in [POLICY_GREEDY_DFS, POLICY_GREEDY_BFS]:
-            input_policy = UtgGreedySearchPolicy(device, app, self.random_input, self.policy_name)
+            input_policy = UtgGreedySearchPolicy(device, app, self.random_input, self.policy_name, self.target_activity_name)
         elif self.policy_name == POLICY_MEMORY_GUIDED:
             from .input_policy2 import MemoryGuidedPolicy
             input_policy = MemoryGuidedPolicy(device, app, self.random_input)
@@ -113,10 +114,13 @@ class InputManager(object):
         start sending event
         """
         self.logger.info("start sending events, policy is %s" % self.policy_name)
-
+        
         try:
             if self.policy is not None:
-                self.policy.start(self)
+                if self.target_activity_name is not None:
+                    self.policy.start_to_activity(self, self.target_activity_name)
+                else:
+                    self.policy.start(self)
             elif self.policy_name == POLICY_NONE:
                 self.device.start_app(self.app)
                 if self.event_count == 0:

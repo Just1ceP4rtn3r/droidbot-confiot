@@ -44,7 +44,8 @@ class DroidBot(object):
                  master=None,
                  humanoid=None,
                  ignore_ad=False,
-                 replay_output=None):
+                 replay_output=None,
+                 target_activity_name=None):
         """
         initiate droidbot with configurations
         :return:
@@ -80,6 +81,7 @@ class DroidBot(object):
         self.humanoid = humanoid
         self.ignore_ad = ignore_ad
         self.replay_output = replay_output
+        self.target_activity_name = target_activity_name
 
         self.enabled = True
 
@@ -109,7 +111,8 @@ class DroidBot(object):
                 script_path=script_path,
                 profiling_method=profiling_method,
                 master=master,
-                replay_output=replay_output)
+                replay_output=replay_output,
+                target_activity_name = target_activity_name)
         except Exception:
             import traceback
             traceback.print_exc()
@@ -149,7 +152,7 @@ class DroidBot(object):
             if not self.enabled:
                 return
             self.env_manager.deploy()
-
+             
             if not self.enabled:
                 return
             if self.droidbox is not None:

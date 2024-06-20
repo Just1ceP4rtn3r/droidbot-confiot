@@ -1,0 +1,29 @@
+{
+  "views": {
+      "scale_text": {
+          "text": "Body fat scale",
+          "class": ".*TextView"
+      }
+  },
+  "states": {
+      "home_state": {
+          "activity": ".*SmartHomeMainActivity",
+          "views": [
+              "scale_text"
+          ]
+      }
+  },
+  "operations": {
+      "enter_scale_card": [
+          {
+              "event_type": "touch",
+              "target_view": "scale_text"
+          }
+      ]
+  },
+  "main": {
+      "home_state": [
+          "enter_scale_card"
+      ]
+  }
+}

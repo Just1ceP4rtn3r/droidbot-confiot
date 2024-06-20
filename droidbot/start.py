@@ -15,79 +15,112 @@ def parse_args():
     """
     parser = argparse.ArgumentParser(description="Start DroidBot to test an Android app.",
                                      formatter_class=argparse.RawTextHelpFormatter)
-    parser.add_argument("-d", action="store", dest="device_serial", required=False,
+    parser.add_argument("-d",
+                        action="store",
+                        dest="device_serial",
+                        required=False,
                         help="The serial number of target device (use `adb devices` to find)")
-    parser.add_argument("-a", action="store", dest="apk_path", required=True,
-                        help="The file path to target APK")
-    parser.add_argument("-o", action="store", dest="output_dir",
-                        help="directory of output")
+    parser.add_argument("-a", action="store", dest="apk_path", required=True, help="The file path to target APK")
+    parser.add_argument("-o", action="store", dest="output_dir", help="directory of output")
     # parser.add_argument("-env", action="store", dest="env_policy",
     #                     help="policy to set up environment. Supported policies:\n"
     #                          "none\tno environment will be set. App will run in default environment of device; \n"
     #                          "dummy\tadd some fake contacts, SMS log, call log; \n"
     #                          "static\tset environment based on static analysis result; \n"
     #                          "<file>\tget environment policy from a json file.\n")
-    parser.add_argument("-policy", action="store", dest="input_policy", default=input_manager.DEFAULT_POLICY,
+    parser.add_argument("-policy",
+                        action="store",
+                        dest="input_policy",
+                        default=input_manager.DEFAULT_POLICY,
                         help='Policy to use for test input generation. '
-                             'Default: %s.\nSupported policies:\n' % input_manager.DEFAULT_POLICY +
-                             '  \"%s\" -- No event will be sent, user should interact manually with device; \n'
-                             '  \"%s\" -- Use "adb shell monkey" to send events; \n'
-                             '  \"%s\" -- Explore UI using a naive depth-first strategy;\n'
-                             '  \"%s\" -- Explore UI using a greedy depth-first strategy;\n'
-                             '  \"%s\" -- Explore UI using a naive breadth-first strategy;\n'
-                             '  \"%s\" -- Explore UI using a greedy breadth-first strategy;\n'
-                             %
-                             (
-                                 input_policy.POLICY_NONE,
-                                 input_policy.POLICY_MONKEY,
-                                 input_policy.POLICY_NAIVE_DFS,
-                                 input_policy.POLICY_GREEDY_DFS,
-                                 input_policy.POLICY_NAIVE_BFS,
-                                 input_policy.POLICY_GREEDY_BFS,
-                             ))
+                        'Default: %s.\nSupported policies:\n' % input_manager.DEFAULT_POLICY +
+                        '  \"%s\" -- No event will be sent, user should interact manually with device; \n'
+                        '  \"%s\" -- Use "adb shell monkey" to send events; \n'
+                        '  \"%s\" -- Explore UI using a naive depth-first strategy;\n'
+                        '  \"%s\" -- Explore UI using a greedy depth-first strategy;\n'
+                        '  \"%s\" -- Explore UI using a naive breadth-first strategy;\n'
+                        '  \"%s\" -- Explore UI using a greedy breadth-first strategy;\n' % (
+                            input_policy.POLICY_NONE,
+                            input_policy.POLICY_MONKEY,
+                            input_policy.POLICY_NAIVE_DFS,
+                            input_policy.POLICY_GREEDY_DFS,
+                            input_policy.POLICY_NAIVE_BFS,
+                            input_policy.POLICY_GREEDY_BFS,
+                        ))
 
     # for distributed DroidBot
-    parser.add_argument("-distributed", action="store", dest="distributed", choices=["master", "worker"],
+    parser.add_argument("-distributed",
+                        action="store",
+                        dest="distributed",
+                        choices=["master", "worker"],
                         help="Start DroidBot in distributed mode.")
-    parser.add_argument("-master", action="store", dest="master",
-                        help="DroidMaster's RPC address")
-    parser.add_argument("-qemu_hda", action="store", dest="qemu_hda",
-                        help="The QEMU's hda image")
-    parser.add_argument("-qemu_no_graphic", action="store_true", dest="qemu_no_graphic",
+    parser.add_argument("-master", action="store", dest="master", help="DroidMaster's RPC address")
+    parser.add_argument("-qemu_hda", action="store", dest="qemu_hda", help="The QEMU's hda image")
+    parser.add_argument("-qemu_no_graphic",
+                        action="store_true",
+                        dest="qemu_no_graphic",
                         help="Run QEMU with -nograpihc parameter")
 
-    parser.add_argument("-script", action="store", dest="script_path",
+    parser.add_argument("-script",
+                        action="store",
+                        dest="script_path",
                         help="Use a script to customize input for certain states.")
-    parser.add_argument("-count", action="store", dest="count", default=input_manager.DEFAULT_EVENT_COUNT, type=int,
-                        help="Number of events to generate in total. Default: %d" % input_manager.DEFAULT_EVENT_COUNT)
-    parser.add_argument("-interval", action="store", dest="interval", default=input_manager.DEFAULT_EVENT_INTERVAL,
+    parser.add_argument("-count",
+                        action="store",
+                        dest="count",
+                        default=input_manager.DEFAULT_EVENT_COUNT,
                         type=int,
+                        help="Number of events to generate in total. Default: %d" % input_manager.DEFAULT_EVENT_COUNT)
+    parser.add_argument("-interval",
+                        action="store",
+                        dest="interval",
+                        default=input_manager.DEFAULT_EVENT_INTERVAL,
                         help="Interval in seconds between each two events. Default: %d" % input_manager.DEFAULT_EVENT_INTERVAL)
-    parser.add_argument("-timeout", action="store", dest="timeout", default=input_manager.DEFAULT_TIMEOUT, type=int,
+    parser.add_argument("-timeout",
+                        action="store",
+                        dest="timeout",
+                        default=input_manager.DEFAULT_TIMEOUT,
+                        type=int,
                         help="Timeout in seconds, -1 means unlimited. Default: %d" % input_manager.DEFAULT_TIMEOUT)
-    parser.add_argument("-cv", action="store_true", dest="cv_mode",
-                        help="Use OpenCV (instead of UIAutomator) to identify UI components. CV mode requires opencv-python installed.")
-    parser.add_argument("-debug", action="store_true", dest="debug_mode",
-                        help="Run in debug mode (dump debug messages).")
-    parser.add_argument("-random", action="store_true", dest="random_input",
-                        help="Add randomness to input events.")
-    parser.add_argument("-keep_app", action="store_true", dest="keep_app",
-                        help="Keep the app on the device after testing.")
-    parser.add_argument("-keep_env", action="store_true", dest="keep_env",
+    parser.add_argument(
+        "-cv",
+        action="store_true",
+        dest="cv_mode",
+        help="Use OpenCV (instead of UIAutomator) to identify UI components. CV mode requires opencv-python installed.")
+    parser.add_argument("-debug", action="store_true", dest="debug_mode", help="Run in debug mode (dump debug messages).")
+    parser.add_argument("-random", action="store_true", dest="random_input", help="Add randomness to input events.")
+    parser.add_argument("-keep_app", action="store_true", dest="keep_app", help="Keep the app on the device after testing.")
+    parser.add_argument("-keep_env",
+                        action="store_true",
+                        dest="keep_env",
                         help="Keep the test environment (eg. minicap and accessibility service) after testing.")
-    parser.add_argument("-use_method_profiling", action="store", dest="profiling_method",
+    parser.add_argument("-use_method_profiling",
+                        action="store",
+                        dest="profiling_method",
                         help="Record method trace for each event. can be \"full\" or a sampling rate.")
-    parser.add_argument("-grant_perm", action="store_true", dest="grant_perm",
+    parser.add_argument("-grant_perm",
+                        action="store_true",
+                        dest="grant_perm",
                         help="Grant all permissions while installing. Useful for Android 6.0+.")
-    parser.add_argument("-is_emulator", action="store_true", dest="is_emulator",
+    parser.add_argument("-is_emulator",
+                        action="store_true",
+                        dest="is_emulator",
                         help="Declare the target device to be an emulator, which would be treated specially by DroidBot.")
-    parser.add_argument("-accessibility_auto", action="store_true", dest="enable_accessibility_hard",
-                        help="Enable the accessibility service automatically even though it might require device restart\n(can be useful for Android API level < 23).")
-    parser.add_argument("-humanoid", action="store", dest="humanoid",
+    parser.add_argument(
+        "-accessibility_auto",
+        action="store_true",
+        dest="enable_accessibility_hard",
+        help=
+        "Enable the accessibility service automatically even though it might require device restart\n(can be useful for Android API level < 23)."
+    )
+    parser.add_argument("-humanoid",
+                        action="store",
+                        dest="humanoid",
                         help="Connect to a Humanoid service (addr:port) for more human-like behaviors.")
-    parser.add_argument("-ignore_ad", action="store_true", dest="ignore_ad",
-                        help="Ignore Ad views by checking resource_id.")
-    parser.add_argument("-replay_output", action="store", dest="replay_output",
+    parser.add_argument("-ignore_ad", action="store_true", dest="ignore_ad", help="Ignore Ad views by checking resource_id.")
+    parser.add_argument("-replay_output",
+                        action="store",
+                        dest="replay_output",
                         help="The droidbot output directory being replayed.")
     options = parser.parse_args()
     # print options

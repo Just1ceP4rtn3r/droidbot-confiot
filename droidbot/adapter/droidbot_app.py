@@ -232,19 +232,22 @@ class DroidBotAppConn(Adapter):
                 self.logger.warning("cannot get non-None last_acc_event")
                 return None
             time.sleep(GET_VIEW_WAIT_TIME)
+        
+        # print(self.last_acc_event)
 
         if 'view_list' in self.last_acc_event:
             return self.last_acc_event['view_list']
 
         import copy
         view_tree = copy.deepcopy(self.last_acc_event['root_node'])
-        # print view_tree
+        # print(view_tree)
         if not view_tree:
             return None
         view_tree['parent'] = -1
         view_list = []
         self.__view_tree_to_list(view_tree, view_list)
         self.last_acc_event['view_list'] = view_list
+        # print(view_list)
         return view_list
 
 

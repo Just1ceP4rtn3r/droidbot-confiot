@@ -1,4 +1,36 @@
 from collections import deque
+import warnings
+from PIL import Image, ImageDraw
+
+
+def deprecated(func):
+
+    def wrapper(*args, **kwargs):
+        warnings.warn(f"Function {func.__name__} is deprecated.", category=DeprecationWarning)
+        return func(*args, **kwargs)
+
+    return wrapper
+
+
+def draw_rect_with_bounds(file, bounds):
+    # 打开图像文件
+    image = Image.open(file)
+
+    # 创建一个可绘制对象
+    draw = ImageDraw.Draw(image)
+
+    # 定义框的坐标
+    x1, y1 = bounds[0]
+    x2, y2 = bounds[1]
+
+    # 绘制红色框
+    draw.line([(x1, y1), (x2, y1)], fill="red", width=2)  # 上边
+    draw.line([(x2, y1), (x2, y2)], fill="red", width=2)  # 右边
+    draw.line([(x2, y2), (x1, y2)], fill="red", width=2)  # 下边
+    draw.line([(x1, y2), (x1, y1)], fill="red", width=2)  # 左边
+
+    # 保存修改后的图像
+    image.save(file)
 
 
 class Node:
@@ -21,6 +53,11 @@ class Edge:
 class DirectedGraph:
 
     def __init__(self):
+        # utg.js中原始的nodes以及edges
+        self.utg_nodes = []
+        self.utg_edges = []
+
+        # DirectedGraph中的nodes以及edges
         self.nodes = []
         # {"state_str": Node}
         self.nodes_dict = {}

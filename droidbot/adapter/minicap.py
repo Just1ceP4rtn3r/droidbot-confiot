@@ -266,6 +266,44 @@ class Minicap(Adapter):
         except Exception as e:
             print(e)
 
+    def save_image(self, bounds, view_file_path):
+        from PIL import Image
+        from . import cv
+        """
+        Save an image to path
+        :param img: numpy.ndarray, representing an image in opencv
+        :param img_path: The path to save the image
+        """
+        import cv2
+
+        # Load the original image:
+        view_bound = bounds
+        img_path = "/Users/tracy/Desktop/UI/test/imgs.png"
+        
+        img = cv.load_image_from_buf(self.last_screen)
+        cv2.imwrite(img_path, img)
+        original_img = Image.open(img_path)
+
+
+        # view bound should be in original image bound
+        view_img = original_img.crop(
+            (min(original_img.width - 1, max(0, view_bound[0][0])), min(original_img.   height - 1, max(0, view_bound[0][1])),
+            min(original_img.width, max(0, view_bound[1][0])), min(original_img.    height, max(0, view_bound[1][1]))))
+        view_img.convert("RGB").save(view_file_path)
+
+    def save_views(self, result_rectangles):
+        # image_path = "/Users/tracy/Desktop/Screenshot 2023-12-04 at 17.47.20.png"
+        out_dir = "/Users/tracy/Desktop/UI/test/views/real"
+        bounds = []
+
+        for x,y,w,h in result_rectangles:
+            bounds.append([[x,y], [x+w, y+h]])
+        # print(bounds)
+
+        for i in range(len(bounds)):
+            view_file_path = "%s/view_%s.png" % (out_dir, i)
+            self.save_image(bounds[i], view_file_path) 
+
     def get_views(self):
         """
         get UI views using cv module
@@ -277,10 +315,19 @@ class Minicap(Adapter):
             return None
         if self.last_views:
             return self.last_views
+        
+        # print(type(self.last_screen))
 
         from . import cv
         img = cv.load_image_from_buf(self.last_screen)
+        # print(type(img))
         view_bounds = cv.find_views(img)
+        if not view_bounds:
+            self.logger.warning("view_bounds is None")
+            return None
+
+        # self.save_views(view_bounds)
+
         root_view = {
             "class": "CVViewRoot",
             "bounds": [[0, 0], [self.width, self.height]],

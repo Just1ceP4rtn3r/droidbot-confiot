@@ -52,6 +52,81 @@ class InputPolicy(object):
         self.app = app
         self.action_count = 0
         self.master = None
+    
+    def start_to_activity(self, input_manager, target_activity_name):
+        """
+        start producing events
+        :param input_manager: instance of InputManager
+        """
+        self.action_count = 0
+        current_activity_name = ""
+        event_str = ""
+        view_str = ""
+        last_activity = ""
+        blacklist_activity = ""
+        while input_manager.enabled and self.action_count < input_manager.event_count:
+            try:
+                # # make sure the first event is go to HOME screen
+                # # the second event is to start the app
+                # if self.action_count == 0 and self.master is None:
+                #     event = KeyEvent(name="HOME")
+                # elif self.action_count == 1 and self.master is None:
+                #     event = IntentEvent(self.app.get_start_intent())
+                if self.action_count == 0 and self.master is None:
+                    event = KillAppEvent(app=self.app)
+                else:
+                    event = self.generate_event()
+                    event_str = event.get_event_str(self.device.get_current_state())
+                    
+                    current_activity_name = event_str.split("(")[0].split("}")
+                    # if (event_str.split("(")[0] == "KeyEvent"):
+                    #     current_activity_name = "unknown"
+                    if (len(event_str.split("(")) < 3 ):
+                        # IntentEvent: start and stop, skip
+                        current_activity_name = last_activity
+                    else:
+                        current_activity_name = event_str.split("(")[2].split("}/")[0]
+                        last_activity = current_activity_name
+
+                    print("Generate event activity_name: %s" % current_activity_name)
+                    print("Generate event: %s" % event_str)
+
+                    if len(event_str.split(", view=")) > 1 :
+                        view_str = event_str.split(", view=")[1].split("(")[0]
+                    # Action: TouchEvent(state=320da521d69b2cde549f5149a249746a,    view=3d8622531c57d469916832908fbcc912(EditDevice}/ImageButton-))
+
+                    if (current_activity_name == target_activity_name) and (view_str == "9be2d695ae9ca521b8c46f1a42473255"):
+                        print("skip")
+                        continue
+                    elif (current_activity_name == target_activity_name) and (event_str.split("(") [0] == "KeyEvent"):
+                        print("skip")
+                        continue
+                    elif current_activity_name == "AlarmVideoActivityNew":
+                        current_activity_name = target_activity_name
+                        input_manager.add_event(KeyEvent(name="BACK"))
+                        print("skip")
+                        continue
+                    elif current_activity_name == "MessageCenterV2Activity":
+                        current_activity_name = last_activity
+                        input_manager.add_event(KeyEvent(name="BACK"))
+                        print("skip")
+                        continue
+                    else:
+                        input_manager.add_event(event)
+            except KeyboardInterrupt:
+                break
+            except InputInterruptedException as e:
+                self.logger.warning("stop sending events: %s" % e)
+                break
+            # except RuntimeError as e:
+            #     self.logger.warning(e.message)
+            #     break
+            except Exception as e:
+                self.logger.warning("exception during sending events: %s" % e)
+                import traceback
+                traceback.print_exc()
+                continue
+            self.action_count += 1
 
     def start(self, input_manager):
         """
@@ -117,8 +192,9 @@ class UtgBasedInputPolicy(InputPolicy):
     state-based input policy
     """
 
-    def __init__(self, device, app, random_input):
+    def __init__(self, device, app, random_input, target_activity_name):
         super(UtgBasedInputPolicy, self).__init__(device, app)
+        self.target_activity_name = target_activity_name
         self.random_input = random_input
         self.script = None
         self.master = None
@@ -199,20 +275,22 @@ class UtgNaiveSearchPolicy(UtgBasedInputPolicy):
     depth-first strategy to explore UFG (old)
     """
 
-    def __init__(self, device, app, random_input, search_method):
+    def __init__(self, device, app, random_input, search_method, target_activity_name):
         super(UtgNaiveSearchPolicy, self).__init__(device, app, random_input)
         self.logger = logging.getLogger(self.__class__.__name__)
 
         self.explored_views = set()
         self.state_transitions = set()
         self.search_method = search_method
+        self.target_activity_name = target_activity_name
 
         self.last_event_flag = ""
         self.last_event_str = None
         self.last_state = None
 
-        self.preferred_buttons = ["yes", "ok", "activate", "detail", "more", "access",
-                                  "allow", "check", "agree", "try", "go", "next"]
+        self.preferred_buttons = [
+            "yes", "ok", "activate", "detail", "more", "access", "allow", "check", "agree", "try", "go", "next"
+        ]
 
     def generate_event_based_on_utg(self):
         """
@@ -282,8 +360,7 @@ class UtgNaiveSearchPolicy(UtgBasedInputPolicy):
             random.shuffle(views)
 
         # add a "BACK" view, consider go back first/last according to search policy
-        mock_view_back = {'view_str': 'BACK_%s' % state.foreground_activity,
-                          'text': 'BACK_%s' % state.foreground_activity}
+        mock_view_back = {'view_str': 'BACK_%s' % state.foreground_activity, 'text': 'BACK_%s' % state.foreground_activity}
         if self.search_method == POLICY_NAIVE_DFS:
             views.append(mock_view_back)
         elif self.search_method == POLICY_NAIVE_BFS:
@@ -353,13 +430,14 @@ class UtgGreedySearchPolicy(UtgBasedInputPolicy):
     DFS/BFS (according to search_method) strategy to explore UFG (new)
     """
 
-    def __init__(self, device, app, random_input, search_method):
-        super(UtgGreedySearchPolicy, self).__init__(device, app, random_input)
+    def __init__(self, device, app, random_input, search_method, target_activity_name):
+        super(UtgGreedySearchPolicy, self).__init__(device, app, random_input, target_activity_name)
         self.logger = logging.getLogger(self.__class__.__name__)
         self.search_method = search_method
 
-        self.preferred_buttons = ["yes", "ok", "activate", "detail", "more", "access",
-                                  "allow", "check", "agree", "try", "go", "next"]
+        self.preferred_buttons = [
+            "yes", "ok", "activate", "detail", "more", "access", "allow", "check", "agree", "try", "go", "next"
+        ]
 
         self.__nav_target = None
         self.__nav_num_steps = -1
@@ -368,6 +446,7 @@ class UtgGreedySearchPolicy(UtgBasedInputPolicy):
         self.__event_trace = ""
         self.__missed_states = set()
         self.__random_explore = False
+        self.target_activity_name = target_activity_name
 
     def generate_event_based_on_utg(self):
         """
@@ -429,8 +508,14 @@ class UtgGreedySearchPolicy(UtgBasedInputPolicy):
             # If the app is in foreground
             self.__num_steps_outside = 0
 
-        # Get all possible input events
-        possible_events = current_state.get_possible_input()
+        # syncxxx 过滤webview
+        act = current_state.foreground_activity
+        act = act.lower()
+        if ("webview" in act):
+            possible_events = []
+        else:
+            # Get all possible input events
+            possible_events = current_state.get_possible_input()
 
         if self.random_input:
             random.shuffle(possible_events)
@@ -481,8 +566,7 @@ class UtgGreedySearchPolicy(UtgBasedInputPolicy):
             "history_view_trees": self.humanoid_view_trees,
             "history_events": [x.__dict__ for x in self.humanoid_events],
             "possible_events": [x.__dict__ for x in possible_events],
-            "screen_res": [self.device.display_info["width"],
-                           self.device.display_info["height"]]
+            "screen_res": [self.device.display_info["width"], self.device.display_info["height"]]
         }
         result = json.loads(proxy.predict(json.dumps(request_json)))
         new_idx = result["indices"]
@@ -539,6 +623,7 @@ class UtgGreedySearchPolicy(UtgBasedInputPolicy):
         self.__nav_num_steps = -1
         return None
 
+
 class UtgReplayPolicy(InputPolicy):
     """
     Replay DroidBot output generated by UTG policy
@@ -551,9 +636,7 @@ class UtgReplayPolicy(InputPolicy):
 
         import os
         event_dir = os.path.join(replay_output, "events")
-        self.event_paths = sorted([os.path.join(event_dir, x) for x in
-                                   next(os.walk(event_dir))[2]
-                                   if x.endswith(".json")])
+        self.event_paths = sorted([os.path.join(event_dir, x) for x in next(os.walk(event_dir))[2] if x.endswith(".json")])
         # skip HOME and start app intent
         self.device = device
         self.app = app

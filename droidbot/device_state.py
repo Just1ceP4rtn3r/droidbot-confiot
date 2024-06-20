@@ -11,8 +11,7 @@ class DeviceState(object):
     the state of the current device
     """
 
-    def __init__(self, device, views, foreground_activity, activity_stack, background_services,
-                 tag=None, screenshot_path=None):
+    def __init__(self, device, views, foreground_activity, activity_stack, background_services, tag=None, screenshot_path=None):
         self.device = device
         self.foreground_activity = foreground_activity
         self.activity_stack = activity_stack if isinstance(activity_stack, list) else []
@@ -39,15 +38,17 @@ class DeviceState(object):
         return self.foreground_activity.split('.')[-1]
 
     def to_dict(self):
-        state = {'tag': self.tag,
-                 'state_str': self.state_str,
-                 'state_str_content_free': self.structure_str,
-                 'foreground_activity': self.foreground_activity,
-                 'activity_stack': self.activity_stack,
-                 'background_services': self.background_services,
-                 'width': self.width,
-                 'height': self.height,
-                 'views': self.views}
+        state = {
+            'tag': self.tag,
+            'state_str': self.state_str,
+            'state_str_content_free': self.structure_str,
+            'foreground_activity': self.foreground_activity,
+            'activity_stack': self.activity_stack,
+            'background_services': self.background_services,
+            'width': self.width,
+            'height': self.height,
+            'views': self.views
+        }
         return state
 
     def to_json(self):
@@ -69,8 +70,8 @@ class DeviceState(object):
         return views
 
     def __assemble_view_tree(self, root_view, views):
-        if not len(self.view_tree): # bootstrap
-            if not len(views): # to fix if views is empty
+        if not len(self.view_tree):  # bootstrap
+            if not len(views):  # to fix if views is empty
                 return
             self.view_tree = copy.deepcopy(views[0])
             self.__assemble_view_tree(self.view_tree, views)
@@ -111,11 +112,11 @@ class DeviceState(object):
             import json
             from xmlrpc.client import ServerProxy
             proxy = ServerProxy("http://%s/" % self.device.humanoid)
-            return proxy.render_view_tree(json.dumps({
-                "view_tree": self.view_tree,
-                "screen_res": [self.device.display_info["width"],
-                               self.device.display_info["height"]]
-            }))
+            return proxy.render_view_tree(
+                json.dumps({
+                    "view_tree": self.view_tree,
+                    "screen_res": [self.device.display_info["width"], self.device.display_info["height"]]
+                }))
         else:
             view_signatures = set()
             for view in self.views:
@@ -129,11 +130,11 @@ class DeviceState(object):
             import json
             from xmlrpc.client import ServerProxy
             proxy = ServerProxy("http://%s/" % self.device.humanoid)
-            state_str = proxy.render_content_free_view_tree(json.dumps({
-                "view_tree": self.view_tree,
-                "screen_res": [self.device.display_info["width"],
-                               self.device.display_info["height"]]
-            }))
+            state_str = proxy.render_content_free_view_tree(
+                json.dumps({
+                    "view_tree": self.view_tree,
+                    "screen_res": [self.device.display_info["width"], self.device.display_info["height"]]
+                }))
         else:
             view_signatures = set()
             for view in self.views:
@@ -149,8 +150,9 @@ class DeviceState(object):
         get a text for searching the state
         :return: str
         """
-        words = [",".join(self.__get_property_from_all_views("resource_id")),
-                 ",".join(self.__get_property_from_all_views("text"))]
+        words = [
+            ",".join(self.__get_property_from_all_views("resource_id")), ",".join(self.__get_property_from_all_views("text"))
+        ]
         return "\n".join(words)
 
     def __get_property_from_all_views(self, property_name):
@@ -191,7 +193,7 @@ class DeviceState(object):
         except Exception as e:
             self.device.logger.warning(e)
 
-    def save_view_img(self, view_dict, output_dir=None):
+    def save_view_img(self, view_dict, output_dir=None, file_path=None):
         try:
             if output_dir is None:
                 if self.device.output_dir is None:
@@ -207,16 +209,21 @@ class DeviceState(object):
                 view_file_path = "%s/view_%s.png" % (output_dir, view_str)
             if os.path.exists(view_file_path):
                 return
+            # syncxxx
+            if file_path is not None:
+                view_file_path = file_path
             from PIL import Image
             # Load the original image:
             view_bound = view_dict['bounds']
+
+            print(view_bound)
             original_img = Image.open(self.screenshot_path)
             # view bound should be in original image bound
-            view_img = original_img.crop((min(original_img.width - 1, max(0, view_bound[0][0])),
-                                          min(original_img.height - 1, max(0, view_bound[0][1])),
-                                          min(original_img.width, max(0, view_bound[1][0])),
-                                          min(original_img.height, max(0, view_bound[1][1]))))
+            view_img = original_img.crop(
+                (min(original_img.width - 1, max(0, view_bound[0][0])), min(original_img.height - 1, max(0, view_bound[0][1])),
+                 min(original_img.width, max(0, view_bound[1][0])), min(original_img.height, max(0, view_bound[1][1]))))
             view_img.convert("RGB").save(view_file_path)
+            return view_file_path
         except Exception as e:
             self.device.logger.warning(e)
 
@@ -316,9 +323,7 @@ class DeviceState(object):
                 relative_x, relative_y = child_x - root_x, child_y - root_y
                 children["(%d,%d)" % (relative_x, relative_y)] = self.__get_view_structure(child_view)
 
-        view_structure = {
-            "%s(%d*%d)" % (class_name, width, height): children
-        }
+        view_structure = {"%s(%d*%d)" % (class_name, width, height): children}
         view_dict['view_structure'] = view_structure
         return view_structure
 
@@ -413,16 +418,37 @@ class DeviceState(object):
         enabled_view_ids = []
         touch_exclude_view_ids = set()
         for view_dict in self.views:
+            # syncxxx: 将左上角的相关图片送到gpt中查询是否是back按钮
+            # import Confiot.gpt_test.gpt as gpt
+            # filep = self.save_view_img(view_dict)
+            # print(filep)
+            # back = gpt.is_back_button(filep)
+            # if (back):
+            #     output_dir = os.path.join(self.device.output_dir, "BackButtons")
+            #     if not os.path.exists(output_dir):
+            #         os.makedirs(output_dir)
+            #     view_str = view_dict['view_str']
+            #     view_file_path = "%s/view_%s.png" % (output_dir, view_str)
+            #     self.save_view_img(view_dict, output_dir=view_file_path)
+            #     continue
+
             # exclude navigation bar if exists
-            if self.__safe_dict_get(view_dict, 'enabled') and \
-                    self.__safe_dict_get(view_dict, 'visible') and \
-                    self.__safe_dict_get(view_dict, 'resource_id') not in \
-               ['android:id/navigationBarBackground',
-                'android:id/statusBarBackground']:
+            # if self.__safe_dict_get(view_dict, 'enabled') and \
+            #         self.__safe_dict_get(view_dict, 'visible') and \
+            #         self.__safe_dict_get(view_dict, 'resource_id') not in \
+            #    ['android:id/navigationBarBackground',
+            #     'android:id/statusBarBackground']:
+            #     enabled_view_ids.append(view_dict['temp_id'])
+
+            if self.__safe_dict_get(view_dict, 'enabled'): #and self.__safe_dict_get(view_dict, 'visible'):
                 enabled_view_ids.append(view_dict['temp_id'])
+
+            print(view_dict)
         # enabled_view_ids.reverse()
+        print(enabled_view_ids)
 
         for view_id in enabled_view_ids:
+            # print(view_id)
             if self.__safe_dict_get(self.views[view_id], 'clickable'):
                 possible_events.append(TouchEvent(view=self.views[view_id]))
                 touch_exclude_view_ids.add(view_id)
@@ -478,7 +504,7 @@ class DeviceState(object):
                ['android:id/navigationBarBackground',
                 'android:id/statusBarBackground']:
                 enabled_view_ids.append(view_dict['temp_id'])
-        
+
         text_frame = "<p id=@ text='&' attr=null bounds=null>#</p>"
         btn_frame = "<button id=@ text='&' attr=null bounds=null>#</button>"
         checkbox_frame = "<checkbox id=@ text='&' attr=null bounds=null>#</checkbox>"
@@ -612,7 +638,7 @@ class DeviceState(object):
                ['android:id/navigationBarBackground',
                 'android:id/statusBarBackground']:
                 # if the successor is not visible, then ignore it!
-                continue          
+                continue
 
             text = self.__safe_dict_get(self.views[childid], 'text', default='')
             if len(text) > 50:
@@ -632,4 +658,3 @@ class DeviceState(object):
         merged_text = '<br>'.join(texts) if len(texts) > 0 else ''
         merged_desc = '<br>'.join(content_descriptions) if len(content_descriptions) > 0 else ''
         return merged_text, merged_desc
-

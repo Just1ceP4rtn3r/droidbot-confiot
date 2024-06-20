@@ -45,6 +45,63 @@ def load_image_from_buf(img_bytes):
     img_bytes = numpy.array(img_bytes)
     return cv2.imdecode(img_bytes, cv2.IMREAD_UNCHANGED)
 
+def detect_buttons_and_dots(image):
+    import cv2
+    # Convert to grayscale
+    gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+
+    # Gaussian blur to reduce noise and improve contour detection
+    blurred = cv2.GaussianBlur(gray, (5, 5), 0)
+
+    # Adaptive thresholding to handle varying lighting conditions
+    thresh = cv2.adaptiveThreshold(blurred, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, 
+                                   cv2.THRESH_BINARY_INV, 11, 2)
+
+    # Find contours
+    contours, hierarchy = cv2.findContours(thresh, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+
+    # Filter contours by area and perimeter to differentiate between buttons and dots
+    filtered_contours = []
+    rectangle_list = []
+    for contour, cnt in contours:
+        area = cv2.contourArea(contour)
+        if area > 15 and area < 2000:  # Threshold for button size
+            perimeter = cv2.arcLength(contour, True)
+            epsilon = 0.01 * perimeter
+            approx = cv2.approxPolyDP(contour, epsilon, True)
+
+            # A circle has no corners, we look for contours with many approximate points
+            if len(approx) > 8:
+                filtered_contours.append(contour)
+
+            x, y, w, h = cv2.boundingRect(cnt)
+
+            new_rectangle = (x, y, w, h, len(approx))
+            should_append = True
+            remove_list = []
+            for index, rectangle in enumerate(rectangle_list):
+                if _intersect(new_rectangle, rectangle):
+                    if new_rectangle[4] > rectangle[4]:
+                        should_append = False
+                        break
+                    else:
+                        remove_list.append(index)
+            remove_list.reverse()
+            for index in remove_list:
+                del rectangle_list[index]
+            if should_append:
+                rectangle_list.append(new_rectangle)
+    
+
+    # Draw contours on the image
+    # contoured_image = image.copy()
+    # cv2.drawContours(contoured_image, filtered_contours, -1, (0, 255, 0), 3)
+
+    for x, y, w, h, len_approx in rectangle_list:
+        cv2.rectangle(image, (x, y), (x+w, y+h), (0, 255, 0), 5)
+    cv2.imshow('image', image)
+    
+    return contoured_image
 
 def find_views(img):
     """
@@ -53,8 +110,8 @@ def find_views(img):
     :return: a list of rectangles, each of which is a tuple (x,y,w,h) representing an identified UI view.
     """
     import cv2
-    x_scale = 0.3
-    y_scale = 0.3
+    x_scale = 0.1
+    y_scale = 0.1
     # resize to a smaller image
     img = cv2.resize(img, (0, 0), fx=x_scale, fy=y_scale)
     # get width and height
@@ -76,7 +133,7 @@ def find_views(img):
     for index, cnt in enumerate(contours):
         contour_area = cv2.contourArea(cnt)
         # area constraint
-        if contour_area < area / 300 or contour_area > area / 4:
+        if contour_area < area / 5000 or contour_area > area / 4:
             continue
         x, y, w, h = cv2.boundingRect(cnt)
         # find approxPolyDP
@@ -100,19 +157,18 @@ def find_views(img):
         if should_append:
             rectangle_list.append(new_rectangle)
 
-    result_rectangles = [
-        (int(float(x)/x_scale), int(float(y)/y_scale), int(float(w)/x_scale), int(float(h)/y_scale))
-        for x, y, w, h, len_approx in rectangle_list]
+    result_rectangles = [(int(float(x) / x_scale), int(float(y) / y_scale), int(float(w) / x_scale), int(float(h) / y_scale))
+                         for x, y, w, h, len_approx in rectangle_list]
 
     # For debugging, show the image
-    # print result_rectangles
-    # for x, y, w, h, len_approx in rectangle_list:
-    #     cv2.rectangle(img, (x, y), (x+w, y+h), (0, 255, 0), 5)
-    # cv2.imshow('image', img)
-    # cv2.waitKey(0)
-    # cv2.destroyAllWindows()
+    # print(result_rectangles)
+    for x, y, w, h, len_approx in rectangle_list:
+        cv2.rectangle(img, (x, y), (x+w, y+h), (0, 255, 0), 5)
+    cv2.imshow('image', img)
+    cv2.waitKey(1000)
+    cv2.destroyAllWindows()
 
-    return result_rectangles
+    return result_rectangles  
 
 
 def calculate_dhash(img):
@@ -127,7 +183,7 @@ def calculate_dhash(img):
     hash_string = ""
     for index, value in enumerate(difference):
         if value:
-            decimal_value += value * (2 ** (index % 8))
+            decimal_value += value * (2**(index % 8))
         if index % 8 == 7:  # every eight binary bit to one hex number
             hash_string += str(hex(decimal_value)[2:-1].rjust(2, "0"))  # 0xf=>0x0f
             decimal_value = 0

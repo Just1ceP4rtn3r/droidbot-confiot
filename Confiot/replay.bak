@@ -1,0 +1,260 @@
+import json
+import os
+import sys
+import time
+
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+sys.path.append(BASE_DIR + "/../")
+
+from droidbot.input_event import *
+from droidbot.device import Device
+from droidbot.app import App
+from util import DirectedGraph, Node, Edge
+
+device_serial = "17291JECB10652"
+app_path = "/Users/tracy/Documents/workspaces/appUI/droidbot/apks/com.xiaomi.smarthome"
+droid_output = "/Users/tracy/Documents/github/droidbot/mihome/pixel5"
+
+Confiot_output = "/Users/tracy/Documents/github/droidbot/Confiot"
+
+
+class Confiot:
+
+    def __init__(self) -> None:
+        self.device: Device = None
+        self.app: App = None
+        self.utg_graph: DirectedGraph = None
+        # {"event_str": event_json_path}
+        self.events = {}
+
+    def device_connect(self, device_serial, output_dir):
+        self.device = Device(device_serial=device_serial, ignore_ad=True)
+        self.app = App(app_path=app_path, output_dir=Confiot_output)
+        # device.connect()
+        self.device.install_app(self.app)
+
+    def device_screenshot(self, tag):
+        local_image_path = Confiot_output + "/screenshot_%s.png" % tag
+        remote_image_path = "/sdcard/screen_%s.png" % tag
+        self.device.adb.shell("screencap -p %s" % remote_image_path)
+        self.device.pull_file(remote_image_path, local_image_path)
+        self.device.adb.shell("rm %s" % remote_image_path)
+
+    def device_stop_app(self):
+        try:
+            stack = self.device.get_current_activity_stack()
+            current_package = None
+            for acts in stack:
+                acts_package = acts.split("/")[0]
+                if (acts_package != current_package and acts_package != "com.android.systemui" and acts_package != ""):
+                    if (acts_package == self.app.get_package_name()):
+                        break
+                    current_package = acts_package
+                    self.device.adb.shell("am force-stop " + current_package)
+            stop_app_intent = self.app.get_stop_intent()
+            go_back_event = IntentEvent(stop_app_intent)
+            go_back_event.send(self.device)
+        except:
+            print("[ERR]: Cannot stop app")
+
+    def device_to_state(self, target_state: str):
+        event_str_path = []
+        path = self.utg_graph.find_shortest_path(self.utg_graph.start_node, target_state)
+        if (path):
+            current_node = path[0]
+            for node in path[1:]:
+                event_str_path.append(self.utg_graph.edges_dict[current_node.name][node.name][0])
+                current_node = node
+
+        self.device_stop_app()
+        self.device.start_app(self.app)
+        # waiting for app start
+        time.sleep(5)
+        for estr in event_str_path:
+            time.sleep(2)
+            if (estr in self.events):
+                with open(self.events[estr], "r") as f:
+                    event_dict = json.load(f)["event"]
+                    event = InputEvent.from_dict(event_dict)
+                    print("[DBG]: Action: " + estr)
+                    print(event)
+                    event.send(self.device)
+            else:
+                print("[ERR]: Wrong event path: ", event_str_path)
+                break
+
+        self.device.get_current_state()
+        print("[DBG]: Finish")
+
+    def parse_event(self, droid_output):
+        events_path = droid_output + "/events/"
+        events_json = os.listdir(events_path)
+        for j in events_json:
+            with open(events_path + j, "r") as f:
+                try:
+                    event_str = json.load(f)["event_str"]
+                    if (event_str != ''):
+                        self.events[event_str] = events_path + j
+                except Exception as e:
+                    print(f"[ERR]: Failed to parse the event file `{j}`\n" + str(e))
+
+    def parse_utg(self, droid_output) -> DirectedGraph:
+        self.utg_graph = DirectedGraph()
+        utg_nodes = {}
+
+        utg_dict = {}
+        nodes_dict = []
+        edges_dict = []
+
+        with open(droid_output + "/utg.js", "r") as f:
+            utg_content = f.read()
+            if (utg_content != ''):
+                utg_content = utg_content.replace("var utg = ", '')
+                utg_content = utg_content.replace(";", "")
+                utg_dict = json.loads(utg_content)
+                nodes_dict = utg_dict["nodes"]
+                edges_dict = utg_dict["edges"]
+
+                for node in nodes_dict:
+                    activity = (node["package"] + node["activity"]).replace("}", "")
+                    if (activity == utg_dict["app_main_activity"]):
+                        self.utg_graph.start_node = node["state_str"]
+                        break
+
+        if (nodes_dict != [] and edges_dict != [] and self.utg_graph.start_node is not None):
+            print("[DBG]: Start state: " + self.utg_graph.start_node)
+        else:
+            print("[ERR]: Cannot find start state")
+            return None
+
+        # parse utg with DirectedGraph
+        for n in nodes_dict:
+            self.utg_graph.add_node(Node(n["state_str"]))
+            utg_nodes[n["state_str"]] = self.utg_graph.nodes[-1]
+
+        for e in edges_dict:
+            event_strs = [eve["event_str"] for eve in e["events"]]
+            self.utg_graph.add_edge(Edge(utg_nodes[e["from"]], utg_nodes[e["to"]], event_strs))
+
+        return self.utg_graph, edges_dict
+    
+    def do_event(self, event_str, count): # input: event_str
+        if (event_str == '\n' or event_str == ''):
+            self.device_stop_app()
+            return
+        with open(self.events[event_str], "r") as f:
+                    event_dict = json.load(f)["event"]
+                    event = InputEvent.from_dict(event_dict)
+                    print("[DBG]: Action: " + event_str)
+                    # print(event)
+                    event.send(self.device)
+                    time.sleep(0.3) # to capture the alert
+                    self.device_screenshot(count)
+    
+    def extract_conf_list(self):
+        # input: droid_output/utg.js -> edges
+        # output: conf_list {view_images, event_id, event_str, from_state, to_state, activity}
+        _, edges_dict = self.parse_utg()
+        conf_list = []
+        # {'from': '6578c97fcb7eb008507ccde68f80d360', 'to': 'ddd93f40628f40c0b4105d3cc0f69a26', 'id': '6578c97fcb7eb008507ccde68f80d360-->ddd93f40628f40c0b4105d3cc0f69a26', 'title': '<table class="table">\n<tr><th>1166</th><td>TouchEvent(state=6578c97fcb7eb008507ccde68f80d360, view=bba1713c7fb66a73d605cc227313a1cf(CustomTabActivity}/View-))</td></tr>\n</table>', 'label': '1166', 'events': [{'event_str': 'TouchEvent(state=6578c97fcb7eb008507ccde68f80d360, view=bba1713c7fb66a73d605cc227313a1cf(CustomTabActivity}/View-))', 'event_id': 1166, 'event_type': 'touch', 'view_images': ['views/view_bba1713c7fb66a73d605cc227313a1cf.png']}]}
+        # print(edges_dict)
+        for e in edges_dict:
+            conf_activity_dict = {}
+            if (e["events"] == []):
+                continue
+            
+            c = {}
+            for conf in conf_list:
+                if (e["events"][0]["view_images"] == conf["view_images"]):
+                    c = conf
+                    break
+            if c != {}:
+                continue
+
+            conf_activity_dict["view_images"] = e["events"][0]["view_images"]
+            conf_activity_dict["event_id"] = e["events"][0]["event_id"]
+            conf_activity_dict["event_str"] = e["events"][0]["event_str"]
+            conf_activity_dict["from_state"] = e["from"]
+            conf_activity_dict["to_state"] = e["to"]
+
+            if (e["events"][0]["event_str"].split("(")[0] == "KeyEvent"):
+                conf_activity_dict["activity"] = conf_list[-1]["activity"]
+            elif (len(e["events"][0]["event_str"].split("(")) < 3 ):
+                # IntentEvent: start and stop, skip
+                conf_activity_dict["activity"] = ''
+                continue
+            else:
+                conf_activity_dict["activity"] = e["events"][0]["event_str"].split("(")[2].split("}/")[0]
+
+            if (conf_activity_dict["activity"] == "ChooseDeviceActivity" or conf_activity_dict["activity"] == "ScanBarcodeActivity" or conf_activity_dict["activity"] == "ChooseSubCategoryDeviceActivity" or conf_activity_dict["activity"] == "WebShellActivity" or conf_activity_dict["activity"] == "MainActivity" or conf_activity_dict["activity"] == "ResolverActivity" or conf_activity_dict["activity"] == "HomeAllStyleListActivity" or conf_activity_dict["activity"] == "HomeStyleActivity" or conf_activity_dict["activity"] == "HomeRoomBackgroundPreviewActivity" or conf_activity_dict["activity"] == "HomeRoomBackgroundActivity" or conf_activity_dict["activity"] == "ImagePreviewActivity" or conf_activity_dict["activity"] == "LoginH5HomeAcvtivity" or conf_activity_dict["activity"] == "CustomTabActivity"):
+                continue
+
+            conf_list.append(conf_activity_dict)
+        print(conf_list)
+        return conf_list
+
+
+
+def test_goto_state():
+    confiot = Confiot()
+    confiot.device_connect()
+
+    confiot.parse_event()
+    # print(confiot.events)
+    confiot.parse_utg()
+
+    while (1):
+        target_str = input("state: ")
+        if (target_str == '\n' or target_str == ''):
+            confiot.device_stop_app()
+            break
+        confiot.device_to_state(target_str)
+
+
+def test_stop_app():
+    confiot = Confiot()
+    confiot.device_connect()
+
+    confiot.device_stop_app()
+
+
+def test_do_event():
+    confiot = Confiot()
+    confiot.device_connect()
+    confiot.parse_event()
+
+    confiot.device_stop_app()
+    confiot.device.start_app(confiot.app)
+    # waiting for app start
+    time.sleep(5)
+
+    while(1):
+        count = 0
+        event_str = input("event_str: ")
+        confiot.do_event(event_str, count)
+        count += 1
+    
+    # TouchEvent(state=fa07fbc0617b10f4d31d1cbcf5c8ce05, view=23f3da97dc88c7a191d58cd9c305d396(SmartHomeMainActivity}/ViewGroup-))
+    # TouchEvent(state=8f9faca9459fa27a8a33eb1a9da4cc07, view=e26dde88a959dcc2ab4d2f04eb1fb85a(PluginRNActivityCamera}/ImageView-))
+
+def test_extract_conf_list():
+    confiot = Confiot()
+    confiot.extract_conf_list()
+
+
+if __name__ == "__main__":
+    # test_goto_state()
+    test_do_event()
+    # test_extract_conf_list()
+
+    
+
+    # path = confiot.utg_graph.find_shortest_path(confiot.utg_graph.start_node, "64f90b2eddcdefb5f3f4c902ebcba04e")
+
+    # event_path = []
+    # if (path):
+    #     current_node = path[0]
+    #     for node in path[1:]:
+    #         event_path.append(confiot.utg_graph.edges_dict[current_node.name][node.name][0])
+    #         current_node = node
+    # print(event_path)
