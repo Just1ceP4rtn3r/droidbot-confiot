@@ -1,0 +1,1 @@
+{"Host": {"Device Actuator status (light pattern)": "Edit", "Device metadata (remote configuration)": "Edit"}, "Guest": {"Device Actuator status (light pattern)": "Edit", "Device metadata (remote configuration)": "Edit"}}

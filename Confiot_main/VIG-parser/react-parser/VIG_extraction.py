@@ -86,15 +86,18 @@ class ASTParser:
         match = re.findall(r'__d\((.*?,[ ]?(\d+),[ ]?\[(.*?)\].*?)\);', self.raw_code.decode(), re.DOTALL)
         if match:
             for r in match:
-                raw = r[0]
-                id = int(r[1])
-                dependencies = list(map(int, [i for i in r[2].split(',') if i.strip() != '']))
-                self.resources[id] = {}
-                self.resources[id]["raw"] = raw
-                self.resources[id]["dependencies"] = dependencies
+                try:
+                    raw = r[0]
+                    id = int(r[1])
+                    dependencies = list(map(int, [i for i in r[2].split(',') if i.strip() != '']))
+                    self.resources[id] = {}
+                    self.resources[id]["raw"] = raw
+                    self.resources[id]["dependencies"] = dependencies
 
-                if ("createStackNavigator" in raw or "LHInitPage" in raw):
-                    self.screen_in_resources.append(id)
+                    if ("createStackNavigator" in raw or "LHInitPage" in raw):
+                        self.screen_in_resources.append(id)
+                except:
+                    continue
 
             return self.resources
         return None
@@ -385,6 +388,7 @@ class ASTParser:
                     (
                         identifier
                     ) @screenvar
+                    .
                     value:
                     (_) @value
             )
@@ -398,6 +402,7 @@ class ASTParser:
             (
                 identifier
             ) @identifier
+            .
             index:
             (
                 number
@@ -410,27 +415,27 @@ class ASTParser:
 
         screenvars = {}
 
-        screenvars_declaration = self.query(query_screenRelatedResource_screenvar,
-                                            self.resources[self.screen_in_resources[0]]["node"])
-        for m in screenvars_declaration:
-            if (m[1]):
-                var_name = m[1]["screenvar"].text
-                value = m[1]["value"]
+        for r in self.screen_in_resources:
+            screenvars_declaration = self.query(query_screenRelatedResource_screenvar, self.resources[r]["node"])
+            for m in screenvars_declaration:
+                if (m[1]):
+                    var_name = m[1]["screenvar"].text
+                    value = m[1]["value"]
 
-                depend_resource_arrayId = self.query(query_screenRelatedResource_arrayId, value)
-                arrayId = -1
-                for n in depend_resource_arrayId:
-                    if (n[1] and n[1]["identifier"].text == b'_dependencyMap'):
-                        if (n[1]["arrayId"].type == "number"):
-                            arrayId = int(n[1]["arrayId"].text)
-                        break
-                if (arrayId != -1):
-                    screenvars[var_name] = self.resources[self.screen_in_resources[0]]["dependencies"][arrayId]
-                else:
-                    for v in screenvars:
-                        if (v in value.text):
-                            screenvars[var_name] = screenvars[v]
+                    depend_resource_arrayId = self.query(query_screenRelatedResource_arrayId, value)
+                    arrayId = -1
+                    for n in depend_resource_arrayId:
+                        if (n[1] and n[1]["identifier"].text == b'_dependencyMap'):
+                            if (n[1]["arrayId"].type == "number"):
+                                arrayId = int(n[1]["arrayId"].text)
                             break
+                    if (arrayId != -1):
+                        screenvars[var_name] = self.resources[r]["dependencies"][arrayId]
+                    else:
+                        for v in screenvars:
+                            if (v in value.text):
+                                screenvars[var_name] = screenvars[v]
+                                break
 
         navigator_stack = self.query(query_getScreens, self.root_node)
 
@@ -445,7 +450,7 @@ class ASTParser:
                 screens_node = m[1]["screens"]
                 initialRouteName = None
                 if ("initialRouteName" in m[1]):
-                    initialRouteName = m[1]["initialRouteName"].text.replace(b'"', b'').replace(b"'", b'')
+                    initialRouteName = decode_bytes(m[1]["initialRouteName"].text.replace(b'"', b'').replace(b"'", b''))
 
                 query_pairs = '''
                 (object (pair key: (_) @key value: (member_expression object:(identifier)@object property:(property_identifier)@property)))
@@ -490,24 +495,29 @@ class ASTParser:
             self.initialRouteName = initialRouteName
         return (screens, initialRouteName)
 
-    def get_navigations(self, resource_id):
+    def get_navigations(self, resource_id, worklist: set):
         if ("navigations" in self.resources[resource_id]):
             return self.resources[resource_id]["navigations"]
+
+        worklist.add(resource_id)
 
         node = self.resources[resource_id]["node"]
         # [byte, Node]
         navigations = self.get_navigations_from_node(node)
 
         for dep in self.resources[resource_id]["dependencies"]:
-            if (dep not in self.resources or resource_id in self.resources[dep]["dependencies"]):
+            if (dep not in self.resources):
+                continue
+            if (dep in worklist):
                 continue
             if ("navigations" in self.resources[dep]):
                 navigations.extend(self.resources[dep]["navigations"])
             else:
-                dep_navigations = self.get_navigations(dep)
+                dep_navigations = self.get_navigations(dep, worklist)
                 navigations.extend(dep_navigations)
 
         self.resources[resource_id]["navigations"] = navigations
+        worklist.remove(resource_id)
         return navigations
 
     # 由于缺乏静态分析，暂时直接获取resource中的navigation
@@ -779,7 +789,7 @@ class ASTParser:
 
 
 if __name__ == '__main__':
-    model = "cuco.plug.co1"
+    model = "cuco.plug.cp1"
 
     parser = ASTParser(
         f"/root/documents/droidbot-confiot/Confiot_main/VIG-parser/react-parser/javascript/MihomePlugins/{model}/{model}.js")
@@ -798,14 +808,15 @@ if __name__ == '__main__':
 
         # 获取navigations
         for id in parser.resources:
-            nav = parser.get_navigations(id)
+            worklist = set()
+            nav = parser.get_navigations(id, worklist)
             # if (nav):
             #     print(nav)
 
         # STEP-1: 获取host的UITree
         parser.construct_UITree(out_dir=output_dir, UITree_file="host_UITree")
 
-        parser.device_map_config_resource(model=model, out_dir=output_dir)
+        # parser.device_map_config_resource(model=model, out_dir=output_dir)
 
         # STEP-2: 获取guest的UITree
         parser.construct_shared_UITree(static_analysis_results_csv=output_dir + "js-results.csv",

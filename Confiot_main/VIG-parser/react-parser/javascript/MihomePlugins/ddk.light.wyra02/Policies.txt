@@ -1,0 +1,1 @@
+{"Host": {"Automation list (smart scene, countdown, scheduled tasks)": "Edit", "Device Actuator status (light on/off)": "View"}, "Guest": {"Automation list (smart scene, countdown, scheduled tasks)": "Edit", "Device Actuator status (light on/off)": "View"}}

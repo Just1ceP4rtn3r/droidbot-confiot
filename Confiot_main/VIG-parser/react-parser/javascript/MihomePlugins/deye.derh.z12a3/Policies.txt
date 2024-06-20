@@ -1,0 +1,1 @@
+{"Host": {"Device Sensor status (home humidity)": "View", "Device metadata (timezone)": "View", "Device Actuator status (light on/off)": "Edit"}, "Guest": {"Device Sensor status (home humidity)": "View", "Device metadata (timezone)": "View", "Device Actuator status (light on/off)": "Edit"}}

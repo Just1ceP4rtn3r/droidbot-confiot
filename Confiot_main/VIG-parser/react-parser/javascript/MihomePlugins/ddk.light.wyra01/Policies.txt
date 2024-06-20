@@ -1,0 +1,1 @@
+{"Host": {"None": "View", "Device Actuator status (light on/off)": "Edit"}, "Guest": {"None": "View", "Device Actuator status (light on/off)": "Edit"}}

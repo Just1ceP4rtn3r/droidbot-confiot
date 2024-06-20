@@ -1,0 +1,1 @@
+{"Host": {"Device Sensor status (water purifier filter status)": "View", "Device usage log (instructional index)": "View"}, "Guest": {"Device Sensor status (water purifier filter status)": "View", "Device usage log (instructional index)": "View"}}

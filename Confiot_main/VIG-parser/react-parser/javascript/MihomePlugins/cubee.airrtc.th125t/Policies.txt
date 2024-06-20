@@ -1,0 +1,1 @@
+{"Host": {"Device Sensor status (temperature compensation)": "Edit", "Device Sensor status (start temperature differential)": "Edit"}, "Guest": {"Device Sensor status (temperature compensation)": "Edit", "Device Sensor status (start temperature differential)": "Edit"}}

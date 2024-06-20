@@ -1,0 +1,1 @@
+{"Host": {"Automation list (scheduled tasks)": "Edit", "Device metadata (e.g., current settings page being viewed)": "View"}, "Guest": {"Automation list (scheduled tasks)": "Edit", "Device metadata (e.g., current settings page being viewed)": "View"}}

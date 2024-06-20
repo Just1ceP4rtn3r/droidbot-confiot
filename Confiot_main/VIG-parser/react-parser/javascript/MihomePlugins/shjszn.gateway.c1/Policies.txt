@@ -1,0 +1,1 @@
+{"Host": {"Device metadata (device name)": "Edit", "User list (sharing device access)": "Edit", "Device metadata (security settings)": "Edit", "Third-party services (help content)": "View", "Third-party services (feedback system)": "Edit", "Device metadata (shortcut settings)": "Edit", "Unknown": "View"}, "Guest": {}}

@@ -1,0 +1,1 @@
+{"Host": {"Device metadata (device name)": "View", "(No specific resource associated with a navigation back action)": "View", "Automation list (smart scene)": "Edit"}, "Guest": {"Device metadata (device name)": "View", "(No specific resource associated with a navigation back action)": "View", "Automation list (smart scene)": "Edit"}}

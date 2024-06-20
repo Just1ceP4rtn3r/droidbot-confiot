@@ -1,0 +1,1 @@
+{"Host": {"Device Actuator status (dryer on/off, dryer cycle time, dryer commands)": "View", "Device metadata (device name: coc.dryer.fdpsm)": "View"}, "Guest": {"Device Actuator status (dryer on/off, dryer cycle time, dryer commands)": "View", "Device metadata (device name: coc.dryer.fdpsm)": "View"}}

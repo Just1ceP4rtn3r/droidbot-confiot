@@ -73,7 +73,8 @@ def analyze_policies(model):
 
         # 获取navigations
         for id in parser.resources:
-            nav = parser.get_navigations(id)
+            worklist = set()
+            nav = parser.get_navigations(id, worklist)
             # if (nav):
             #     print(nav)
 
@@ -162,6 +163,16 @@ def analyze_policies(model):
 
 if __name__ == "__main__":
     # analyze_sharing_content("/root/documents/Output/PLUGINS/")
-    model = input("model: ")
-    # model = "090615.curtain.1mcu01"
-    analyze_policies(model)
+    models = []
+    with open("/root/documents/droidbot-confiot/Confiot_main/VIG-parser/react-parser/javascript/MihomePlugins/worklist.txt",
+              'r') as f:
+        models = f.read().split("\n")
+    for model in models:
+        # model = input("model: ")
+        # model = "090615.curtain.1mcu01"
+        print(model)
+        try:
+            if (model.strip()):
+                analyze_policies(model.strip())
+        except:
+            input()

@@ -1,0 +1,1 @@
+{"Host": {"Device usage log (navigation within the app)": "View"}, "Guest": {"Device usage log (navigation within the app)": "View"}}

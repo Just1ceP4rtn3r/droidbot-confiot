@@ -1,0 +1,1 @@
+{"Host": {"Device Actuator status (light on/off)": "Edit", "Automation list (smart scene)": "Edit", "Device list (devices under a smart home, devices under a Bridge/Hub)": "Edit"}, "Guest": {"Device Actuator status (light on/off)": "Edit", "Automation list (smart scene)": "Edit", "Device list (devices under a smart home, devices under a Bridge/Hub)": "Edit"}}

@@ -1,0 +1,1 @@
+{"Host": {"Device Sensor status (device orientation)": "View", "Previous screen (returning to it)": "View"}, "Guest": {"Device Sensor status (device orientation)": "View", "Previous screen (returning to it)": "View"}}
