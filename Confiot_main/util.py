@@ -318,8 +318,14 @@ def Plugin_parse_config_resource_mapping(text):
                 task = match[2].split("\n")
             else:
                 task = match[2].split(",")
-            related_resources = re.findall("<(.*?)>", match[3])
-            related_resources = [r.strip().split(",") for r in related_resources]
+            _resources = re.findall("<(.*?)>", match[3])
+            related_resources = []
+
+            for r in _resources:
+                if ("," not in r):
+                    continue
+                op_index = r.index(",")
+                related_resources.append([r[:op_index].strip(), r[op_index + 1:].strip()])
 
             for i in range(len(task)):
                 task[i] = task[i].replace('<', '').replace('>', '')

@@ -1,4 +1,5 @@
 import os, sys
+import copy
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
@@ -38,24 +39,23 @@ def is_file_empty(file_path):
 
 
 def tidy_ConfigResourceMapper(ConfigResourceMapper):
+    results = copy.deepcopy(ConfigResourceMapper)
     for i, m in enumerate(ConfigResourceMapper):
         resources = m["Resources"]
         for j, r in enumerate(resources):
             if (len(r) != 2):
                 continue
             operation = r[0]
-            ConfigResourceMapper[i]["Resources"][j][1] = r[1].strip()
+            results[i]["Resources"][j][1] = r[1].strip()
             if ("edit" in operation.lower()):
-                ConfigResourceMapper[i]["Resources"][j][0] = "Edit"
+                results[i]["Resources"][j][0] = "Edit"
             else:
-                ConfigResourceMapper[i]["Resources"][j][0] = "View"
+                results[i]["Resources"][j][0] = "View"
 
-    return ConfigResourceMapper
+    return results
 
 
-def analyze_policies():
-    model = "cuco.plug.co1"
-
+def analyze_policies(model):
     parser = ASTParser(
         f"/root/documents/droidbot-confiot/Confiot_main/VIG-parser/react-parser/javascript/MihomePlugins/{model}/{model}.js")
     out_dir = f"/root/documents/Output/PLUGINS/{model}/"
@@ -162,4 +162,6 @@ def analyze_policies():
 
 if __name__ == "__main__":
     # analyze_sharing_content("/root/documents/Output/PLUGINS/")
-    analyze_policies()
+    model = input("model: ")
+    # model = "090615.curtain.1mcu01"
+    analyze_policies(model)
