@@ -148,7 +148,7 @@ class Confiot:
 
         mapper = []
         for i in range(frags_size):
-            if(i == frags_size - 1):
+            if (i == frags_size - 1):
                 paths_str = ''.join(paths_str_list[i * 20:])
             else:
                 paths_str = ''.join(paths_str_list[i * 20:(i + 1) * 20])
@@ -523,7 +523,7 @@ class Confiot:
 
         return current_config, config_description
 
-    # 返回所有config paths
+    # 返回所有config paths Version:1.0
     def parse_UITree(self):
         self.uiTree = UITree()
 
@@ -553,7 +553,6 @@ class Confiot:
                     if (event_str not in self.events):
                         continue
                     e = self.events[event_str]
-
 
                     # 不包括返回的边
                     if ("name=BACK" in event_str):
@@ -593,7 +592,6 @@ class Confiot:
                             self.uiTree.start_node = config_id
                         else:
                             event_config[event_str] = self.uiTree.nodes_dict[config_id]
-
 
         indegree = {}
         for n in self.uiTree.nodes:
