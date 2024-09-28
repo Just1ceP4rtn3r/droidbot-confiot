@@ -635,6 +635,76 @@ class Confiot:
 
         return config_paths
 
+    # 返回所有config paths Version:1.0
+    def Enumerate_operations(self):
+        # {state: 聚合同一文本的views}
+        TextualWidgets = {}
+        # clickable,checkable,long_clickable的views
+        enabled_views = {}
+
+        if (self.utg_graph is None):
+            return
+
+        for state in self.state_contents:
+            for view in self.state_contents[state]:
+                if (view["clickable"] == True or view["checkable"] == True or view["long_clickable"] == True):
+                    if (state not in enabled_views):
+                        enabled_views[state] = []
+                    enabled_views[state].append(view)
+
+        
+
+
+
+        # 获取每个state中存在的config Node
+        for src_state in self.utg_graph.edges_dict:
+            for target_state in self.utg_graph.edges_dict[src_state]:
+                for event_str in self.utg_graph.edges_dict[src_state][target_state]:
+                    if (event_str not in self.events):
+                        continue
+                    e = self.events[event_str]
+
+                    # 不包括返回的边
+                    if ("name=BACK" in event_str):
+                        continue
+
+                    if ('view' in e):
+                        config_id = str(e['view']['temp_id'])
+                        parent = str(e['view']['parent'])
+                        view_str = e['view']["view_str"]
+                        bounds = e['view']["bounds"]
+                        config_node, config_description = self.get_related_descrition(src_state, int(e['view']['temp_id']),
+                                                                                      view_str, bounds)
+                        if (config_node):
+                            cap = self.get_config_cap(config_node)
+                            config_description = cap + config_description
+
+                        if (src_state not in config_nodes):
+                            config_nodes[src_state] = []
+
+                        config_id = config_id + "-" + parent + "-" + src_state[:5]
+                        if (config_id not in self.uiTree.nodes_dict):
+                            n = Node(config_id, description=config_description, state=src_state)
+                            self.uiTree.nodes_dict[config_id] = n
+                            event_config[event_str] = n
+                            config_nodes[src_state].append(n)
+                            self.uiTree.add_node(n)
+                        else:
+                            event_config[event_str] = self.uiTree.nodes_dict[config_id]
+                            config_nodes[src_state].append(self.uiTree.nodes_dict[config_id])
+                    elif ('intent' in e and 'am start' in e['intent']):
+                        config_id = "000"
+                        if (config_id not in self.uiTree.nodes_dict):
+                            n = Node(config_id, description="STARTAPP", state=src_state)
+                            self.uiTree.nodes_dict[config_id] = n
+                            event_config[event_str] = n
+                            self.uiTree.add_node(n)
+                            self.uiTree.start_node = config_id
+                        else:
+                            event_config[event_str] = self.uiTree.nodes_dict[config_id]
+
+        return config_paths
+
     def parse_conf_list(self):
         # input: droid_output/utg.js -> edges
         # output: conf_activity_dict (view_images, {event_id, event_str, {from_state, to_state}}, activity)

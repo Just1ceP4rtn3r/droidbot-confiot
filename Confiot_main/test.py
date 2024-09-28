@@ -191,7 +191,15 @@ def test_mapping_uitree():
     #                                    "51b1b582e9a5351503e9f7a195ce1f9e4674ccdf38cb61c00d4b6eac163a9a2c", ConfigResourceMapper)
 
 
+def test_Enumerate_operations():
+    from Confiot_main.settings import settings
+    from Confiot_main.util import query_config_resource_mapping, parse_config_resource_mapping, get_ConfigResourceMapper_from_file
+
+    confiot = Confiot()
+    confiot.Enumerate_operations()
+
+
 if __name__ == "__main__":
     #test_device_guest_config_walker()
     # test_STEP0()
-    test_mapping_uitree()
+    test_Enumerate_operations()
