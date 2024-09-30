@@ -24,7 +24,7 @@ def parse_configuration_list():
             for task in i["Tasks"]:
                 if (task not in configuration_actionpath_mapping):
                     configuration_actionpath_mapping[task] = []
-                configuration_actionpath_mapping[task].append(i["Id"])
+                configuration_actionpath_mapping[task].append(i["Path"])
 
     return configuration_actionpath_mapping
 
