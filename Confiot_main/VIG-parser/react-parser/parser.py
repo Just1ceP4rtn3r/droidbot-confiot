@@ -6,7 +6,7 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 sys.path.append(BASE_DIR + "/../../")
 
 from VIG_extraction import ASTParser
-from util import *
+from Confiot_main.utils.util import *
 
 
 # 1. 分析所有的plugins中多少存在角色区分

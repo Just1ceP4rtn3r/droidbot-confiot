@@ -16,9 +16,9 @@ from droidbot_origin.droidbot.input_event import *
 from droidbot_origin.droidbot.device import Device
 from droidbot_origin.droidbot.app import App
 from droidbot_origin.droidbot.device_state import DeviceState
-from Confiot_main.util import deprecated, DirectedGraph, Node, Edge, draw_rect_with_bounds, png_resize, UITree, query_config_resource_mapping, parse_config_resource_mapping, get_ConfigResourceMapper_from_file
+from Confiot_main.utils.util import deprecated, DirectedGraph, Node, Edge, draw_rect_with_bounds, png_resize, UITree, query_config_resource_mapping, parse_config_resource_mapping, get_ConfigResourceMapper_from_file
 from Confiot_main.settings import settings
-from Confiot_main.UIComparator import UIComparator
+from Confiot_main.PolicyInference.UIComparator import UIComparator
 
 DONE = '''
 ###################
@@ -652,58 +652,7 @@ class Confiot:
                         enabled_views[state] = []
                     enabled_views[state].append(view)
 
-        
-
-
-
-        # 获取每个state中存在的config Node
-        for src_state in self.utg_graph.edges_dict:
-            for target_state in self.utg_graph.edges_dict[src_state]:
-                for event_str in self.utg_graph.edges_dict[src_state][target_state]:
-                    if (event_str not in self.events):
-                        continue
-                    e = self.events[event_str]
-
-                    # 不包括返回的边
-                    if ("name=BACK" in event_str):
-                        continue
-
-                    if ('view' in e):
-                        config_id = str(e['view']['temp_id'])
-                        parent = str(e['view']['parent'])
-                        view_str = e['view']["view_str"]
-                        bounds = e['view']["bounds"]
-                        config_node, config_description = self.get_related_descrition(src_state, int(e['view']['temp_id']),
-                                                                                      view_str, bounds)
-                        if (config_node):
-                            cap = self.get_config_cap(config_node)
-                            config_description = cap + config_description
-
-                        if (src_state not in config_nodes):
-                            config_nodes[src_state] = []
-
-                        config_id = config_id + "-" + parent + "-" + src_state[:5]
-                        if (config_id not in self.uiTree.nodes_dict):
-                            n = Node(config_id, description=config_description, state=src_state)
-                            self.uiTree.nodes_dict[config_id] = n
-                            event_config[event_str] = n
-                            config_nodes[src_state].append(n)
-                            self.uiTree.add_node(n)
-                        else:
-                            event_config[event_str] = self.uiTree.nodes_dict[config_id]
-                            config_nodes[src_state].append(self.uiTree.nodes_dict[config_id])
-                    elif ('intent' in e and 'am start' in e['intent']):
-                        config_id = "000"
-                        if (config_id not in self.uiTree.nodes_dict):
-                            n = Node(config_id, description="STARTAPP", state=src_state)
-                            self.uiTree.nodes_dict[config_id] = n
-                            event_config[event_str] = n
-                            self.uiTree.add_node(n)
-                            self.uiTree.start_node = config_id
-                        else:
-                            event_config[event_str] = self.uiTree.nodes_dict[config_id]
-
-        return config_paths
+        return
 
     def parse_conf_list(self):
         # input: droid_output/utg.js -> edges

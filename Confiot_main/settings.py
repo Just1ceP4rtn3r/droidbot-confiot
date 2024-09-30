@@ -4,7 +4,7 @@ class settings:
     # app_path = "/root/documents/droidbot-new/a2dp/a2dp.Vol_169.apk"
     # droid_output = "/root/documents/droidbot-new/a2dp/"
     app_path = "/root/documents/Output/Alexa/amazon.apk"
-    droid_output = "/root/documents/Output/Alexa/host/result"  #"/root/documents/Output/mihome/mihome-smartscale-guest/result"
+    droid_output = r"E:\blog\AirBNB user study.assets\Confiot Output\Output\Huawei_AI_Life\host\result"  #"/root/documents/Output/mihome/mihome-smartscale-guest/result"
 
     Confiot_output = f"{droid_output}/Confiot"
     UI_output = Confiot_output + "/UI/"
@@ -58,10 +58,9 @@ class settings:
     # backs = ([[0,54],[126,158]],)
     # precise_backs = ()
 
-
     # Mihome router
 
-    backs = ([[32,84],[95,147]],)
+    backs = ([[32, 84], [95, 147]],)
     precise_backs = ()
 
     def __init__(self, device, app_path, droid_output) -> None:

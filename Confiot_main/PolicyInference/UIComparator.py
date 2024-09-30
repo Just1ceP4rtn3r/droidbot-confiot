@@ -14,7 +14,7 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 sys.path.append(BASE_DIR + "/../")
 
 from Confiot_main.settings import settings
-from Confiot_main.util import deprecated
+from Confiot_main.utils.util import deprecated
 
 
 class UIComparator:

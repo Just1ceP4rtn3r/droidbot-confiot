@@ -5,8 +5,8 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 sys.path.append(BASE_DIR + "/../")
 from Confiot_main.Confiot import ConfiotGuest, ConfiotHost, Confiot
 import xml.etree.ElementTree as ET
-from Confiot_main.UIComparator import UIComparator
-from Confiot_main.PolicyGenerator import PolicyGenerator
+from Confiot_main.PolicyInference.UIComparator import UIComparator
+from Confiot_main.PolicyInference.PolicyGenerator import PolicyGenerator
 
 # For test
 HOST_CONFIG_ANALYZED = "host:August_on"
@@ -15,14 +15,14 @@ HOST_CONFIG_ANALYZED = "host:August_on"
 ######################################
 # util.py
 def test_parse_config_resource_map():
-    from Confiot_main.util import parse_config_resource_mapping
+    from Confiot_main.utils.util import parse_config_resource_mapping
     with open("prompt/response.txt") as f:
         respond = f.read()
         parse_config_resource_mapping(respond)
 
 
 def test_resize_png():
-    from Confiot_main.util import png_resize
+    from Confiot_main.utils.util import png_resize
     png_resize(
         "/root/documents/droidbot-new/a2dp/Confiot/UI/host:A2DP_Start_at_Boot_off/guest:view_0fe88b3189e686f7242ae495c9b79a4a.png/after.png",
         230, 512)
@@ -34,7 +34,7 @@ def test_resize_png():
 
 def test_goto_state():
     from Confiot_main.settings import settings
-    from Confiot_main.util import query_config_resource_mapping, parse_config_resource_mapping, get_ConfigResourceMapper_from_file
+    from Confiot_main.utils.util import query_config_resource_mapping, parse_config_resource_mapping, get_ConfigResourceMapper_from_file
     settings.device_serial = "192.168.31.218:5555"
     settings.app_path = "/root/documents/Output/Huawei_AI_Life/Huawei.apk"
     settings.droid_output = "/root/documents/Output/Huawei_AI_Life/host/result"
@@ -173,7 +173,7 @@ def test_get_ui_hierarchy():
 
 def test_mapping_uitree():
     from Confiot_main.settings import settings
-    from Confiot_main.util import query_config_resource_mapping, parse_config_resource_mapping, get_ConfigResourceMapper_from_file
+    from Confiot_main.utils.util import query_config_resource_mapping, parse_config_resource_mapping, get_ConfigResourceMapper_from_file
 
     confiot = Confiot()
     policy_generator = PolicyGenerator()
@@ -193,7 +193,7 @@ def test_mapping_uitree():
 
 def test_Enumerate_operations():
     from Confiot_main.settings import settings
-    from Confiot_main.util import query_config_resource_mapping, parse_config_resource_mapping, get_ConfigResourceMapper_from_file
+    from Confiot_main.utils.util import query_config_resource_mapping, parse_config_resource_mapping, get_ConfigResourceMapper_from_file
 
     confiot = Confiot()
     confiot.Enumerate_operations()
