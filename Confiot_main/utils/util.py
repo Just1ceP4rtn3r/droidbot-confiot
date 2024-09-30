@@ -1,7 +1,6 @@
 from collections import deque
 import warnings
 from PIL import Image, ImageDraw
-from openai import OpenAI
 from base64 import b64encode
 import os
 import re
