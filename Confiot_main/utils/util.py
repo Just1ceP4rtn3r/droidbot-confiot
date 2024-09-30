@@ -280,7 +280,7 @@ def parse_config_resource_mapping(text):
 
             for i in range(len(task)):
                 task[i] = task[i].replace('<', '').replace('>', '')
-                task[i] = add_testdata_for_task(task[i])
+                # task[i] = add_testdata_for_task(task[i])
 
             ConfigResourceMapper.append({"Id": config_id, "Path": config_path, "Tasks": task, "Resources": related_resources})
 

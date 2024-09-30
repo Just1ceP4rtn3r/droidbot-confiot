@@ -250,7 +250,7 @@ if __name__ == "__main__":
 
     UI_old = comparator.old_hierarchy_path + f"/{state_str}.xml"
     UI_new = comparator.new_hierarchy_path + f"/{state_str}.xml"
-    compare_output_path = comparator.compare_output_path + f"/{state_str}.html"
+    compare_output_path = comparator.compare_output_path + f"/{state_str[:5]}.html"
     diff_html = comparator.compare_xml_files(UI_old, UI_new, compare_output_path)
 
     UI_add = comparator.get_UI_add(compare_output_path)
