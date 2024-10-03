@@ -459,12 +459,12 @@ class Confiot:
 
     def get_view_text(self,view):
         d = ''
-        if ("content_description" in view and view["content_description"] and
-                view["content_description"] != ''):
-            d = f"{view['content_description']}"
+        # if ("content_description" in view and view["content_description"] and
+        #         view["content_description"] != ''):
+        #     d = f"{view['content_description']}"
 
         if ("text" in view and view["text"] and view["text"] != ''):
-            d += f", {view['text']}"
+            d = f"{view['text']}"
 
         if(d == '' or not d):
             return ''
@@ -838,16 +838,17 @@ class Confiot:
 
 class V2_Confiot(Confiot):
     def __init__(self) -> None:
+        self.hashable_views = {}
         self.operation_to_text = {}
-        self.text_to_operation = {}
+
 
         super().__init__()
 
     # 返回所有config paths Version:1.0
-    def Enumerate_operations(self):
-
+    def label_resolution(self):
         # 包含文本的views
         Textual_views = {}
+        Textual_views_hash = []
         # clickable,checkable,long_clickable的operation views
         operation_views = {}
         checkable_views = {}
@@ -855,6 +856,12 @@ class V2_Confiot(Confiot):
 
         if (self.utg_graph is None):
             return
+
+        for state in self.state_contents:
+            for view in self.state_contents[state]:
+                view_hash = hash(str(view))
+                self.hashable_views[view_hash] = view
+                operation_views[state] = []
 
         for state in self.state_contents:
             for view in self.state_contents[state]:
@@ -866,23 +873,23 @@ class V2_Confiot(Confiot):
                     if (state not in Textual_views):
                         Textual_views[state] = []
                     Textual_views[state].append(view)
-
+                    Textual_views_hash.append(hash(str(view)))
+                else:
+                    view["text"] = ''
 
                 if (view["checkable"] == True):
                 # if (view["checkable"] == True or view["selectable"] == True):
                     if (state not in checkable_views):
                         checkable_views[state] = []
-                        operation_views[state] = []
                     checkable_views[state].append(view)
                     operation_views[state].append(view)
                     continue
 
                 if (view["clickable"] == True):
+                    if("layout" in view["class"].lower() or "group" in view["class"].lower()):
+                        continue
                     if (state not in clickable_views):
                         clickable_views[state] = []
-                        operation_views[state] = []
-                    if("layout" in view["class"].lower() or "group" not in view["class"].lower() ):
-                        continue
                     clickable_views[state].append(view)
                     operation_views[state].append(view)
 
@@ -891,34 +898,39 @@ class V2_Confiot(Confiot):
 
 
         # TODO: 更多种类的可交互的配置layout
-        complete_operation_views = []
-
-
         # Layout-1：弹窗：确定、取消、输入
 
         # Layout-2：左边text：右边（checkable、clickable）view，或相反
         for state in operation_views:
+            complete_operation_views = []
             for view in operation_views[state]:
-                if (view in complete_operation_views):
+                if (hash(str(view)) in complete_operation_views):
+                    continue
+
+                if (hash(str(view)) in Textual_views_hash):
+                    if (state not in self.operation_to_text):
+                        self.operation_to_text[state] = {}
+                    if (hash(str(view)) not in self.operation_to_text[state]):
+                        self.operation_to_text[state][hash(str(view))] = []
+                    self.operation_to_text[state][hash(str(view))].append((view, None))
+                    if (hash(str(view)) not in complete_operation_views):
+                        complete_operation_views.append(hash(str(view)))
                     continue
                 o_rec = Rectangle(view["bounds"][0][0], view["bounds"][0][1], view["bounds"][1][0], view["bounds"][1][1])
                 for tview in Textual_views[state]:
                     t_rec = Rectangle(tview["bounds"][0][0], tview["bounds"][0][1], tview["bounds"][1][0], tview["bounds"][1][1])
-                    is_related =  calc_collision_vector(o_rec, t_rec)
+                    is_related = calc_collision_vector(o_rec, t_rec)
                     if (is_related):
                         if (state not in self.operation_to_text):
                             self.operation_to_text[state] = {}
-                        if (view not in self.operation_to_text[state]):
-                            self.operation_to_text[state][view] = []
-                        self.operation_to_text[state][view].append((tview, is_related))
+                        if (hash(str(view)) not in self.operation_to_text[state]):
+                            self.operation_to_text[state][hash(str(view))] = []
+                        self.operation_to_text[state][hash(str(view))].append((tview, is_related))
 
-                        if (view not in complete_operation_views):
-                            complete_operation_views.append(view)
-                        if (tview in clickable_views and tview not in complete_operation_views):
-                            complete_operation_views.append(tview)
-
-
-
+                        if (hash(str(view)) not in complete_operation_views):
+                            complete_operation_views.append(hash(str(view)))
+                        if (tview["clickable"] and hash(str(tview))  not in complete_operation_views):
+                            complete_operation_views.append(hash(str(tview)))
 
         # Layout-3: 上下左右的文本，根据距离判断，将文本与最近的clickable view建立联系
 
@@ -933,8 +945,20 @@ class V2_Confiot(Confiot):
         # 计算view与related text的全局mapping，从而过滤掉不同的state中的相同views
         # self.get_related_descrition()
 
+
+
         return
 
+    def operation_similarity(self):
+        # 1. 获取operation_views中存在跳转逻辑的views
+
+
+
+        # 2. 在每个state内判断相似度，进行合并
+        return
+
+    def enumerate_operations(self):
+        return
 
 class ConfiotHost(Confiot):
 

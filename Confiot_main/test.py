@@ -196,7 +196,7 @@ def test_Enumerate_operations():
     from Confiot_main.utils.util import query_config_resource_mapping, parse_config_resource_mapping, get_ConfigResourceMapper_from_file
 
     confiot = V2_Confiot()
-    confiot.Enumerate_operations()
+    confiot.label_resolution()
 
 
 if __name__ == "__main__":

@@ -48,7 +48,7 @@ class Vector:
 
 # Collision predictor functions
 USE_THIRD_VECTOR = True
-DISTANCE_THRESHOLD = 0  # 10 pixels
+DISTANCE_THRESHOLD = 10  # 10 pixels
 MAX_DIST = 80.00
 
 def get_collision_vector(rect1: Rectangle, rect2_list: List[Rectangle]):
@@ -141,8 +141,8 @@ def get_common_coordinates_h(r1: Rectangle, r2: Rectangle, is_left: bool) -> Tup
             break
         i += 1
     return (
-        Coordinate(r1.left if is_left else r1.right, i),
-        Coordinate(r2.right if is_left else r2.left, i)
+        Coordinate(0 if is_left else r1.right, i),
+        Coordinate(0 if is_left else r2.left, i)
     )
 
 def sort_by_magnitude(vectors: List[Vector]) -> List[Vector]:
