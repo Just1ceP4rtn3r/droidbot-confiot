@@ -48,18 +48,25 @@ class Vector:
 
 # Collision predictor functions
 USE_THIRD_VECTOR = True
-DISTANCE_THRESHOLD = 10  # 10 pixels
+DISTANCE_THRESHOLD = 0  # 10 pixels
+MAX_DIST = 80.00
 
-def get_collision_vector(rect1: Rectangle, rect2_list: List[Rectangle]) -> List[List[Vector]]:
-    vlist = []
+def get_collision_vector(rect1: Rectangle, rect2_list: List[Rectangle]):
+    results = []
     for rect2 in rect2_list:
-        vlist.append(calc_collision_vector(rect1, rect2))
-    return vlist
+        v = calc_collision_vector(rect1, rect2)
+        if(v.get_magnitude() < MAX_DIST):
+            results.append(rect2)
+    return results
 
-def calc_collision_vector(rect1: Rectangle, rect2: Rectangle) -> List[Vector]:
+def calc_collision_vector(rect1: Rectangle, rect2: Rectangle):
+    v = None
     if contained_in_top(rect1, rect2) or contained_in_bottom(rect1, rect2):
-        return calc_collision_vector_w(rect1, rect2, contained_in_top(rect1, rect2))
-    return calc_collision_vector_h(rect1, rect2, contained_in_left(rect1, rect2))
+        v= calc_collision_vector_w(rect1, rect2, contained_in_top(rect1, rect2))[0]
+    v = calc_collision_vector_h(rect1, rect2, contained_in_left(rect1, rect2))[0]
+    if(v and v.get_magnitude() < MAX_DIST):
+        return v
+    return None
 
 def contained_in_top(r1: Rectangle, r2: Rectangle) -> bool:
     return r2.bottom <= r1.top
@@ -91,7 +98,7 @@ def calc_collision_vector_w(r1: Rectangle, r2: Rectangle, is_above: bool) -> Lis
     return [v1, v2] if v1.get_magnitude() <= v2.get_magnitude() else [v2, v1]
 
 def is_entirely_above_or_below(r1: Rectangle, r2: Rectangle) -> bool:
-    return (r1.left >= r2.left - DISTANCE_THRESHOLD and r1.right <= r2.right + DISTANCE_THRESHOLD)
+    return (r1.left >= r2.left - DISTANCE_THRESHOLD and r1.right <= r2.right + DISTANCE_THRESHOLD) or (r2.left >= r1.left - DISTANCE_THRESHOLD and r2.right <= r1.right + DISTANCE_THRESHOLD)
 
 def get_common_coordinates_w(r1: Rectangle, r2: Rectangle, is_above: bool) -> Tuple[Coordinate, Coordinate]:
     i = r1.left
@@ -125,7 +132,7 @@ def calc_collision_vector_h(r1: Rectangle, r2: Rectangle, is_left: bool) -> List
     return [v1, v2] if v1.get_magnitude() <= v2.get_magnitude() else [v2, v1]
 
 def is_entirely_left_or_right(r1: Rectangle, r2: Rectangle) -> bool:
-    return (r1.top >= r2.top - DISTANCE_THRESHOLD and r1.bottom <= r2.bottom + DISTANCE_THRESHOLD)
+    return (r1.top >= r2.top - DISTANCE_THRESHOLD and r1.bottom <= r2.bottom + DISTANCE_THRESHOLD) or (r2.top >= r1.top - DISTANCE_THRESHOLD and r2.bottom <= r1.bottom + DISTANCE_THRESHOLD)
 
 def get_common_coordinates_h(r1: Rectangle, r2: Rectangle, is_left: bool) -> Tuple[Coordinate, Coordinate]:
     i = r1.top

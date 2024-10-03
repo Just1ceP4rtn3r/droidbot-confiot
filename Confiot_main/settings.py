@@ -4,7 +4,7 @@ class settings:
     # app_path = "/root/documents/droidbot-new/a2dp/a2dp.Vol_169.apk"
     # droid_output = "/root/documents/droidbot-new/a2dp/"
     app_path = "/root/documents/Output/Alexa/amazon.apk"
-    droid_output = r"/root/ConfiotOutput/Output/Huawei_AI_Life/host/result"  #"/root/documents/Output/mihome/mihome-smartscale-guest/result"
+    droid_output = r"/root/ConfiotOutput/Output/Tuya/host/result"  #"/root/documents/Output/mihome/mihome-smartscale-guest/result"
 
     Confiot_output = f"{droid_output}/Confiot"
     UI_output = Confiot_output + "/UI/"

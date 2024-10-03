@@ -20,6 +20,7 @@ from droidbot_origin.droidbot.device_state import DeviceState
 from Confiot_main.utils.util import deprecated, DirectedGraph, Node, Edge, draw_rect_with_bounds, png_resize, UITree, query_config_resource_mapping, parse_config_resource_mapping, get_ConfigResourceMapper_from_file
 from Confiot_main.settings import settings
 from Confiot_main.PolicyInference.UIComparator import UIComparator
+from Confiot_main.ConfFinder.LabelResolution import Rectangle, Vector,calc_collision_vector
 
 DONE = '''
 ###################
@@ -837,15 +838,18 @@ class Confiot:
 
 class V2_Confiot(Confiot):
     def __init__(self) -> None:
+        self.operation_to_text = {}
+        self.text_to_operation = {}
+
         super().__init__()
 
     # 返回所有config paths Version:1.0
     def Enumerate_operations(self):
 
-
         # 包含文本的views
         Textual_views = {}
-        # clickable,checkable,long_clickable的views
+        # clickable,checkable,long_clickable的operation views
+        operation_views = {}
         checkable_views = {}
         clickable_views = {}
 
@@ -868,24 +872,57 @@ class V2_Confiot(Confiot):
                 # if (view["checkable"] == True or view["selectable"] == True):
                     if (state not in checkable_views):
                         checkable_views[state] = []
+                        operation_views[state] = []
                     checkable_views[state].append(view)
+                    operation_views[state].append(view)
+                    continue
 
                 if (view["clickable"] == True):
                     if (state not in clickable_views):
                         clickable_views[state] = []
+                        operation_views[state] = []
+                    if("layout" in view["class"].lower() or "group" not in view["class"].lower() ):
+                        continue
                     clickable_views[state].append(view)
+                    operation_views[state].append(view)
+
+                    # if("button" not in view["class"].lower() and "image" not in view["class"].lower() and "text" not in view["class"].lower() ):
+                    #     print(view["class"])
 
 
         # TODO: 更多种类的可交互的配置layout
-        # Layout-1：左边text：右边（checkable、clickable）view，或相反
-        
+        complete_operation_views = []
 
 
-        # Layout-2：弹窗：确定、取消、输入
+        # Layout-1：弹窗：确定、取消、输入
+
+        # Layout-2：左边text：右边（checkable、clickable）view，或相反
+        for state in operation_views:
+            for view in operation_views[state]:
+                if (view in complete_operation_views):
+                    continue
+                o_rec = Rectangle(view["bounds"][0][0], view["bounds"][0][1], view["bounds"][1][0], view["bounds"][1][1])
+                for tview in Textual_views[state]:
+                    t_rec = Rectangle(tview["bounds"][0][0], tview["bounds"][0][1], tview["bounds"][1][0], tview["bounds"][1][1])
+                    is_related =  calc_collision_vector(o_rec, t_rec)
+                    if (is_related):
+                        if (state not in self.operation_to_text):
+                            self.operation_to_text[state] = {}
+                        if (view not in self.operation_to_text[state]):
+                            self.operation_to_text[state][view] = []
+                        self.operation_to_text[state][view].append((tview, is_related))
+
+                        if (view not in complete_operation_views):
+                            complete_operation_views.append(view)
+                        if (tview in clickable_views and tview not in complete_operation_views):
+                            complete_operation_views.append(tview)
+
+
+
 
         # Layout-3: 上下左右的文本，根据距离判断，将文本与最近的clickable view建立联系
 
-        print(enabled_views)
+        print(complete_operation_views)
 
         # 根据view的跳转关系，以及相似度，合并confiugration
 
