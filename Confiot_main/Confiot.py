@@ -8,6 +8,7 @@ import sys
 import copy
 import subprocess
 import time
+import cleantext
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 sys.path.append(BASE_DIR + "/../")
@@ -455,6 +456,22 @@ class Confiot:
         cap += '}'
         return cap
 
+    def get_view_text(self,view):
+        d = ''
+        if ("content_description" in view and view["content_description"] and
+                view["content_description"] != ''):
+            d = f"{view['content_description']}"
+
+        if ("text" in view and view["text"] and view["text"] != ''):
+            d += f", {view['text']}"
+
+        if(d == '' or not d):
+            return ''
+        d = cleantext.clean(d, extra_spaces=True, numbers=True, punct=True)
+
+        return d
+
+
     # 获取与temp_id配置相关的文本描述（child/brother node）
     def get_related_descrition(self, state, temp_id, view_str, bounds):
         config_description = ""
@@ -634,25 +651,6 @@ class Confiot:
                 config_paths.append(p)
 
         return config_paths
-
-    # 返回所有config paths Version:1.0
-    def Enumerate_operations(self):
-        # {state: 聚合同一文本的views}
-        TextualWidgets = {}
-        # clickable,checkable,long_clickable的views
-        enabled_views = {}
-
-        if (self.utg_graph is None):
-            return
-
-        for state in self.state_contents:
-            for view in self.state_contents[state]:
-                if (view["clickable"] == True or view["checkable"] == True or view["long_clickable"] == True):
-                    if (state not in enabled_views):
-                        enabled_views[state] = []
-                    enabled_views[state].append(view)
-
-        return
 
     def parse_conf_list(self):
         # input: droid_output/utg.js -> edges
@@ -835,6 +833,70 @@ class Confiot:
                     whole_state_views.append(view)
 
         return whole_state_views
+
+
+class V2_Confiot(Confiot):
+    def __init__(self) -> None:
+        super().__init__()
+
+    # 返回所有config paths Version:1.0
+    def Enumerate_operations(self):
+
+
+        # 包含文本的views
+        Textual_views = {}
+        # clickable,checkable,long_clickable的views
+        checkable_views = {}
+        clickable_views = {}
+
+        if (self.utg_graph is None):
+            return
+
+        for state in self.state_contents:
+            for view in self.state_contents[state]:
+                d = self.get_view_text(view)
+                if (d != ''):
+                    # 更新view的文本描述
+                    view["text"] = d
+
+                    if (state not in Textual_views):
+                        Textual_views[state] = []
+                    Textual_views[state].append(view)
+
+
+                if (view["checkable"] == True):
+                # if (view["checkable"] == True or view["selectable"] == True):
+                    if (state not in checkable_views):
+                        checkable_views[state] = []
+                    checkable_views[state].append(view)
+
+                if (view["clickable"] == True):
+                    if (state not in clickable_views):
+                        clickable_views[state] = []
+                    clickable_views[state].append(view)
+
+
+        # TODO: 更多种类的可交互的配置layout
+        # Layout-1：左边text：右边（checkable、clickable）view，或相反
+        
+
+
+        # Layout-2：弹窗：确定、取消、输入
+
+        # Layout-3: 上下左右的文本，根据距离判断，将文本与最近的clickable view建立联系
+
+        print(enabled_views)
+
+        # 根据view的跳转关系，以及相似度，合并confiugration
+
+
+
+
+
+        # 计算view与related text的全局mapping，从而过滤掉不同的state中的相同views
+        # self.get_related_descrition()
+
+        return
 
 
 class ConfiotHost(Confiot):

@@ -4,3 +4,5 @@ numpy
 tree-sitter==0.22.2
 tree-sitter-javascript==0.22.2
 graphviz
+nltk
+cleantext

@@ -3,7 +3,7 @@ import math
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 sys.path.append(BASE_DIR + "/../")
-from Confiot_main.Confiot import ConfiotGuest, ConfiotHost, Confiot
+from Confiot_main.Confiot import *
 import xml.etree.ElementTree as ET
 from Confiot_main.PolicyInference.UIComparator import UIComparator
 from Confiot_main.PolicyInference.PolicyGenerator import PolicyGenerator
@@ -195,7 +195,7 @@ def test_Enumerate_operations():
     from Confiot_main.settings import settings
     from Confiot_main.utils.util import query_config_resource_mapping, parse_config_resource_mapping, get_ConfigResourceMapper_from_file
 
-    confiot = Confiot()
+    confiot = V2_Confiot()
     confiot.Enumerate_operations()
 
 
