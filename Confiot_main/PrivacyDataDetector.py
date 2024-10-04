@@ -145,14 +145,12 @@ def get_dirs(path):
 def remove_duplicate_pages(pages):
     unique_pages, duplicate_pages = [], []
     for page in pages:
-        if page not in duplicate_pages:
-            unique_pages.append(page)
-        else:
+        if page in duplicate_pages:
             continue
+        unique_pages.append(page)
+        
         for page2 in pages:
-            if page == page2:
-                continue
-            if page2 in duplicate_pages:
+            if page == page2 or page2 in unique_pages:
                 continue
             if page_similarity(page, page2):
                 duplicate_pages.append(page2)
