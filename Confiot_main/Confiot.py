@@ -839,7 +839,9 @@ class Confiot:
 class V2_Confiot(Confiot):
     def __init__(self) -> None:
         self.hashable_views = {}
+        # {"state": {hash(str(operation)): [(text_view, distance_vector),...]}}
         self.operation_to_text = {}
+        self.text_to_operation = {}
 
 
         super().__init__()
@@ -896,11 +898,11 @@ class V2_Confiot(Confiot):
                     # if("button" not in view["class"].lower() and "image" not in view["class"].lower() and "text" not in view["class"].lower() ):
                     #     print(view["class"])
 
-
+        # 1. 根据不同的layout绑定label与operation_views
         # TODO: 更多种类的可交互的配置layout
         # Layout-1：弹窗：确定、取消、输入
 
-        # Layout-2：左边text：右边（checkable、clickable）view，或相反
+        # Layout-2：上下左右的文本，根据距离判断，将文本与最近的clickable view建立联系
         for state in operation_views:
             complete_operation_views = []
             for view in operation_views[state]:
@@ -929,26 +931,28 @@ class V2_Confiot(Confiot):
 
                         if (hash(str(view)) not in complete_operation_views):
                             complete_operation_views.append(hash(str(view)))
-                        if (tview["clickable"] and hash(str(tview))  not in complete_operation_views):
+                        if (tview["clickable"] and hash(str(tview)) not in complete_operation_views):
                             complete_operation_views.append(hash(str(tview)))
 
-        # Layout-3: 上下左右的文本，根据距离判断，将文本与最近的clickable view建立联系
-
-        print(complete_operation_views)
-
-        # 根据view的跳转关系，以及相似度，合并confiugration
+        # 2. 无人认领的label进行额外处理
 
 
 
+        # 3. 一个label被对应多个operation_views的情况，根据距离判断?
 
 
-        # 计算view与related text的全局mapping，从而过滤掉不同的state中的相同views
-        # self.get_related_descrition()
-
-
+        # [DEBUG] print label resolution
+        for state in self.operation_to_text:
+            print("State: ", state)
+            for view in self.operation_to_text[state]:
+                print("View: ", view)
+                for text in self.operation_to_text[state][view]:
+                    print("Text: ", text)
+            print("")
 
         return
 
+    # 根据view的跳转关系，以及相似度，合并confiugration
     def operation_similarity(self):
         # 1. 获取operation_views中存在跳转逻辑的views
 
