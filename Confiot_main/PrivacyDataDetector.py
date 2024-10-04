@@ -81,14 +81,15 @@ def get_diff(before_xml, after_xml):
 #             continue
 
 # Use text-based similarity to recognize similar snapshots
-# [TODO] Other ways might be more precise:
+# TODO: Other ways might be more precise:
 #    1. Use image-based similarity
 #    2. Use UI hierarchy node similarity
+# TODO: Another thing is the similarity threshold, 0.65~0.7 is a good choice based on the test results, but need further evaluation.
 def page_similarity(page1, page2):
     text1 = get_text(page1)
     text2 = get_text(page2)
     similarity = text_similarity(text1, text2)
-    if similarity > 0.70: # 80% similarity
+    if similarity > 0.65: 
         return True
     else:
         return False
@@ -157,27 +158,36 @@ def remove_duplicate_pages(pages):
         
     return unique_pages
 
+### Get unique pages (including before and after pages)
+### TODO: to improve the precision, we can consider the relationship between before and after pages
+### For example, for august /Users/tracy/Downloads/Output/August/guest/Confiot/UI/000/guest_view_05f997c12d0e37ddf4f31cd6ca167324.png12/after.png, this is recognized as a deleted page, but this one is reachable from /Users/tracy/Downloads/Output/August/guest/Confiot/UI/000/guest_view_05f997c12d0e37ddf4f31cd6ca167324.png12/before.png. 
+### Therefore, if consider tree structure, we will find this page is not covered by the crawler, not a deleted page.
+def get_unique_pages(UI_path):
+    pages, unique_pages = [], []
+    dirs = get_dirs(UI_path)
+
+    # Remove duplicate pages
+    for dir in dirs:
+        if os.path.exists(UI_path + "/" + dir + "/" + "before.xml") and os.path.exists(UI_path + "/" + dir + "/" + "after.xml"):
+            pages.append(UI_path + "/" + dir + "/" + "before.xml")
+            pages.append(UI_path + "/" + dir + "/" + "after.xml")
+        else:
+            raise Exception("The before.xml or after.xml do not exist.")
+    unique_pages = remove_duplicate_pages(pages)
+    return unique_pages
+
 ### Substep for step 1: get UI page text changes
 ### input: before and after conducting one configuration (xml files)
 ### output: get all added, deleted, and changed texts in the UI
 def get_page_diff(before_conf_UI_path, after_conf_UI_path, output_path):
     if not os.path.exists(output_path):
         os.makedirs(output_path)
-    dirs_before = get_dirs(before_conf_UI_path)
-    dirs_after = get_dirs(after_conf_UI_path)
+    
+    # get unique pages
+    pages_before = get_unique_pages(before_conf_UI_path)
+    pages_after = get_unique_pages(after_conf_UI_path)
 
-    pages_before, pages_after = [], []
-
-    # Remove duplicate pages
-    for dir_before in dirs_before:
-        if os.path.exists(before_conf_UI_path + "/" + dir_before + "/" + "before.xml"):
-            pages_before.append(before_conf_UI_path + "/" + dir_before + "/" + "before.xml")
-    pages_before = remove_duplicate_pages(pages_before)
-    for dir_after in dirs_after:
-        if os.path.exists(after_conf_UI_path + "/" + dir_after + "/" + "before.xml"):
-            pages_after.append(after_conf_UI_path + "/" + dir_after + "/" + "before.xml")
-    pages_after = remove_duplicate_pages(pages_after)
-
+    # get similar pages, added pages, and deleted pages
     similar_page_pairs, deleted_pages, added_pages = [], [], []
     similar_before_pages, similar_after_pages = [], []
     for page_before in pages_before:
@@ -192,7 +202,7 @@ def get_page_diff(before_conf_UI_path, after_conf_UI_path, output_path):
 
                 # get changes in similar pages
                 diff_html = get_diff(page_before, page_after)
-                with open(output_path + "/" + "diff_" + dir_before + "_" + dir_after + ".html", 'w') as file:
+                with open(output_path + "/" + "diff_" + page_before.split(".")[0].split("/")[-1] + "_" + page_after.split(".")[0].split("/")[-1] + ".html", 'w') as file:
                     file.write(diff_html)
                 break
     
@@ -225,8 +235,19 @@ def get_snapshot_diff(before_conf_UI_path, after_conf_UI_path, output_path):
 
     return ui_add_texts, ui_delete_texts, ui_change_texts
 
-    
+### Step 2: compare privacy sensitive data using senmatic similarity
+def compare_privacy_sensitive_data():
+    pass
 
+### Step 3: detect privacy sensitive data ownership
+def privacy_sensitive_data_ownership():
+    pass
+
+### Step 4: compare changed configuration with configuration list (guest side)
+def compare_configuration_senmatics():
+    pass
+
+### Step 4: detect privacy sensitive problem & configuration problem
 # def detector(UIComparation):
 #     # Load the UIComparator directory
 #     # Load the privacy sensitive data category
