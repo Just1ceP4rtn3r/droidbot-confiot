@@ -9,6 +9,9 @@
 import os, re, difflib, json
 from bs4 import BeautifulSoup
 import xml.dom.minidom
+from transformers import BertTokenizer, BertModel
+import torch
+from sklearn.metrics.pairwise import cosine_similarity
 
 
 def text_similarity(text1, text2):
@@ -234,6 +237,32 @@ def get_snapshot_diff(before_conf_UI_path, after_conf_UI_path, output_path):
         ui_delete_texts.append(get_text(after_conf_UI_path + "/" + added_page + "/" + "before.xml"))
 
     return ui_add_texts, ui_delete_texts, ui_change_texts
+
+def texts_senmatic_similarity(text1, text2):
+    # 1. Tokenization: load the BERT tokenizer
+    tokenizer = BertTokenizer.from_pretrained('bert-base-uncased')
+    model = BertModel.from_pretrained('bert-base-uncased')
+
+    # Tokenize the texts
+    # TODO: consider adding [CLS] and [SEP] tokens
+    tokens1 = tokenizer.tokenize(text1)
+    tokens2 = tokenizer.tokenize(text2)
+
+    # 2. Encoding texts: convert tokens to input IDs
+    input_id1 = torch.tensor(tokenizer.convert_tokens_to_ids(tokens1)).unsqueeze(0)  # Batch size 1
+    input_id2 = torch.tensor(tokenizer.convert_tokens_to_ids(tokens2)).unsqueeze(0)  # Batch size 1
+
+    # 3. Get the embeddings: obtain the BERT embeddings
+    with torch.no_grad():
+        outputs1 = model(input_id1)
+        embeddings1 = input_id1.last_hidden_state[:, 0, :]  # [CLS] token
+        outputs2 = model(input_id2)
+        embeddings2 = input_id2.last_hidden_state[:, 0, :]  # [CLS] token
+
+    # 4. Calculating Sentence Similarity using BERT Transformer
+    similarity = cosine_similarity(embeddings1, embeddings2)
+
+    return similarity
 
 ### Step 2: compare privacy sensitive data using senmatic similarity
 def compare_privacy_sensitive_data():
