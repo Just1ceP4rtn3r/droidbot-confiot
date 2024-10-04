@@ -6,7 +6,7 @@
 #       key files (with host name): 
 #           output/August/guest/Confiot/Comparation/UIHierarchy/000_to_10_1_Access_and_modify_Edit_House_Owners/158c0f863e2718afeed12ad26e5ef3ee5892e6715d7ebea4af5b052557430ea1.html, 253c3c6111c428bfa34b3ffc1fb61f579dd53d44a7db96fd597a58d5db0ed375.html
 
-import os, re, difflib, json
+import os, re, difflib, json, pickle
 from bs4 import BeautifulSoup
 import xml.dom.minidom
 from transformers import BertTokenizer, BertModel
@@ -42,7 +42,10 @@ def parse_html(html, class_name):
     return output_list
 
 def get_clean_text(text):
-    return text.replace('\u00a0', ' ')
+    if type(text) == str:
+        return text.replace('\u00a0', ' ')
+    else:
+        return str(text).replace('\u00a0', ' ')
 
 # detect the added nodes
 def get_UI_add(diff_html):
@@ -70,19 +73,6 @@ def get_diff(before_xml, after_xml):
     # sys.stdout.writelines(diff)
     return diff_html
 
-# # Step 1: only get before.xml diff between each two configurations, like (000, 10_1_Access_and_modify_Edit_House_Owners)
-# def get_files_diff(before_conf_UI_path, after_conf_UI_path, output_path):
-#     for dir in os.listdir(before_conf_UI_path):
-#         if os.path.isdir(before_conf_UI_path + "/" + dir) and os.path.isdir(after_conf_UI_path + "/" + dir):
-#             if os.path.exists(before_conf_UI_path + "/" + dir + "/" + "before.xml") and os.path.exists(after_conf_UI_path + "/" + dir + "/" + "before.xml"):
-#                 diff_html = get_diff(before_conf_UI_path + "/" + dir + "/" + "before.xml", after_conf_UI_path + "/" + dir + "/" + "before.xml")
-#                 with open(output_path + "/" + "diff_" + dir + ".html", 'w') as file:
-#                     file.write(diff_html)
-#             else:
-#                 raise Exception("The before.xml does not exist.")
-#         else:
-#             continue
-
 # Use text-based similarity to recognize similar snapshots
 # TODO: Other ways might be more precise:
 #    1. Use image-based similarity
@@ -101,6 +91,8 @@ def page_similarity(page1, page2):
 ### input: the page xml file
 ### output: get all texts in the UI page
 def get_text(page_xml):
+    if not os.path.exists(page_xml):
+        raise Exception("The xml file does not exist.", page_xml)
     with open(page_xml) as f:
         page = f.read()
         # page_xml = format_xml(f.read()).replace('<text>None</text>', '').replace('<content_description>None</content_description>', '').split('\n')
@@ -221,7 +213,7 @@ def get_page_diff(before_conf_UI_path, after_conf_UI_path, output_path):
                 
     return similar_page_pairs, deleted_pages, added_pages
 
-### Step 1: get UI snapshot text changes              
+### Sub-step for Step 1: get UI snapshot text changes              
 ### input: before and after conducting one configuration (xml files)
 ### output: text changes in the current snapshot, and related snapshot xml files
 def get_snapshot_diff(before_conf_UI_path, after_conf_UI_path, output_path):
@@ -232,11 +224,40 @@ def get_snapshot_diff(before_conf_UI_path, after_conf_UI_path, output_path):
     ui_add_texts, ui_delete_texts, ui_change_texts = get_text_diff(output_path)
 
     for deleted_page in deleted_pages:
-        ui_add_texts.append(get_text(before_conf_UI_path + "/" + deleted_page + "/" + "before.xml"))
+        ui_add_texts.append(get_text(deleted_page))
     for added_page in added_pages:
-        ui_delete_texts.append(get_text(after_conf_UI_path + "/" + added_page + "/" + "before.xml"))
+        ui_delete_texts.append(get_text(added_page))
 
     return ui_add_texts, ui_delete_texts, ui_change_texts
+
+### Step 1 for mode 1: analyze one device
+### input: device output path
+### output: effects(key: configuration, value: effects(add, delete, change))
+def get_device_effects(device_path):
+    effects = dict() # key: configuration, value: effects(add, delete, change)
+    conf_UI_path = device_path + "guest/Confiot/UI"
+    conf_dirs = get_dirs(conf_UI_path)
+    for conf_dir in conf_dirs:
+        before_conf_UI_path = conf_UI_path + "/" + conf_dir
+        after_conf_UI_path = conf_UI_path + "/" + conf_dirs[conf_dirs.index(conf_dir) + 1]
+        output_path = device_path + "guest/Confiot/Comparation/UIHierarchy/" + conf_dir + "_to_" + conf_dirs[conf_dirs.index(conf_dir) + 1]
+
+        effects[conf_dir] = get_snapshot_diff(before_conf_UI_path, after_conf_UI_path, output_path)
+
+    return effects
+
+### Step 1 for mode 2: analyze all devices
+### input: output path
+### output: all devices effects(key: device, value: effects(key: configuration, value: effects(add, delete, change)))
+def get_all_devices_effects(path):
+    devices = get_dirs(path)
+    all_devices_effects = dict()
+
+    for device in devices:
+        all_devices_effects[device] = get_device_effects(path + "/" + device)
+    
+    return all_devices_effects
+
 
 def texts_senmatic_similarity(text1, text2):
     # 1. Tokenization: load the BERT tokenizer
@@ -264,12 +285,25 @@ def texts_senmatic_similarity(text1, text2):
 
     return similarity
 
+### pre-defined privacy sensitive data category
+def load_privacy_data_criterias(privacy_sensitive_data_path):
+    # Load the data from the PKL file
+    with open(privacy_sensitive_data_path, "rb") as f:
+            data = pickle.load(f)
+    return data
+
 ### Step 2: compare privacy sensitive data using senmatic similarity
-def compare_privacy_sensitive_data():
-    pass
+def compare_privacy_sensitive_data(privacy_sensitive_data_path, ui_add_texts, ui_delete_texts, ui_change_texts):
+    privacy_sensitive_data = load_privacy_data_criterias(privacy_sensitive_data_path)
+
+    privacy_sensitive_additions, privacy_sensitive_deletions, privacy_sensitive_changes = [], [], []
+
+    # TODO: directly use model and code here: https://github.com/iotprofiler/IoTProfiler-Public/blob/main/apk-analysis/sootconfig/IoT-Privacy/
+
+    return privacy_sensitive_additions, privacy_sensitive_deletions, privacy_sensitive_changes
 
 ### Step 3: detect privacy sensitive data ownership
-def privacy_sensitive_data_ownership():
+def privacy_sensitive_data_ownership(ui_add_texts, ui_delete_texts, ui_change_texts):
     pass
 
 ### Step 4: compare changed configuration with configuration list (guest side)
@@ -277,7 +311,7 @@ def compare_configuration_senmatics():
     pass
 
 ### Step 4: detect privacy sensitive problem & configuration problem
-# def detector(UIComparation):
+# def data_detector(UIComparation):
 #     # Load the UIComparator directory
 #     # Load the privacy sensitive data category
 #     # Load the privacy sensitive data detection rules
