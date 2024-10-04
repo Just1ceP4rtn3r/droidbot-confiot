@@ -88,7 +88,7 @@ def page_similarity(page1, page2):
     text1 = get_text(page1)
     text2 = get_text(page2)
     similarity = text_similarity(text1, text2)
-    if similarity > 0.8: # 80% similarity
+    if similarity > 0.75: # 80% similarity
         return True
     else:
         return False
@@ -143,13 +143,19 @@ def get_dirs(path):
 
 ### Remove duplicate pages
 def remove_duplicate_pages(pages):
-    unique_pages = []
+    unique_pages, duplicate_pages = [], []
     for page in pages:
-        unique_pages.append(page)
+        if page not in duplicate_pages:
+            unique_pages.append(page)
+        else:
+            continue
         for page2 in pages:
-            if page != page2 and page_similarity(page, page2):
-                pages.remove(page2)
+            if page == page2:
                 continue
+            if page2 in duplicate_pages:
+                continue
+            if page_similarity(page, page2):
+                duplicate_pages.append(page2)
         
     return unique_pages
 
