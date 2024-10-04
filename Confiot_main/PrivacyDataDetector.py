@@ -88,7 +88,7 @@ def page_similarity(page1, page2):
     text1 = get_text(page1)
     text2 = get_text(page2)
     similarity = text_similarity(text1, text2)
-    if similarity > 0.75: # 80% similarity
+    if similarity > 0.70: # 80% similarity
         return True
     else:
         return False
@@ -148,7 +148,7 @@ def remove_duplicate_pages(pages):
         if page in duplicate_pages:
             continue
         unique_pages.append(page)
-        
+
         for page2 in pages:
             if page == page2 or page2 in unique_pages:
                 continue
@@ -178,15 +178,16 @@ def get_page_diff(before_conf_UI_path, after_conf_UI_path, output_path):
             pages_after.append(after_conf_UI_path + "/" + dir_after + "/" + "before.xml")
     pages_after = remove_duplicate_pages(pages_after)
 
-    similar_page_pairs = []
-    deleted_pages = []
-    added_pages = []
+    similar_page_pairs, deleted_pages, added_pages = [], [], []
+    similar_before_pages, similar_after_pages = [], []
     for page_before in pages_before:
         for page_after in pages_after:
+            if page_before in similar_before_pages or page_after in similar_after_pages:
+                continue
             if page_similarity(page_before, page_after):
                 # same page, no need to compare 
-                pages_before.remove(page_before)
-                pages_after.remove(page_after)
+                similar_before_pages.append(page_before)
+                similar_after_pages.append(page_after)
                 similar_page_pairs.append((page_before, page_after))
 
                 # get changes in similar pages
@@ -197,11 +198,13 @@ def get_page_diff(before_conf_UI_path, after_conf_UI_path, output_path):
     
     # for the remianing dirs, they are not the same snapshots. Snapshots in dirs_before are deleted snapshots, and snapshots in dirs_after are added snapshots
     for page_before in pages_before:
-        deleted_pages.append(page_before)
-        # add_text = get_text(before_conf_UI_path + "/" + dir_before + "/" + "before.xml")
+        if page_before not in similar_before_pages:
+            deleted_pages.append(page_before)
+            # add_text = get_text(before_conf_UI_path + "/" + dir_before + "/" + "before.xml")
     for page_after in pages_after:
-        added_pages.append(page_after)
-        # delete_text = get_text(after_conf_UI_path + "/" + dir_after + "/" + "before.xml")
+        if page_after not in similar_after_pages:
+            added_pages.append(page_after)
+            # delete_text = get_text(after_conf_UI_path + "/" + dir_after + "/" + "before.xml")
                 
     return similar_page_pairs, deleted_pages, added_pages
 
