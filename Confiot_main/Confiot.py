@@ -861,8 +861,6 @@ class V2_Confiot(Confiot):
 
         for state in self.state_contents:
             for view in self.state_contents[state]:
-                view_hash = hash(str(view))
-                self.hashable_views[view_hash] = view
                 operation_views[state] = []
 
         for state in self.state_contents:
@@ -879,6 +877,10 @@ class V2_Confiot(Confiot):
                 else:
                     view["text"] = ''
 
+
+                view_hash = hash(str(view))
+                self.hashable_views[view_hash] = view
+
                 if (view["checkable"] == True):
                 # if (view["checkable"] == True or view["selectable"] == True):
                     if (state not in checkable_views):
@@ -888,7 +890,7 @@ class V2_Confiot(Confiot):
                     continue
 
                 if (view["clickable"] == True):
-                    if("layout" in view["class"].lower() or "group" in view["class"].lower()):
+                    if ("group" in view["class"].lower()):
                         continue
                     if (state not in clickable_views):
                         clickable_views[state] = []
@@ -922,6 +924,14 @@ class V2_Confiot(Confiot):
                 for tview in Textual_views[state]:
                     t_rec = Rectangle(tview["bounds"][0][0], tview["bounds"][0][1], tview["bounds"][1][0], tview["bounds"][1][1])
                     is_related = calc_collision_vector(o_rec, t_rec)
+
+                    if(is_related == "PotentialLeftLabel"):
+                        parent = self.state_contents[state][view['parent']]
+                        o_rec = Rectangle(parent["bounds"][0][0], parent["bounds"][0][1], parent["bounds"][1][0], parent["bounds"][1][1])
+                        is_related = calc_collision_vector(o_rec, t_rec)
+                        if(is_related == "PotentialLeftLabel" or not is_related):
+                            continue
+
                     if (is_related):
                         if (state not in self.operation_to_text):
                             self.operation_to_text[state] = {}
@@ -944,12 +954,12 @@ class V2_Confiot(Confiot):
         # [DEBUG] print label resolution
         for state in self.operation_to_text:
             print("State: ", state)
-            for view in self.operation_to_text[state]:
-                print("View: ", view)
-                for text in self.operation_to_text[state][view]:
-                    print("Text: ", text)
-            print("")
-
+            for view_hash in self.operation_to_text[state]:
+                print("    + View: ", self.hashable_views[view_hash]["view_str"])
+                for label in self.operation_to_text[state][view_hash]:
+                    view = label[0]
+                    vector = label[1]
+                    print("        - Text: ", view["text"], vector.get_magnitude() if vector else 0)
         return
 
     # 根据view的跳转关系，以及相似度，合并confiugration
