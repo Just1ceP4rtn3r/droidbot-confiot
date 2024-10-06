@@ -109,6 +109,7 @@ def get_text(page_xml):
 ### Substep for substep 1: get text changes from the diff html (only for similar pages)
 ### input: html files path
 ### output: get all added, deleted, and changed texts in the UI page
+# TODO: bug output nothing
 def get_text_diff(output_path):
     for file in os.listdir(output_path):
         if file.startswith("diff_") & file.endswith(".html"):
@@ -126,12 +127,14 @@ def get_text_diff(output_path):
             for ui_change in ui_changes:
                 if "<text>" in ui_change["element"]:
                     ui_change_texts.append(ui_change["element"])
-            with open(output_path + "/" + file.split(".html")[0] + ".json", 'w', encoding='UTF-8') as json_file:
-                json.dump([ui_add_texts, ui_delete_texts, ui_change_texts], json_file)
+            # with open(output_path + "/" + file.split(".html")[0] + ".json", 'w', encoding='UTF-8') as json_file:
+            #     json.dump([ui_add_texts, ui_delete_texts, ui_change_texts], json_file)
     return ui_add_texts, ui_delete_texts, ui_change_texts
 
 def get_dirs(path):
     dirs = []
+    if not os.path.isdir(path):
+        raise Exception("The path is not a dir.")
     for dir in os.listdir(path):
         if os.path.isdir(path + "/" + dir):
             dirs.append(dir)
@@ -224,9 +227,9 @@ def get_snapshot_diff(before_conf_UI_path, after_conf_UI_path, output_path):
     ui_add_texts, ui_delete_texts, ui_change_texts = get_text_diff(output_path)
 
     for deleted_page in deleted_pages:
-        ui_add_texts.append(get_text(deleted_page))
+        ui_delete_texts.append(get_text(deleted_page))
     for added_page in added_pages:
-        ui_delete_texts.append(get_text(added_page))
+        ui_add_texts.append(get_text(added_page))
 
     return ui_add_texts, ui_delete_texts, ui_change_texts
 
@@ -258,7 +261,18 @@ def get_all_devices_effects(path):
     
     return all_devices_effects
 
+def get_tokens(text_list):
+    token = '[CLS]'
+    for text in text_list:
+        token += text + '[SEP]'
 
+    return token
+
+### get text similarity using BERT
+### TODO: 
+###     1. SBERT
+###     2. Other embedding models 
+###     3. Another possible way to improve the precision is to use another LLM to get keywords first
 def texts_senmatic_similarity(text1, text2):
     # 1. Tokenization: load the BERT tokenizer
     tokenizer = BertTokenizer.from_pretrained('bert-base-uncased')
@@ -276,9 +290,9 @@ def texts_senmatic_similarity(text1, text2):
     # 3. Get the embeddings: obtain the BERT embeddings
     with torch.no_grad():
         outputs1 = model(input_id1)
-        embeddings1 = input_id1.last_hidden_state[:, 0, :]  # [CLS] token
+        embeddings1 = outputs1.last_hidden_state[:, 0, :]  # [CLS] token
         outputs2 = model(input_id2)
-        embeddings2 = input_id2.last_hidden_state[:, 0, :]  # [CLS] token
+        embeddings2 = outputs2.last_hidden_state[:, 0, :]  # [CLS] token
 
     # 4. Calculating Sentence Similarity using BERT Transformer
     similarity = cosine_similarity(embeddings1, embeddings2)
@@ -288,19 +302,45 @@ def texts_senmatic_similarity(text1, text2):
 ### pre-defined privacy sensitive data category
 def load_privacy_data_criterias(privacy_sensitive_data_path):
     # Load the data from the PKL file
-    with open(privacy_sensitive_data_path, "rb") as f:
-            data = pickle.load(f)
+    with open(privacy_sensitive_data_path, "r") as f:
+            data = json.load(f)
     return data
 
 ### Step 2: compare privacy sensitive data using senmatic similarity
-def compare_privacy_sensitive_data(privacy_sensitive_data_path, ui_add_texts, ui_delete_texts, ui_change_texts):
-    privacy_sensitive_data = load_privacy_data_criterias(privacy_sensitive_data_path)
+# ❌ directly use model and code here: https://github.com/iotprofiler/IoTProfiler-Public/blob/main/apk-analysis/sootconfig/IoT-Privacy/ .The model is not suitable for the current project, but s-bert is a good choice.
+# input: text changes in the UI for each snapshot
+# output: data additions, deletions, and changes only related to privacy
+def get_privacy_diff_for_one_snapshot(before_conf_UI_path, after_conf_UI_path, output_path):
+    path = os.path.dirname(os.path.abspath(__file__)) + "/privacy_sensitive_data.json"
+    data = load_privacy_data_criterias(path)
 
-    privacy_sensitive_additions, privacy_sensitive_deletions, privacy_sensitive_changes = [], [], []
+    ui_add_texts, ui_delete_texts, ui_change_texts = get_snapshot_diff(before_conf_UI_path, after_conf_UI_path, output_path)
 
-    # TODO: directly use model and code here: https://github.com/iotprofiler/IoTProfiler-Public/blob/main/apk-analysis/sootconfig/IoT-Privacy/
+    privacy_additions, privacy_deletions, privacy_changes = [], [], []
+ 
+    for privacy_data in data:
+        items = data[privacy_data]
+        for item in items:
+            for ui_add_text in ui_add_texts:
+                s_add = texts_senmatic_similarity(get_tokens(ui_add_text), item)
+                if s_add > 0.65:
+                    privacy_additions.append({privacy_data: [ui_add_text, s_add]})
+            for ui_delete_text in ui_delete_texts:
+                s_delete = texts_senmatic_similarity(get_tokens(ui_delete_text), item)
+                if s_delete > 0.65:
+                    privacy_deletions.append({privacy_data: [ui_delete_text, s_delete]})
 
-    return privacy_sensitive_additions, privacy_sensitive_deletions, privacy_sensitive_changes
+            for ui_change_text in ui_change_texts:
+                s_change = texts_senmatic_similarity(get_tokens(ui_change_text), item)
+                if s_change > 0.65:
+                    privacy_changes.append({privacy_data: [ui_change_text, s_change]})
+
+    # bug: can not recognize the privacy sensitive data as a category
+    # for example: +1 800-xxx-xxxx is a phone number, but the model can not recognize it as a phone number
+
+    # algorithm: too simple and slow, need to improve
+
+    return privacy_additions, privacy_deletions, privacy_changes
 
 ### Step 3: detect privacy sensitive data ownership
 def privacy_sensitive_data_ownership(ui_add_texts, ui_delete_texts, ui_change_texts):
