@@ -6,7 +6,7 @@
 #       key files (with host name): 
 #           output/August/guest/Confiot/Comparation/UIHierarchy/000_to_10_1_Access_and_modify_Edit_House_Owners/158c0f863e2718afeed12ad26e5ef3ee5892e6715d7ebea4af5b052557430ea1.html, 253c3c6111c428bfa34b3ffc1fb61f579dd53d44a7db96fd597a58d5db0ed375.html
 
-import os, re, difflib, json, pickle
+import os, re, difflib, json, pickle, argparse
 from bs4 import BeautifulSoup
 import xml.dom.minidom
 from transformers import BertTokenizer, BertModel
@@ -97,7 +97,6 @@ def get_text(page_xml):
         page = f.read()
         # page_xml = format_xml(f.read()).replace('<text>None</text>', '').replace('<content_description>None</content_description>', '').split('\n')
 
-    # [TODO] debug: Use BeautifulSoup to parse the xml file and get all <text>
     texts = re.findall(r'<text>(.*?)</text>', page)
     cleaned_texts = []
     for text in texts:
@@ -367,6 +366,19 @@ def get_privacy_diff_for_one_snapshot(before_conf_UI_path, after_conf_UI_path, o
 
     return [privacy_diff, shared_diff]
 
+def get_privacy_diff_for_one_device(device_path):
+    data = dict() # key: configuration, value: effects(add, delete, change)
+    conf_UI_path = device_path + "guest/Confiot/UI"
+    conf_dirs = get_dirs(conf_UI_path)
+    for conf_dir in conf_dirs:
+        before_conf_UI_path = conf_UI_path + "/" + conf_dir
+        after_conf_UI_path = conf_UI_path + "/" + conf_dirs[conf_dirs.index(conf_dir) + 1]
+        output_path = device_path + "guest/Confiot/Comparation/UIHierarchy/" + conf_dir + "_to_" + conf_dirs[conf_dirs.index(conf_dir) + 1]
+
+        data[conf_dir] = get_privacy_diff_for_one_snapshot(before_conf_UI_path, after_conf_UI_path, output_path)
+
+    return data
+
 ### Step 3: detect privacy sensitive data ownership
 def privacy_data_ownership(ui_add_texts, ui_delete_texts, ui_change_texts):
     pass
@@ -379,5 +391,49 @@ def compare_configuration_senmatics():
 ### text-based privacy data & shared data detection
 ### input: device mode (with device path) or all devices mode
 ### output: violations 
-def data_detector(UIComparation):
-    
+def confiot_detector(mode, path):
+    if mode == "device":
+        data = get_privacy_diff_for_one_device(path)
+        for conf_dir in data:
+            if len(data[conf_dir]) == 2:
+                [privacy_diff, shared_diff] = data[conf_dir]
+                if len(privacy_diff) == 3:
+                    [privacy_additions, privacy_deletions, privacy_changes] = privacy_diff
+                else:
+                    raise Exception("The data structure is not correct.")
+                if len(shared_diff) == 3:
+                    [shared_additions, shared_deletions, shared_changes] = shared_diff
+                else:
+                    raise Exception("The data structure is not correct.")
+                # violations
+                if shared_deletions:
+                    Warning("Insecure configuration: should view shared data! ", conf_dir, shared_additions)
+                if shared_additions:
+                    print("Secure configuration: can view shared data. ", conf_dir, shared_additions)
+                # if privacy_deletions: # consider ownership
+                #     Warning("Privacy sensitive data is deleted! ", conf_dir, privacy_deletions)
+
+            else:
+                raise Exception("The data structure is not correct.")
+            
+    elif mode == "all":
+        get_all_devices_effects(path)
+    else:
+        raise Exception("Please specify the mode: 'device' for one specific device, 'all' for all devices")
+
+def arg_parser():
+    parser = argparse.ArgumentParser(description='Process some integers.')
+    parser.add_argument('-m', '--mode', dest='mode',
+                    help='please specify the mode: "device" for one specific device, "all" for all devices')
+    parser.add_argument('-p', '--path', dest='path',
+                    help='if use mode "device", provide the device folder path, if use mode "all", provide the output folder path')
+    args = parser.parse_args()
+    return args
+
+
+if __name__ == "__main__":
+    args = arg_parser()
+    if args.mode == "device":
+        confiot_detector("device", args.path)
+    elif args.mode == "all":
+        confiot_detector("all", args.path)
