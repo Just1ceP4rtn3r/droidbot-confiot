@@ -264,7 +264,7 @@ def get_all_devices_effects(path):
 def get_tokens(text_list):
     token = '[CLS]'
     for text in text_list:
-        token += text + '[SEP]'
+        token += text.lower() + '[SEP]'
 
     return token
 
@@ -279,7 +279,7 @@ def texts_senmatic_similarity(text1, text2):
     model = BertModel.from_pretrained('bert-base-uncased')
 
     # Tokenize the texts
-    # TODO: consider adding [CLS] and [SEP] tokens
+    # Done: consider adding [CLS] and [SEP] tokens
     tokens1 = tokenizer.tokenize(text1)
     tokens2 = tokenizer.tokenize(text2)
 
@@ -306,68 +306,78 @@ def load_privacy_data_criterias(privacy_sensitive_data_path):
             data = json.load(f)
     return data
 
+def compare_textList_similarity(list, text):
+    res = []
+    for l in list:
+        sim = texts_senmatic_similarity(get_tokens(l), text)
+        if sim > 0.65:
+            res.append({l: sim})
+    return res
+
+def get_textList_contains(list, text):
+    res = []
+    for l in list:
+        l = [t.lower() for t in l]
+        if text[0] in l and text[1] in l:
+            res.append(l)
+
+    return res
+
+
 ### Step 2: compare privacy sensitive data using senmatic similarity
 # ❌ directly use model and code here: https://github.com/iotprofiler/IoTProfiler-Public/blob/main/apk-analysis/sootconfig/IoT-Privacy/ .The model is not suitable for the current project, but s-bert is a good choice.
 # input: text changes in the UI for each snapshot
 # output: data additions, deletions, and changes only related to privacy
 def get_privacy_diff_for_one_snapshot(before_conf_UI_path, after_conf_UI_path, output_path):
-    path = os.path.dirname(os.path.abspath(__file__)) + "/privacy_sensitive_data.json"
+    path = os.path.dirname(os.path.abspath(__file__)) + "/criterias.json"
     data = load_privacy_data_criterias(path)
 
     ui_add_texts, ui_delete_texts, ui_change_texts = get_snapshot_diff(before_conf_UI_path, after_conf_UI_path, output_path)
 
     privacy_additions, privacy_deletions, privacy_changes = [], [], []
- 
-    for privacy_data in data:
-        items = data[privacy_data]
-        for item in items:
-            for ui_add_text in ui_add_texts:
-                s_add = texts_senmatic_similarity(get_tokens(ui_add_text), item)
-                if s_add > 0.65:
-                    privacy_additions.append({privacy_data: [ui_add_text, s_add]})
-            for ui_delete_text in ui_delete_texts:
-                s_delete = texts_senmatic_similarity(get_tokens(ui_delete_text), item)
-                if s_delete > 0.65:
-                    privacy_deletions.append({privacy_data: [ui_delete_text, s_delete]})
+    shared_additions, shared_deletions, shared_changes = [], [], []
+    privacy_diff = [privacy_additions, privacy_deletions, privacy_changes]
+    shared_diff = [shared_additions, shared_deletions, shared_changes]
+    
+    # update structure of data
+    for data_type in data:
+        if data_type == "privacy_sensitive_data":
+            for pri_data in data[data_type]:
+                privacy_additions = [*privacy_additions, *compare_textList_similarity(ui_add_texts, pri_data)]
+                privacy_deletions = [*privacy_deletions, *compare_textList_similarity(ui_delete_texts, pri_data)]
+                privacy_changes = [*privacy_changes, *compare_textList_similarity(ui_change_texts, pri_data)]
 
-            for ui_change_text in ui_change_texts:
-                s_change = texts_senmatic_similarity(get_tokens(ui_change_text), item)
-                if s_change > 0.65:
-                    privacy_changes.append({privacy_data: [ui_change_text, s_change]})
+        elif data_type == "Shared Data":
+            for shared_data in data[data_type]:
+                match shared_data:
+                    case "user list":
+                        shared_additions = [*shared_additions, *get_textList_contains(ui_add_texts, data[data_type][shared_data])]
+                        shared_deletions = [*shared_deletions, *get_textList_contains(ui_delete_texts, data[data_type][shared_data])]
+                        shared_changes = [*shared_changes, *get_textList_contains(ui_change_texts, data[data_type][shared_data])]
+                    case "control ways" | "activity logs":
+                        for s_d in data[data_type][shared_data]:
+                            shared_additions = [*shared_additions, *compare_textList_similarity(ui_add_texts, s_d)]
+                            shared_deletions = [*shared_deletions, *compare_textList_similarity(ui_delete_texts, s_d)]
+                            shared_changes = [*shared_changes, *compare_textList_similarity(ui_change_texts, s_d)]
 
     # bug: can not recognize the privacy sensitive data as a category
     # for example: +1 800-xxx-xxxx is a phone number, but the model can not recognize it as a phone number
 
     # algorithm: too simple and slow, need to improve
 
-    return privacy_additions, privacy_deletions, privacy_changes
+    return [privacy_diff, shared_diff]
 
 ### Step 3: detect privacy sensitive data ownership
-def privacy_sensitive_data_ownership(ui_add_texts, ui_delete_texts, ui_change_texts):
+def privacy_data_ownership(ui_add_texts, ui_delete_texts, ui_change_texts):
     pass
 
 ### Step 4: compare changed configuration with configuration list (guest side)
 def compare_configuration_senmatics():
     pass
 
-### Step 4: detect privacy sensitive problem & configuration problem
-# def data_detector(UIComparation):
-#     # Load the UIComparator directory
-#     # Load the privacy sensitive data category
-#     # Load the privacy sensitive data detection rules
-#     # Detect privacy sensitive data
-#     # Output the detection results
-#     if os.path.exists(UIComparation):
-#         for dir in os.listdir(UIComparation):
-#             if os.path.isdir(UIComparation + "/" + dir):
-#                 for file in os.listdir(UIComparation + "/" + dir):
-#                     if file.endswith(".html"):
-#                         diff = difflib.HtmlDiff()
-#                         file
-#     else:
-#         print("The directory does not exist.")
-#         return
+### Step 5: detect privacy sensitive problem & configuration problem
+### text-based privacy data & shared data detection
+### input: device mode (with device path) or all devices mode
+### output: violations 
+def data_detector(UIComparation):
     
-# UIComparation = "/Users/tracy/Downloads/Output/August/guest/Confiot/Comparation/UIHierarchy"
-# detector(UIComparation)
-
