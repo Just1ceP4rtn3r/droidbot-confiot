@@ -193,7 +193,7 @@ class DirectedGraph:
 
         dot_content += "}"
 
-        with open(f"{output_dir}/UITree.dot", "w") as dot_file:
+        with open(f"{output_dir}/UIPages.dot", "w") as dot_file:
             dot_file.write(dot_content)
 
 

@@ -210,6 +210,7 @@ def test_Enumerate_pages():
     #     print(confiot.calc_state_similarity(a, b))
 
     confiot.parse_struture_unique_pages()
+    confiot.extract_navigations()
     print(confiot.pages)
 
 

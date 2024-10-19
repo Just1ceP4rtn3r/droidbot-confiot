@@ -20,7 +20,7 @@ from droidbot_origin.droidbot.device_state import DeviceState
 from Confiot_main.utils.util import deprecated, DirectedGraph, Node, Edge, draw_rect_with_bounds, png_resize, UITree, query_config_resource_mapping, parse_config_resource_mapping, get_ConfigResourceMapper_from_file
 from Confiot_main.settings import settings
 from Confiot_main.PolicyInference.UIComparator import UIComparator
-from Confiot_main.ConfFinder.LabelResolution import Rectangle, Vector,calc_collision_vector
+from Confiot_main.ConfFinder.LabelResolution import Rectangle, Vector, calc_collision_vector
 
 DONE = '''
 ###################
@@ -83,8 +83,6 @@ class Confiot:
         self.app = App(app_path=settings.app_path, output_dir=settings.Confiot_output)
         self.device.connect()
         self.device.install_app(self.app)
-
-
 
     def device_map_config_resource(self, output_path):
         STEP0 = '''
@@ -423,7 +421,7 @@ class Confiot:
         cap += '}'
         return cap
 
-    def get_view_text(self,view):
+    def get_view_text(self, view):
         d = ''
         # if ("content_description" in view and view["content_description"] and
         #         view["content_description"] != ''):
@@ -432,12 +430,11 @@ class Confiot:
         if ("text" in view and view["text"] and view["text"] != ''):
             d = f"{view['text']}"
 
-        if(d == '' or not d):
+        if (d == '' or not d):
             return ''
         d = cleantext.clean(d, extra_spaces=True, numbers=True, punct=True)
 
         return d
-
 
     # 获取与temp_id配置相关的文本描述（child/brother node）
     def get_related_descrition(self, state, temp_id, view_str, bounds):
@@ -701,14 +698,13 @@ class Confiot:
         #print(conf_list)
 
 
-
 class V2_Confiot(Confiot):
+
     def __init__(self) -> None:
         self.hashable_views = {}
         # {"state": {hash(str(operation)): [(text_view, distance_vector),...]}}
         self.operation_to_text = {}
         self.text_to_operation = {}
-
 
         super().__init__()
 
@@ -743,12 +739,11 @@ class V2_Confiot(Confiot):
                 else:
                     view["text"] = ''
 
-
                 view_hash = hash(str(view))
                 self.hashable_views[view_hash] = view
 
                 if (view["checkable"] == True):
-                # if (view["checkable"] == True or view["selectable"] == True):
+                    # if (view["checkable"] == True or view["selectable"] == True):
                     if (state not in checkable_views):
                         checkable_views[state] = []
                     checkable_views[state].append(view)
@@ -788,14 +783,16 @@ class V2_Confiot(Confiot):
                     continue
                 o_rec = Rectangle(view["bounds"][0][0], view["bounds"][0][1], view["bounds"][1][0], view["bounds"][1][1])
                 for tview in Textual_views[state]:
-                    t_rec = Rectangle(tview["bounds"][0][0], tview["bounds"][0][1], tview["bounds"][1][0], tview["bounds"][1][1])
+                    t_rec = Rectangle(tview["bounds"][0][0], tview["bounds"][0][1], tview["bounds"][1][0],
+                                      tview["bounds"][1][1])
                     is_related = calc_collision_vector(o_rec, t_rec)
 
-                    if(is_related == "PotentialLeftLabel"):
+                    if (is_related == "PotentialLeftLabel"):
                         parent = self.state_contents[state][view['parent']]
-                        o_rec = Rectangle(parent["bounds"][0][0], parent["bounds"][0][1], parent["bounds"][1][0], parent["bounds"][1][1])
+                        o_rec = Rectangle(parent["bounds"][0][0], parent["bounds"][0][1], parent["bounds"][1][0],
+                                          parent["bounds"][1][1])
                         is_related = calc_collision_vector(o_rec, t_rec)
-                        if(is_related == "PotentialLeftLabel" or not is_related):
+                        if (is_related == "PotentialLeftLabel" or not is_related):
                             continue
 
                     if (is_related):
@@ -812,10 +809,7 @@ class V2_Confiot(Confiot):
 
         # 2. 无人认领的label进行额外处理
 
-
-
         # 3. 一个label被对应多个operation_views的情况，根据距离判断?
-
 
         # [DEBUG] print label resolution
         for state in self.operation_to_text:
@@ -832,13 +826,12 @@ class V2_Confiot(Confiot):
     def operation_similarity(self):
         # 1. 获取operation_views中存在跳转逻辑的views
 
-
-
         # 2. 在每个state内判断相似度，进行合并
         return
 
     def enumerate_operations(self):
         return
+
 
 class ConfiotHost(Confiot):
 
