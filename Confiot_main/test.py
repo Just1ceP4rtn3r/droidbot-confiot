@@ -199,7 +199,21 @@ def test_Enumerate_operations():
     confiot.label_resolution()
 
 
+def test_Enumerate_pages():
+    from Confiot_main.settings import settings
+    from Confiot_main.ConfFinder.ConfigurationParser import ConfigurationParser
+    from Confiot_main.utils.util import query_config_resource_mapping, parse_config_resource_mapping, get_ConfigResourceMapper_from_file
+
+    confiot = ConfigurationParser()
+    # while (1):
+    #     a, b = input().split(' ')
+    #     print(confiot.calc_state_similarity(a, b))
+
+    confiot.parse_struture_unique_pages()
+    print(confiot.pages)
+
+
 if __name__ == "__main__":
     #test_device_guest_config_walker()
     # test_STEP0()
-    test_Enumerate_operations()
+    test_Enumerate_pages()
