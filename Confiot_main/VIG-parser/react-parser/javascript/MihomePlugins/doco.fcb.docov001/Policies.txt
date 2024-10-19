@@ -1,1 +1,0 @@
-{"Host": {"Device Actuator status (e.g., light Bluetooth connectivity status)": "View"}, "Guest": {"Device Actuator status (e.g., light Bluetooth connectivity status)": "View"}}

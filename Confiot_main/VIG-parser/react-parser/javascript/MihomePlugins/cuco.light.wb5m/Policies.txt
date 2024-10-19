@@ -1,1 +1,0 @@
-{"Host": {"Device Actuator status (light on/off)": "View", "Device metadata (settings)": "View", "Automation list (smart scene)": "Edit", "Device usage log": "View"}, "Guest": {"Device Actuator status (light on/off)": "View", "Device usage log": "View"}}

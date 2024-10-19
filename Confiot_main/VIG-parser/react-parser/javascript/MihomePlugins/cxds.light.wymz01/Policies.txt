@@ -1,1 +1,0 @@
-{"Host": {"Device Actuator status (undefined)": "View", "Automation list (countdown)": "View", "Device metadata (device name, firmware version)": "View"}, "Guest": {"Device Actuator status (undefined)": "View", "Automation list (countdown)": "View", "Device metadata (device name, firmware version)": "View"}}

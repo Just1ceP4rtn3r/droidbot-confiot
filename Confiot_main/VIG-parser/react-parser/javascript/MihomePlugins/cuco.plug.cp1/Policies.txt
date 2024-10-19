@@ -1,1 +1,0 @@
-{"Host": {"Automation list (scheduled tasks)": "Edit", "Device metadata (device name)": "Edit"}, "Guest": {"Device metadata (device name)": "Edit"}}

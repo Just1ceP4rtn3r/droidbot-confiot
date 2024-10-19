@@ -1,1 +1,0 @@
-{"Host": {"Device Actuator status (light on/off)": "Edit", "Device usage log (remote controls)": "Edit", "Device list (mesh network devices)": "Edit"}, "Guest": {"Device Actuator status (light on/off)": "Edit", "Device usage log (remote controls)": "Edit", "Device list (mesh network devices)": "Edit"}}

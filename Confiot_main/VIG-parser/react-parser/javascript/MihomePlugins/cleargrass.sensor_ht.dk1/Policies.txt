@@ -1,1 +1,0 @@
-{"Host": {"Device metadata (firmware version)": "View"}, "Guest": {"Device metadata (firmware version)": "View"}}

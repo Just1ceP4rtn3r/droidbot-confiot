@@ -65,6 +65,8 @@ class ConfigurationParser(Confiot):
             for view in self.state_contents[state]:
                 if (not view["visible"]):
                     continue
+                # [TODO]: droidot bug，当页面包含一个diagram，diagram后的views没有被记录
+                if(len(self.state_contents[state]))
                 content_free_signature = f"[class]{view['class']}[resource_id]{view['resource_id']}[bounds]{str(view['bounds'])}"
                 state_content_free_signature.append(content_free_signature)
             page_similarities = {}
@@ -78,7 +80,7 @@ class ConfigurationParser(Confiot):
                 # if (page_similarities[max_similar_page] > 0.8 and page_similarities[max_similar_page] < 0.9):
                 #     print(state, self.pages[max_similar_page])
 
-            if (not max_similar_page or page_similarities[max_similar_page] < 0.8):
+            if (not max_similar_page or page_similarities[max_similar_page] < 0.9):
                 # 创建一个新page
                 pstr = "%s" % (",".join(sorted(state_content_free_signature)))
                 import hashlib
