@@ -20,7 +20,7 @@ from droidbot_origin.droidbot.device_state import DeviceState
 from Confiot_main.utils.util import deprecated, DirectedGraph, Node, Edge, draw_rect_with_bounds, png_resize, UITree, query_config_resource_mapping, parse_config_resource_mapping, get_ConfigResourceMapper_from_file
 from Confiot_main.settings import settings
 from Confiot_main.PolicyInference.UIComparator import UIComparator
-from Confiot_main.ConfFinder.LabelResolution import Rectangle, Vector, calc_collision_vector
+from Confiot_main.ConfFinder.LabelResolution import Rectangle, Vector, calc_collision_vector, Coordinate
 
 DONE = '''
 ###################
@@ -704,7 +704,6 @@ class V2_Confiot(Confiot):
         self.hashable_views = {}
         # {"state": {hash(str(operation)): [(text_view, distance_vector),...]}}
         self.operation_to_text = {}
-        self.text_to_operation = {}
 
         super().__init__()
 
@@ -763,10 +762,34 @@ class V2_Confiot(Confiot):
 
         # 1. 根据不同的layout绑定label与operation_views
         # TODO: 更多种类的可交互的配置layout
+        complete_states = []
         # Layout-1：弹窗：确定、取消、输入
+        for state in Textual_views:
+            is_diagram = False
+            diagram_view = []
+            title_view = []
+            for tview in Textual_views[state]:
+                lowertext = tview["text"].lower()
+                if ("cancel" in lowertext or "apply" in lowertext or "yes" in lowertext or "confirm" in lowertext or
+                        "ok" in lowertext or "确定" in lowertext or "取消" in lowertext):
+                    diagram_view.append(tview)
+                    is_diagram = True
+                elif (is_diagram):
+                    title_view.append(title_view)
+
+            if (is_diagram):
+                view = diagram_view[0]
+                if (hash(str(view)) not in self.operation_to_text[state]):
+                    self.operation_to_text[state][hash(str(view))] = []
+                for title in title_view:
+                    self.operation_to_text[state][hash(str(view))].append((title, Vector(Coordinate(0, 0), Coordinate(0, 0),
+                                                                                         0)))
+                complete_states.append(state)
 
         # Layout-2：上下左右的文本，根据距离判断，将文本与最近的clickable view建立联系
         for state in operation_views:
+            if (state in complete_states):
+                continue
             complete_operation_views = []
             for view in operation_views[state]:
                 if (hash(str(view)) in complete_operation_views):
