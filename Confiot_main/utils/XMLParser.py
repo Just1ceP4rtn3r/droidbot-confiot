@@ -15,10 +15,46 @@ class XMLParser():
         self.root = self.get_root()
         self.nodes = self.get_nodes()
         self.graph = self.get_node_tree()
-        self.all_paths = self.get_all_paths(self.graph, 0)
-        self.paths_dict = self.get_paths_dict()
-        self.paths_controllability = self.get_path_controllability()
-        self.paths_text = self.get_path_text()
+
+        # parse views from nodes
+
+        self.views = []
+        for n in self.nodes:
+            view = {}
+            view["checkable"] = eval(self.get_elements_by_tag_name(n, "checkable"))
+            view["selected"] = eval(self.get_elements_by_tag_name(n, "selected"))
+            view["scrollable"] = eval(self.get_elements_by_tag_name(n, "scrollable"))
+            view["long_clickable"] = eval(self.get_elements_by_tag_name(n, "long_clickable"))
+            view["resource_id"] = None if self.get_elements_by_tag_name(
+                n, "resource_id") == "None" else self.get_elements_by_tag_name(n, "resource_id")
+            view["visible"] = eval(self.get_elements_by_tag_name(n, "visible"))
+            view["enabled"] = eval(self.get_elements_by_tag_name(n, "enabled"))
+            view["clickable"] = eval(self.get_elements_by_tag_name(n, "clickable"))
+            view["is_password"] = eval(self.get_elements_by_tag_name(n, "is_password"))
+            view["checked"] = eval(self.get_elements_by_tag_name(n, "checked"))
+            view["content_description"] = None if self.get_elements_by_tag_name(
+                n, "content_description") == "None" else self.get_elements_by_tag_name(n, "content_description")
+            view["focused"] = eval(self.get_elements_by_tag_name(n, "focused"))
+            view["class"] = None if self.get_elements_by_tag_name(n, "class") == "None" else self.get_elements_by_tag_name(
+                n, "class")
+            view["children"] = eval(self.get_elements_by_tag_name(n, "children"))
+            view["child_count"] = eval(self.get_elements_by_tag_name(n, "child_count"))
+            view["package"] = None if self.get_elements_by_tag_name(n, "package") == "None" else self.get_elements_by_tag_name(
+                n, "package")
+            view["text"] = None if self.get_elements_by_tag_name(n, "text") == "None" else self.get_elements_by_tag_name(
+                n, "text")
+            view["bounds"] = eval(self.get_elements_by_tag_name(n, "bounds"))
+            view["editable"] = eval(self.get_elements_by_tag_name(n, "editable"))
+            view["focusable"] = eval(self.get_elements_by_tag_name(n, "focusable"))
+            view["parent"] = eval(self.get_elements_by_tag_name(n, "parent"))
+            view["temp_id"] = eval(self.get_elements_by_tag_name(n, "temp_id"))
+            view["size"] = self.get_elements_by_tag_name(n, "size")
+            self.views.append(view)
+
+        # self.all_paths = self.get_all_paths(self.graph, 0)
+        # self.paths_dict = self.get_paths_dict()
+        # self.paths_controllability = self.get_path_controllability()
+        # self.paths_text = self.get_path_text()
 
     def get_dom_tree(self):
         return parse(self.xml_path)

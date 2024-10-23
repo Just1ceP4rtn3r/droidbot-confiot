@@ -6,21 +6,18 @@ sys.path.append(BASE_DIR + "/../../")
 from Confiot_main.Confiot import *
 
 
-class ConfigurationParser(Confiot):
+class PageExplorer():
 
-    def __init__(self) -> None:
-        self.hashable_views = {}
-        # {"state": {hash(str(operation)): [(text_view, distance_vector),...]}}
-        self.operation_to_text = {}
-        self.text_to_operation = {}
-
+    def __init__(self, Agent: Confiot) -> None:
         # {
         #     "page": {
         #         "state": ["sig", ...],
         #     },
         # }
+        self.Agent = Agent
         self.pages = {}
-        self.state_in_pages = {}
+        self.page_navigation = UITree()
+        self.state_in_which_page = {}
 
         super().__init__()
 
@@ -34,12 +31,12 @@ class ConfigurationParser(Confiot):
     def calc_state_similarity(self, state1, state2):
         state1_sig = []
         state2_sig = []
-        for view in self.state_contents[state1]:
+        for view in self.Agent.state_contents[state1]:
             if (not view["visible"]):
                 continue
             content_free_signature = f"[class]{view['class']}[resource_id]{view['resource_id']}[bounds]{str(view['bounds'])}"
             state1_sig.append(content_free_signature)
-        for view in self.state_contents[state2]:
+        for view in self.Agent.state_contents[state2]:
             if (not view["visible"]):
                 continue
             content_free_signature = f"[class]{view['class']}[resource_id]{view['resource_id']}[bounds]{str(view['bounds'])}"
@@ -61,13 +58,13 @@ class ConfigurationParser(Confiot):
             return -1
 
     def parse_struture_unique_pages(self):
-        for state in self.state_contents:
+        for state in self.Agent.state_contents:
             state_content_free_signature = []
-            for view in self.state_contents[state]:
+            for view in self.Agent.state_contents[state]:
                 if (not view["visible"]):
                     continue
                 # [TODO]: droidot bug，当页面包含一个diagram，diagram后的views没有被记录
-                if (len(self.state_contents[state]) < 20):
+                if (len(self.Agent.state_contents[state]) < 20):
                     content_free_signature = f"[class]{view['class']}[resource_id]{view['resource_id']}[text]{str(view['text'])}"
                     state_content_free_signature.append(content_free_signature)
                 else:
@@ -90,40 +87,39 @@ class ConfigurationParser(Confiot):
                 page_name = f"Page-{len(self.pages)}"
                 self.pages[page_name] = {}
                 self.pages[page_name][state] = state_content_free_signature
-                self.state_in_pages[state] = page_name
+                self.state_in_which_page[state] = page_name
             else:
                 # 将state加入最相似的page
                 self.pages[max_similar_page][state] = state_content_free_signature
-                self.state_in_pages[state] = max_similar_page
+                self.state_in_which_page[state] = max_similar_page
 
     def extract_navigations(self):
-        self.UIPages = UITree()
 
         # {event_str: Node} event与config一一对应
         event_config = {}
 
-        if (self.utg_graph is None):
+        if (self.Agent.utg_graph is None):
             return
 
         for page in self.pages:
             desc = [s for s in self.pages[page]]
             n = Node(page, description='\n'.join(desc), state=None)
-            self.UIPages.nodes_dict[page] = n
-            self.UIPages.add_node(n)
+            self.page_navigation.nodes_dict[page] = n
+            self.page_navigation.add_node(n)
 
-        for src_state in self.utg_graph.edges_dict:
-            for target_state in self.utg_graph.edges_dict[src_state]:
-                for event_str in self.utg_graph.edges_dict[src_state][target_state]:
-                    if (event_str not in self.events):
+        for src_state in self.Agent.utg_graph.edges_dict:
+            for target_state in self.Agent.utg_graph.edges_dict[src_state]:
+                for event_str in self.Agent.utg_graph.edges_dict[src_state][target_state]:
+                    if (event_str not in self.Agent.events):
                         continue
-                    e = self.events[event_str]
+                    e = self.Agent.events[event_str]
 
                     # 不包括返回的边
                     if ("name=BACK" in event_str):
                         continue
 
-                    src_page = self.state_in_pages[src_state]
-                    target_page = self.state_in_pages[target_state]
+                    src_page = self.state_in_which_page[src_state]
+                    target_page = self.state_in_which_page[target_state]
 
                     if ('view' in e):
                         config_id = str(e['view']['temp_id'])
@@ -131,15 +127,17 @@ class ConfigurationParser(Confiot):
                         view_str = e['view']["view_str"]
                         bounds = e['view']["bounds"]
 
-                        e = Edge(self.UIPages.nodes_dict[src_page], self.UIPages.nodes_dict[target_page], event_str)
-                        self.UIPages.add_edge(e)
+                        e = Edge(self.page_navigation.nodes_dict[src_page], self.page_navigation.nodes_dict[target_page],
+                                 event_str)
+                        self.page_navigation.add_edge(e)
 
                     elif ('intent' in e and 'am start' in e['intent']):
                         start_page = "000"
                         n = Node(start_page, description=start_page, state=None)
-                        self.UIPages.nodes_dict[start_page] = n
-                        self.UIPages.add_node(n)
+                        self.page_navigation.nodes_dict[start_page] = n
+                        self.page_navigation.add_node(n)
 
-                        e = Edge(self.UIPages.nodes_dict[start_page], self.UIPages.nodes_dict[target_page], event_str)
-                        self.UIPages.add_edge(e)
-        UITree.draw(self.UIPages, settings.Confiot_output)
+                        e = Edge(self.page_navigation.nodes_dict[start_page], self.page_navigation.nodes_dict[target_page],
+                                 event_str)
+                        self.page_navigation.add_edge(e)
+        UITree.draw(self.page_navigation, settings.Confiot_output)

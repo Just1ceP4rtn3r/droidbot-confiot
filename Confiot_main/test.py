@@ -201,17 +201,19 @@ def test_Enumerate_operations():
 
 def test_Enumerate_pages():
     from Confiot_main.settings import settings
-    from Confiot_main.ConfFinder.ConfigurationParser import ConfigurationParser
+    from Confiot_main.ConfigurationParser.PageExploration import PageExplorer
     from Confiot_main.utils.util import query_config_resource_mapping, parse_config_resource_mapping, get_ConfigResourceMapper_from_file
 
-    confiot = ConfigurationParser()
+    Agent = Confiot()
+
+    PE = PageExplorer(Agent)
     # while (1):
     #     a, b = input().split(' ')
     #     print(confiot.calc_state_similarity(a, b))
 
-    confiot.parse_struture_unique_pages()
-    confiot.extract_navigations()
-    print(confiot.pages)
+    PE.parse_struture_unique_pages()
+    PE.extract_navigations()
+    print(PE.pages)
 
 
 if __name__ == "__main__":
