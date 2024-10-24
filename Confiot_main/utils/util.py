@@ -100,11 +100,12 @@ class Node:
 
 class Edge:
 
-    def __init__(self, start_node, end_node, event_strs: list, description=None):
+    def __init__(self, start_node, end_node, event_strs: list, description=None, view=None):
         self.start_node = start_node
         self.end_node = end_node
         self.event_strs = event_strs
         self.description = description
+        self.view = view
 
 
 class DirectedGraph:

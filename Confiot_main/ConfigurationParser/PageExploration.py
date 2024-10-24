@@ -127,8 +127,10 @@ class PageExplorer():
                         view_str = e['view']["view_str"]
                         bounds = e['view']["bounds"]
 
-                        e = Edge(self.page_navigation.nodes_dict[src_page], self.page_navigation.nodes_dict[target_page],
-                                 event_str)
+                        e = Edge(self.page_navigation.nodes_dict[src_page],
+                                 self.page_navigation.nodes_dict[target_page],
+                                 event_str,
+                                 view=e['view'])
                         self.page_navigation.add_edge(e)
 
                     elif ('intent' in e and 'am start' in e['intent']):
@@ -141,3 +143,6 @@ class PageExplorer():
                                  event_str)
                         self.page_navigation.add_edge(e)
         UITree.draw(self.page_navigation, settings.Confiot_output)
+
+    def identify_page_of_state(self, state_views):
+        pass
