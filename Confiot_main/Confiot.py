@@ -384,7 +384,8 @@ class Confiot:
             event_strs = [eve["event_str"] for eve in e["events"]]
             if (event_strs == []):
                 continue
-            self.utg_graph.add_edge(Edge(utg_nodes[e["from"]], utg_nodes[e["to"]], event_strs))
+            for event_str in event_strs:
+                self.utg_graph.add_edge(Edge(utg_nodes[e["from"]], utg_nodes[e["to"]], event_str))
 
         self.utg_graph.utg_nodes = utg_nodes_dict
         self.utg_graph.utg_edges = utg_edges_dict

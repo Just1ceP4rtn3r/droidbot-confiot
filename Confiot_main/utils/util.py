@@ -100,10 +100,10 @@ class Node:
 
 class Edge:
 
-    def __init__(self, start_node, end_node, event_strs: list, description=None, view=None):
+    def __init__(self, start_node, end_node, event_str, description=None, view=None):
         self.start_node = start_node
         self.end_node = end_node
-        self.event_strs = event_strs
+        self.event_str = event_str
         self.description = description
         self.view = view
 
@@ -137,9 +137,8 @@ class DirectedGraph:
         if (edge.end_node.name not in self.edges_dict[edge.start_node.name]):
             self.edges_dict[edge.start_node.name][edge.end_node.name] = []
 
-        if (edge.event_strs):
-            for event in edge.event_strs:
-                self.edges_dict[edge.start_node.name][edge.end_node.name].append(event)
+        if (edge.event_str):
+            self.edges_dict[edge.start_node.name][edge.end_node.name].append(edge.event_str)
 
         if (edge.description):
             self.edges_dict[edge.start_node.name][edge.end_node.name].append(edge.description)
@@ -208,9 +207,22 @@ class UITree(DirectedGraph):
 
         # event (represent the current value of the configuration)
         self.edges = []
-        # {"src_node": {"dst_node": ["e1"]}}
+        # {"src_node": {"dst_node": [e,]}}
         self.edges_dict = {}
         self.start_node = None
+
+    def add_edge(self, edge: Edge):
+        self.edges.append(edge)
+        if (edge.start_node.name not in self.edges_dict):
+            self.edges_dict[edge.start_node.name] = {}
+
+        if (edge.end_node.name not in self.edges_dict[edge.start_node.name]):
+            self.edges_dict[edge.start_node.name][edge.end_node.name] = []
+
+        self.edges_dict[edge.start_node.name][edge.end_node.name].append(edge)
+
+        if (edge.description):
+            self.edges_dict[edge.start_node.name][edge.end_node.name].append(edge.description)
 
 
 def get_longest_task(tasks):

@@ -38,23 +38,4 @@ class ConfigurationParser():
 
 
 
-        # 过滤与realted_resources无关的state replay
-        # related_states = set()
-        # for m in self.ConfigResourceMapper:
-        #     flag = False
-        #     if (related_resources is None or related_resources == []):
-        #         flag = True
-        #     else:
-        #         for r in related_resources:
-        #             if (r in m['Resources']):
-        #                 flag = True
-        #                 break
-        #     if (flag):
-        #         related_states.add(m['state'])
 
-        # for s in related_states:
-        #     finished = self.device_to_state(host_analyzing_config, s)
-        #     if (finished):
-        #         self.device_get_UIElement(host_analyzing_config, s)
-
-        # print(DONE)

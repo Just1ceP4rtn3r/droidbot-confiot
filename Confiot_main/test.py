@@ -213,6 +213,8 @@ def test_Enumerate_pages():
 
     PE.parse_struture_unique_pages()
     PE.extract_navigations()
+
+    PE.find_path_to_page("Page-5")
     print(PE.pages)
 
 
