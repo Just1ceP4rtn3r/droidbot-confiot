@@ -63,6 +63,9 @@ class Confiot:
         if (not os.path.exists(settings.Confiot_output)):
             os.makedirs(settings.Confiot_output)
 
+        if (not os.path.exists(settings.Pages)):
+            os.makedirs(settings.Pages)
+
         if (not os.path.exists(settings.Static_comparation_output)):
             os.makedirs(settings.Static_comparation_output)
 
@@ -167,7 +170,7 @@ class Confiot:
         print(DONE)
         return self.ConfigResourceMapper
 
-    def device_get_UIElement(self, host_analyzing_config: str, current_state_str: str, store_path="", store_file=""):
+    def device_get_UIElement(self, host_analyzing_config: str = '', current_state_str: str = '', store_path="", store_file=""):
         output_path = ''
         output_file = ''
         if (store_file == ''):
@@ -377,7 +380,7 @@ class Confiot:
 
         # parse utg with DirectedGraph
         for n in utg_nodes_dict:
-            self.utg_graph.add_node(Node(n["state_str"]))
+            self.utg_graph.add_node(Node(n["state_str"], screenshot=settings.droid_output + "/" + n["image"]))
             utg_nodes[n["state_str"]] = self.utg_graph.nodes[-1]
 
         for e in utg_edges_dict:

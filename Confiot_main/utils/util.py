@@ -89,10 +89,11 @@ def decode_bytes(byte_data):
 
 class Node:
 
-    def __init__(self, name, description='', state=''):
+    def __init__(self, name, description='', state='', screenshot=None):
         self.name = name
         self.description = description
         self.state = state
+        self.screenshot = screenshot
 
     def __str__(self):
         return self.name

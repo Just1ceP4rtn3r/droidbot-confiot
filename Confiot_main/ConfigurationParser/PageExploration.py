@@ -4,6 +4,9 @@ import math
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 sys.path.append(BASE_DIR + "/../../")
 from Confiot_main.Confiot import *
+from Confiot_main.utils.XMLParser import XMLParser
+from zss import simple_distance
+from zss import Node as zss_node
 
 
 class PageExplorer():
@@ -21,6 +24,31 @@ class PageExplorer():
 
         super().__init__()
 
+    def get_zss_tree(self, views):
+        nodes = {}
+        root_node = None
+        size = 0
+        for view in views:
+            if (not view["visible"]):
+                continue
+            nodes[view["temp_id"]] = zss_node(view["resource_id"])
+            if (view["parent"] == -1):
+                root_node = nodes[view["temp_id"]]
+            size += 1
+
+        for view in views:
+            if (not view["visible"]):
+                continue
+            temp_id = view["temp_id"]
+            children = view["children"]
+            for child in children:
+                if (child in nodes):
+                    nodes[temp_id].addkid(nodes[child])
+        return root_node, size
+
+    def zss_similarity(self, tree1, tree1_size, tree2, tree2_size):
+        return 1 - (simple_distance(tree1, tree2) / max(tree1_size, tree2_size))
+
     def jaccard_similarity(self, list1, list2):
         set1, set2 = set(list1), set(list2)
         intersection = len(set1.intersection(set2))
@@ -28,53 +56,114 @@ class PageExplorer():
         # print(intersection / union)
         return intersection / union
 
-    def calc_state_similarity(self, state1, state2):
-        state1_sig = []
-        state2_sig = []
+    def get_state_signature(self, state_views):
+        state1_signature = {"resourceid": [], "bound": [], "text": []}
+        for view in state_views:
+            if (not view["visible"]):
+                continue
+            state1_signature["resourceid"].append(f"[class]{view['class']}[resource_id]{view['resource_id']}")
+            state1_signature["bound"].append(f"[bounds]{view['bounds']}")
+            if (view["text"]):
+                state1_signature["text"].append(f"[text]{view['text']}")
+        return state1_signature
+
+    def calc_state_jaccard_similarity(self, state1, state2):
+        resourceid_similarity = 0
+        bound_similarity = 0
+        text_similarity = 0
+
+        state1_info = {"resourceid": [], "bound": [], "text": []}
+        state2_info = {"resourceid": [], "bound": [], "text": []}
         for view in self.Agent.state_contents[state1]:
             if (not view["visible"]):
                 continue
-            content_free_signature = f"[class]{view['class']}[resource_id]{view['resource_id']}[bounds]{str(view['bounds'])}[text]{str(view['text'])}"
-            state1_sig.append(content_free_signature)
+            state1_info["resourceid"].append(f"[class]{view['class']}[resource_id]{view['resource_id']}")
+            state1_info["bound"].append(f"[bounds]{view['bounds']}")
+            if (view["text"]):
+                state1_info["text"].append(f"[text]{view['text']}")
         for view in self.Agent.state_contents[state2]:
             if (not view["visible"]):
                 continue
-            content_free_signature = f"[class]{view['class']}[resource_id]{view['resource_id']}[bounds]{str(view['bounds'])}[text]{str(view['text'])}"
-            state2_sig.append(content_free_signature)
+            state2_info["resourceid"].append(f"[class]{view['class']}[resource_id]{view['resource_id']}")
+            state2_info["bound"].append(f"[bounds]{view['bounds']}")
+            if (view["text"]):
+                state2_info["text"].append(f"[text]{view['text']}")
 
-        return self.jaccard_similarity(state1_sig, state2_sig)
+        resourceid_similarity = self.jaccard_similarity(state1_info["resourceid"], state2_info["resourceid"])
+        bound_similarity = self.jaccard_similarity(state1_info["bound"], state2_info["bound"])
+        text_similarity = self.jaccard_similarity(state1_info["text"], state2_info["text"])
+
+        return resourceid_similarity * 0.7 + bound_similarity * 0.2 + text_similarity * 0.1
+
+    def calc_state_zss_similarity(self, state1, state2):
+
+        tree1, tree1_size = self.get_zss_tree(self.Agent.state_contents[state1])
+        tree2, tree2_size = self.get_zss_tree(self.Agent.state_contents[state2])
+
+        return self.zss_similarity(tree1, tree1_size, tree2, tree2_size)
 
     # 计算一个UTG state content_free_signature，与一个page中所有state signature的最大相似度
-    def calc_state_similarity_with_page(self, state_content_free_signature, page_signatures):
+    def calc_state_similarity_with_page(self, state_content_free_signature, state_layout, page_info):
+
+        cursory_similarity = 0
         similarities = []
-        for state in page_signatures:
-            page_signature = page_signatures[state]
-            sim = self.jaccard_similarity(state_content_free_signature, page_signature)
+        for state in page_info:
+            page_signature = page_info[state]
+
+            resourceid_similarity = self.jaccard_similarity(state_content_free_signature["resourceid"],
+                                                            page_signature["resourceid"])
+            bound_similarity = self.jaccard_similarity(state_content_free_signature["bound"], page_signature["bound"])
+            text_similarity = self.jaccard_similarity(state_content_free_signature["text"], page_signature["text"])
+
+            sim = resourceid_similarity * 0.7 + bound_similarity * 0.2 + text_similarity * 0.1
             similarities.append(sim)
 
         if (similarities):
-            return max(similarities)
+            cursory_similarity = max(similarities)
+            return cursory_similarity
         else:
             return -1
+
+        # if (cursory_similarity < 0.8):
+        #     return cursory_similarity
+
+        # similarities = []
+        # for state in page_info:
+        #     page_signature, page_layout = page_info[state]
+        #     if (self.jaccard_similarity(state_content_free_signature, page_signature) < 0.8):
+        #         continue
+        #     sim = self.zss_similarity(state_layout[0], state_layout[1], page_layout[0], page_layout[1])
+        #     similarities.append(sim)
+
+        # if (similarities):
+        #     return max(similarities)
+        # else:
+        #     return -1
 
     # step-1: 识别pages
     def parse_struture_unique_pages(self):
         for state in self.Agent.state_contents:
-            state_content_free_signature = []
-            for view in self.Agent.state_contents[state]:
-                if (not view["visible"]):
-                    continue
-                # # [TODO]: droidot bug，当页面包含一个diagram，diagram后的views没有被记录
-                # if (len(self.Agent.state_contents[state]) < 20):
-                #     content_free_signature = f"[class]{view['class']}[resource_id]{view['resource_id']}[text]{str(view['text'])}"
-                #     state_content_free_signature.append(content_free_signature)
-                # else:
-                content_free_signature = f"[class]{view['class']}[resource_id]{view['resource_id']}[bounds]{str(view['bounds'])}[text]{str(view['text'])}"
-                state_content_free_signature.append(content_free_signature)
+            # signature用于预先粗略比较，两个state是否相似
+            state_content_free_signature = self.get_state_signature(self.Agent.state_contents[state])
+            # for view in self.Agent.state_contents[state]:
+            #     if (not view["visible"]):
+            #         continue
+            #     # # [TODO]: droidot bug，当页面包含一个diagram，diagram后的views没有被记录
+            #     # if (len(self.Agent.state_contents[state]) < 20):
+            #     #     content_free_signature = f"[class]{view['class']}[resource_id]{view['resource_id']}[text]{str(view['text'])}"
+            #     #     state_content_free_signature.append(content_free_signature)
+            #     # else:
+            #     content_free_signature = f"[class]{view['class']}[resource_id]{view['resource_id']}"
+            #     state_content_free_signature.append(content_free_signature)
+
+            # state_layout用于执行zss distance计算，比较耗时
+            tree, tree_size = self.get_zss_tree(self.Agent.state_contents[state])
+            state_layout = (tree, tree_size)
             page_similarities = {}
             max_similar_page = ""
             for page in self.pages:
-                page_similarities[page] = self.calc_state_similarity_with_page(state_content_free_signature, self.pages[page])
+                page_similarities[page] = self.calc_state_similarity_with_page(state_content_free_signature, state_layout,
+                                                                               self.pages[page])
 
             if (page_similarities):
                 max_similar_page = max(page_similarities, key=page_similarities.get)
@@ -82,13 +171,18 @@ class PageExplorer():
                 # if (page_similarities[max_similar_page] > 0.8 and page_similarities[max_similar_page] < 0.9):
                 #     print(state, self.pages[max_similar_page])
 
-            if (not max_similar_page or page_similarities[max_similar_page] < 0.9):
+            if (not max_similar_page or page_similarities[max_similar_page] < 0.8):
                 # 创建一个新page
-                pstr = "%s" % (",".join(sorted(state_content_free_signature)))
                 page_name = f"Page-{len(self.pages)}"
                 self.pages[page_name] = {}
                 self.pages[page_name][state] = state_content_free_signature
                 self.state_in_which_page[state] = page_name
+
+                screenshot = self.Agent.utg_graph.nodes_dict[state].screenshot
+                if (screenshot and os.path.exists(screenshot)):
+                    import shutil
+                    shutil.copy(screenshot, settings.Pages + f"/{page_name}.jpg")
+
             else:
                 # 将state加入最相似的page
                 self.pages[max_similar_page][state] = state_content_free_signature
@@ -96,9 +190,6 @@ class PageExplorer():
 
     # step-2: 解析pages的navigation关系，生成page_navigation_graph
     def extract_navigations(self):
-
-        # {event_str: Node} event与config一一对应
-        event_config = {}
 
         if (self.Agent.utg_graph is None):
             return
@@ -148,17 +239,27 @@ class PageExplorer():
         UITree.draw(self.page_navigation_graph, settings.Confiot_output)
 
     # step-3: 遍历所有page，并获取snapshot
-    def device_page_replay(self, dir):
+    def device_page_replay(self, outputdir):
+
+        replay_paths = {}
         for page in self.pages:
             steps = self.find_path_to_page(page)
 
             if (page == self.page_navigation_graph.start_node or not steps):
                 continue
 
-            self.to_page(page, steps)
-            self.Agent.device_get_UIElement(store_path=dir,store_file=f"{page}.xml")
+            replay_paths[page] = steps
 
-    def to_page(self, page, steps):
+        replay_paths = dict(sorted(replay_paths.items(), key=lambda item: len(item[1]), reverse=True))
+
+        complete_pages = []
+        for target_page in replay_paths:
+            print("[DBG]: Start go to page: " + target_page)
+            if (target_page in complete_pages):
+                continue
+            self.to_page(target_page, replay_paths[target_page], complete_pages, outputdir)
+
+    def to_page(self, target_page, steps, complete_pages, outputdir):
 
         self.Agent.device_stop_app()
         self.Agent.device.start_app(self.Agent.app)
@@ -166,6 +267,20 @@ class PageExplorer():
 
         # 在当前page，需要做的操作
         for page in steps:
+            if (page != self.page_navigation_graph.start_node):
+                self.Agent.device_get_UIElement(store_path=outputdir, store_file="tmp.xml")
+
+                tmp_xml = outputdir + "/tmp.xml"
+                tmp_views = XMLParser(tmp_xml).views
+                current_page = self.identify_current_page(tmp_views)
+                if (current_page and current_page == page):
+                    self.Agent.device_get_UIElement(store_path=outputdir, store_file=f"{page}.xml")
+                    complete_pages.append(page)
+                else:
+                    # [TODO]: 如果是一个新的page，或跳转到别的page了（page navigation存在问题）
+                    print("[ERR]: Failed to navigate to page ", page)
+                    return False
+
             candidate_operations = steps[page]
             # [TODO]: 结合find_view_in_page，修改这里
             chosen_operation = candidate_operations[0]
@@ -175,11 +290,25 @@ class PageExplorer():
 
             event_dict = self.Agent.events[event_str]
             event = InputEvent.from_dict(event_dict)
-            print("[DBG]: Action: " + event_str)
+            print("    [DBG]: Action: " + event_str)
             event.send(self.Agent.device)
             time.sleep(2)
 
-        print("[DBG]: Done")
+        if (target_page != self.page_navigation_graph.start_node):
+            self.Agent.device_get_UIElement(store_path=outputdir, store_file="tmp.xml")
+
+            tmp_xml = outputdir + "/tmp.xml"
+            tmp_views = XMLParser(tmp_xml).views
+            current_page = self.identify_current_page(tmp_views)
+            if (current_page and current_page == target_page):
+                self.Agent.device_get_UIElement(store_path=outputdir, store_file=f"{target_page}.xml")
+                complete_pages.append(target_page)
+            else:
+                # [TODO]: 如果是一个新的page，或跳转到别的page了（page navigation存在问题）
+                print("[ERR]: Failed: ", target_page)
+                return False
+
+        print("[DBG]: Finished: ", target_page)
         return True
 
     # 分析到某一个page的路径
@@ -198,23 +327,17 @@ class PageExplorer():
         return steps
 
     def identify_current_page(self, state_views):
-        state_sig = []
-        for view in state_views:
-            if (not view["visible"]):
-                continue
-            content_free_signature = f"[class]{view['class']}[resource_id]{view['resource_id']}[bounds]{str(view['bounds'])}[text]{str(view['text'])}"
-            state_sig.append(content_free_signature)
+        state_sig = self.get_state_signature(state_views)
 
+        tree, tree_size = self.get_zss_tree(state_views)
+        state_layout = (tree, tree_size)
         page_similarities = {}
         max_similar_page = ""
         for page in self.pages:
-            page_similarities[page] = self.calc_state_similarity_with_page(state_sig, self.pages[page])
+            page_similarities[page] = self.calc_state_similarity_with_page(state_sig, state_layout, self.pages[page])
 
         if (page_similarities):
             max_similar_page = max(page_similarities, key=page_similarities.get)
-
-            # if (page_similarities[max_similar_page] > 0.8 and page_similarities[max_similar_page] < 0.9):
-            #     print(state, self.pages[max_similar_page])
 
         if (not max_similar_page or page_similarities[max_similar_page] < 0.8):
             # 创建一个新page

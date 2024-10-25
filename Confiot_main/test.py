@@ -209,12 +209,13 @@ def test_Enumerate_pages():
     PE = PageExplorer(Agent)
     # while (1):
     #     a, b = input().split(' ')
-    #     print(confiot.calc_state_similarity(a, b))
+    #     print(PE.calc_state_jaccard_similarity(a, b))
 
     PE.parse_struture_unique_pages()
     PE.extract_navigations()
 
-    PE.find_path_to_page("Page-5")
+    Agent.device_connect()
+    PE.device_page_replay(settings.UIHierarchy_comparation_output + "/000/")
     print(PE.pages)
 
 
