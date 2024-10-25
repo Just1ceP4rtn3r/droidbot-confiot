@@ -7,7 +7,7 @@ class settings:
     # droid_output = r"/root/ConfiotOutput/Output/Tuya/host/result"  #"/root/documents/Output/mihome/mihome-smartscale-guest/result"
     droid_output = r"/root/documents/Output/mihome/mihome-smartscale-10-25/host/result"
 
-    Confiot_output = f"{droid_output}/Confiot"
+    Confiot_output = f"{droid_output}/Confiot/"
     UI_output = Confiot_output + "/UI/"
     Pages = Confiot_output + "/Pages/"
     Static_comparation_output = Confiot_output + "/Comparation/"
