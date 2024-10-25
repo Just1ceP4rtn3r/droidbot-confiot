@@ -19,6 +19,7 @@ class XMLParser():
         # parse views from nodes
 
         self.views = []
+        self.viewsId = {}
         for n in self.nodes:
             view = {}
             view["checkable"] = eval(self.get_elements_by_tag_name(n, "checkable"))
@@ -50,6 +51,7 @@ class XMLParser():
             view["temp_id"] = eval(self.get_elements_by_tag_name(n, "temp_id"))
             view["size"] = self.get_elements_by_tag_name(n, "size")
             self.views.append(view)
+            self.viewsId[view["temp_id"]] = view
 
         # self.all_paths = self.get_all_paths(self.graph, 0)
         # self.paths_dict = self.get_paths_dict()
@@ -92,8 +94,6 @@ class XMLParser():
                 graph[node_id] = children_id
 
         return graph
-
-
 
     def get_all_paths(self, graph, start, path=[]):
         # Node graph: {0: [1, 24, 25], 1: [2], 2: [3], 3: [4], 4: [5], 5: [6], 6: [7, 12, 16], 7: [8], 8: [9, 10, 11], 9: [], 10: [], 11: [], 12: [13, 15], 13: [14], 14: [], 15: [], 16: [17, 18, 19, 20, 21, 22, 23], 17: [], 18: [], 19: [], 20: [], 21: [], 22: [], 23: [], 24: [], 25: []}

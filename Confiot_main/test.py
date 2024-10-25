@@ -219,7 +219,17 @@ def test_Enumerate_pages():
     print(PE.pages)
 
 
+def test_Configuration_parser():
+    from Confiot_main.settings import settings
+    from Confiot_main.ConfigurationParser.ConfigurationParser import ConfigurationParser
+    from Confiot_main.utils.util import query_config_resource_mapping, parse_config_resource_mapping, get_ConfigResourceMapper_from_file
+
+    Agent = Confiot()
+
+    CP = ConfigurationParser(Agent)
+
+
 if __name__ == "__main__":
     #test_device_guest_config_walker()
     # test_STEP0()
-    test_Enumerate_pages()
+    test_Configuration_parser()
