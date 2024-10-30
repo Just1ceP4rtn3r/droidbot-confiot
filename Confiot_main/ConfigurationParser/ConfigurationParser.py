@@ -35,6 +35,11 @@ class ConfigurationParser():
         self.operations = {}
         self.operations_extraction()
 
+        # Page Contexts
+        # {"page-1": [(view, text),]}
+        self.page_context = {}
+        self.pagecontext_extraction()
+
         self.query_LLM_for_configuration_mapping(settings.Confiot_output)
 
     def app_pages_exploration(self):
@@ -57,7 +62,48 @@ class ConfigurationParser():
             # print(operations)
 
     def pagecontext_extraction(self):
-        pass
+        replay_paths = {}
+        for page in self.pages:
+            steps = self.PE.find_path_to_page(page)
+            if (page == self.page_navigation_graph.start_node or not steps):
+                continue
+            replay_paths[page] = steps
+
+        context_operations = {}
+        for page in self.pages:
+            if (page not in replay_paths):
+                continue
+            # 最后到达page所需要的最后一步，可选的operations
+            last_page = list(replay_paths[page].keys())[-1]
+            last_operations = replay_paths[page][last_page]
+            context_operations[page] = []
+            for op in last_operations:
+                view, event = op
+                text = None
+
+                # find view-related text in last_page
+                target_view_hash = None
+                if (last_page == '000' and view is None):
+                    text = "Start Application"
+                else:
+                    operations, hashable_views = self.operations[last_page]
+                    for hash in hashable_views:
+                        exist_view = hashable_views[hash]
+                        if (view["resource_id"] == exist_view["resource_id"] and view["bounds"] == exist_view["bounds"] and
+                                view["class"] == exist_view["class"] and view["clickable"] == exist_view["clickable"] and
+                                view["checkable"] == exist_view["checkable"]):
+                            target_view_hash = hash
+                            break
+
+                    if (target_view_hash in operations):
+                        text = ','.join([tview[0]["text"] for tview in operations[target_view_hash]])
+
+                context_operations[page].append((view, text))
+
+        self.page_context = context_operations
+        # for page in context_operations:
+        #     print("page:")
+        #     print("    ", context_operations[page][1])
 
     # walk through all pages and store the UI hierachy in UI/
     def device_state_replay(self, outputdir):
