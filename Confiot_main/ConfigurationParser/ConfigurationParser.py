@@ -13,7 +13,14 @@ class ConfigurationParser():
 
     def __init__(self, Agent: Confiot) -> None:
         self.Agent = Agent
-        self.pages = {}
+
+        # App Pages
+        self.PE = PageExplorer(self.Agent)
+        self.app_pages_exploration()
+        self.pages = self.PE.pages
+        self.page_navigation_graph = self.PE.page_navigation_graph
+
+        # operations
         # {
         #     "page-1":
         #   (
@@ -26,13 +33,6 @@ class ConfigurationParser():
         #   )
         # }
         self.operations = {}
-
-        # App Pages
-        self.PE = PageExplorer(self.Agent)
-        self.app_pages_exploration()
-        self.pages = self.PE.pages
-
-        # operations
         self.operations_extraction()
 
         self.query_LLM_for_configuration_mapping(settings.Confiot_output)
@@ -55,6 +55,9 @@ class ConfigurationParser():
             operations, hashable_views = OperationExtractor(page_xml_file=page_xmls[page]).extract_operations()
             self.operations[page] = (operations, hashable_views)
             # print(operations)
+
+    def pagecontext_extraction(self):
+        pass
 
     # walk through all pages and store the UI hierachy in UI/
     def device_state_replay(self, outputdir):
