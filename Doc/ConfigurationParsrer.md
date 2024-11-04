@@ -19,6 +19,7 @@ def test_Configuration_parser():
 ### App Pages Exploration
 
 Input: droidbot output (utg.js等)
+
 Output: Layout-unique Pages, 以及相应的navigations，保存在"Confiot/Pages"目录下
 
 ```
@@ -97,6 +98,7 @@ Output: operations
 提取每个page的context，即上一个page中的某一个、或多个oeprations导致navigate到此page
 
 Input: Pages
+
 Output: Page Contexts
 
 ```python
