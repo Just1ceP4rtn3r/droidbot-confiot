@@ -89,10 +89,11 @@ def decode_bytes(byte_data):
 
 class Node:
 
-    def __init__(self, name, description='', state=''):
+    def __init__(self, name, description='', state='', screenshot=None):
         self.name = name
         self.description = description
         self.state = state
+        self.screenshot = screenshot
 
     def __str__(self):
         return self.name
@@ -100,11 +101,12 @@ class Node:
 
 class Edge:
 
-    def __init__(self, start_node, end_node, event_strs: list, description=None):
+    def __init__(self, start_node, end_node, event_str, description=None, view=None):
         self.start_node = start_node
         self.end_node = end_node
-        self.event_strs = event_strs
+        self.event_str = event_str
         self.description = description
+        self.view = view
 
 
 class DirectedGraph:
@@ -136,9 +138,8 @@ class DirectedGraph:
         if (edge.end_node.name not in self.edges_dict[edge.start_node.name]):
             self.edges_dict[edge.start_node.name][edge.end_node.name] = []
 
-        if (edge.event_strs):
-            for event in edge.event_strs:
-                self.edges_dict[edge.start_node.name][edge.end_node.name].append(event)
+        if (edge.event_str):
+            self.edges_dict[edge.start_node.name][edge.end_node.name].append(edge.event_str)
 
         if (edge.description):
             self.edges_dict[edge.start_node.name][edge.end_node.name].append(edge.description)
@@ -193,7 +194,7 @@ class DirectedGraph:
 
         dot_content += "}"
 
-        with open(f"{output_dir}/UITree.dot", "w") as dot_file:
+        with open(f"{output_dir}/UIPages.dot", "w") as dot_file:
             dot_file.write(dot_content)
 
 
@@ -207,9 +208,22 @@ class UITree(DirectedGraph):
 
         # event (represent the current value of the configuration)
         self.edges = []
-        # {"src_node": {"dst_node": ["e1"]}}
+        # {"src_node": {"dst_node": [e,]}}
         self.edges_dict = {}
         self.start_node = None
+
+    def add_edge(self, edge: Edge):
+        self.edges.append(edge)
+        if (edge.start_node.name not in self.edges_dict):
+            self.edges_dict[edge.start_node.name] = {}
+
+        if (edge.end_node.name not in self.edges_dict[edge.start_node.name]):
+            self.edges_dict[edge.start_node.name][edge.end_node.name] = []
+
+        self.edges_dict[edge.start_node.name][edge.end_node.name].append(edge)
+
+        if (edge.description):
+            self.edges_dict[edge.start_node.name][edge.end_node.name].append(edge.description)
 
 
 def get_longest_task(tasks):

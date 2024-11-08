@@ -1,13 +1,15 @@
 class settings:
-    device_serial = "14131FDF600073"
+    device_serial = "192.168.2.176:5555"
 
     # app_path = "/root/documents/droidbot-new/a2dp/a2dp.Vol_169.apk"
     # droid_output = "/root/documents/droidbot-new/a2dp/"
-    app_path = "/root/documents/Output/Alexa/amazon.apk"
-    droid_output = r"/root/ConfiotOutput/Output/Tuya/host/result"  #"/root/documents/Output/mihome/mihome-smartscale-guest/result"
+    app_path = "/root/documents/Output/mihome/mihome-smartscale-10-25/mihome.apk"
+    # droid_output = r"/root/ConfiotOutput/Output/Tuya/host/result"  #"/root/documents/Output/mihome/mihome-smartscale-guest/result"
+    droid_output = r"/root/documents/Output/mihome/mihome-smartscale-10-25/host/result"
 
-    Confiot_output = f"{droid_output}/Confiot"
+    Confiot_output = f"{droid_output}/Confiot/"
     UI_output = Confiot_output + "/UI/"
+    Pages = Confiot_output + "/Pages/"
     Static_comparation_output = Confiot_output + "/Comparation/"
     UIHierarchy_comparation_output = Static_comparation_output + "/UIHierarchy/"
     Feasibility_comparation_output = Static_comparation_output + "/Feasibility/"
@@ -70,6 +72,7 @@ class settings:
 
         settings.Confiot_output = settings.droid_output + "/Confiot/"
         settings.UI_output = settings.Confiot_output + "/UI/"
+        settings.Pages = settings.Confiot_output + "/Pages/"
         settings.Static_comparation_output = settings.Confiot_output + "/Comparation/"
         settings.UIHierarchy_comparation_output = settings.Static_comparation_output + "/UIHierarchy/"
         settings.Feasibility_comparation_output = settings.Static_comparation_output + "/Feasibility/"
