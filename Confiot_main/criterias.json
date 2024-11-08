@@ -1,0 +1,107 @@
+{
+    "Privacy Data": {
+        "Device Identifier": [
+            "device id",
+            "device fingerprint id",
+            "hardware id",
+            "device id"
+        ],
+        "User Identifier": [
+            "user id",
+            "user name",
+            "user email",
+            "user phone number",
+            "user address",
+            "user credit card",
+            "user social security number",
+            "user birthday"
+        ],
+        "Network Identifier": [
+            "IP address",
+            "mac address",
+            "bssid",
+            "ssid"
+        ],
+        "Bio-metric Data": [
+            "blood oxygen level",
+            "user voice",
+            "body weight",
+            "blood pressure",
+            "stroke volume",
+            "facial image",
+            "hand size",
+            "palm humidity",
+            "kids voice",
+            "walking length",
+            "medical search history"
+        ],
+        "Location Data": [
+            "vehicle location",
+            "lock location",
+            "camera location",
+            "drive route",
+            "drone address"
+        ],
+        "Environmental Data": [
+            "device/home temperature",
+            "street lights",
+            "air quality",
+            "road surface quality"
+        ],
+        "Device Metadata": [
+            "device name",
+            "device model",
+            "screen resolution",
+            "device DPI",
+            "paired device",
+            "temperature setting",
+            "intensive setting",
+            "vibration mode",
+            "bluetooth info"
+        ],
+        "Device Usage": [
+            "camera image",
+            "camera video",
+            "device usage status",
+            "driving speed",
+            "watched/listened channels",
+            "watched videos",
+            "voice clip",
+            "favorite show",
+            "light on/light off",
+            "media information",
+            "audio recording",
+            "smoke puffs",
+            "maps of room",
+            "door status"
+        ],
+        "Timing Info": [
+            "smoke time",
+            "device usage frequency",
+            "watch time",
+            "bed time",
+            "driving time",
+            "turn on time",
+            "at home time",
+            "having sex time",
+            "light on time",
+            "travel time"
+        ]
+    },
+    "Shared Data" :{
+        "user list" : [
+            "test host",
+            "test guest"
+        ],
+        "control ways" : [
+            "control channels",
+            "control ways",
+            "control platforms"
+        ],
+        "activity logs" : [
+            "activitys",
+            "logs",
+            "usage logs"
+        ]
+    }
+}
