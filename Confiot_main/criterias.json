@@ -88,20 +88,25 @@
             "travel time"
         ]
     },
-    "Shared Data" :{
-        "user list" : [
+    "Shared Data": {
+        "user list": [
             "test host",
             "test guest"
         ],
-        "control ways" : [
+        "control ways": [
             "control channels",
             "control ways",
             "control platforms"
         ],
-        "activity logs" : [
+        "activity logs": [
             "activitys",
             "logs",
             "usage logs"
+        ]
+    },
+    "Capablities": {
+        "Guest Excessive Capablities": [
+            "Excessive"
         ]
     }
 }

@@ -4,11 +4,13 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 sys.path.append(BASE_DIR + "/../../")
 
 from Confiot_main.ConfiotHunter.UIComparator import UIComparator
+from TestingPhase import Phase
 
 
 class ConfiotOracle():
 
     def __init__(self) -> None:
+        self.stage = Phase.Initilization
         self.UIChanges = None
         pass
 
@@ -32,6 +34,16 @@ class ConfiotOracle():
 
     # Return Type: [Configuration List, "str", ...]
     def ParseCapabilities(self):
+        # Load capablities criteria from the file
+        with open("criterias.json") as f:
+            capab = json.load(f)
+            pass
+
+        # 解析UI changes为capablities
+        pass
+
+        # 比较criteria 与changed capablities
+
         pass
 
     # Return Type: [Data List]
