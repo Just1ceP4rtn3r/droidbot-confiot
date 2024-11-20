@@ -59,7 +59,6 @@ class ConfigurationParser():
         for page in page_xmls:
             operations, hashable_views = OperationExtractor(page_xml_file=page_xmls[page]).extract_operations()
             self.operations[page] = (operations, hashable_views)
-            # print(operations)
 
     def pagecontext_extraction(self):
         replay_paths = {}
@@ -111,7 +110,6 @@ class ConfigurationParser():
         self.PE.device_page_replay(outputdir)
 
     def query_LLM_for_configuration_mapping(self, outputdir):
-
         prompt_template = ''
         BASE_DIR = os.path.dirname(os.path.abspath(__file__))
         with open(BASE_DIR + "/../prompt/OperationConfigurationMapping.txt") as f:
@@ -120,6 +118,7 @@ class ConfigurationParser():
         for page in self.operations:
             operations_str = []
             operations, hashable_views = self.operations[page]
+            op_id = 0
             for op in operations:
                 op_view = hashable_views[op]
                 op_type = op_view["class"]
@@ -134,18 +133,51 @@ class ConfigurationParser():
                 else:
                     op_action = "Click"
 
-                op_str = f"<{op_action}, {op_type}, \"{op_text}\">"
-                operations_str.append(op_str)
 
-            prompt = prompt_template.replace("{{LIST}}", '\n'.join(operations_str))
+                op_str = f"({op_id}) <{op_action}, {op_type}, \"{op_text}\">"
+                operations_str.append(op_str)
+                op_id += 1
+
+            context_operation = ''
+            for context in self.page_context[page]:
+                context_view,context_text = context
+                if(context_text == '' or not context_text):
+                    continue
+                else:
+                    op_action = None
+                    if(not context_view):
+                        context_operation = f"<\"{context_text}\">"
+                    else:
+                        if ("select" in context_view["class"].lower()):
+                            op_action = "Select"
+                        elif ("check" in context_view["class"].lower()):
+                            op_action = "check"
+                        elif ("input" in context_view["class"].lower()):
+                            op_action = "Input"
+                        else:
+                            op_action = "Click"
+                        context_operation = f"<{op_action}, {context_view['class']}, \"{context_text}\">"
+
+            prompt = prompt_template.replace("{{PAGE}}", page)
+            prompt = prompt.replace("{{CONTEXT}}", context_operation)
+            prompt = prompt.replace("{{LIST}}", '\n'.join(operations_str))
 
             print(prompt)
             print(
                 "----------------------------------------------------------------------------------------------------------------------------------------------"
             )
-            # os.environ["https_proxy"] = "http://192.168.72.1:1083"
-            res = query_config_resource_mapping(prompt)
-
-            with open(outputdir + "/ConfigResourceMappingResponse.txt", "a") as f:
+            with open(outputdir + "/ConfigResourceMappingPrompt.txt", "a") as f:
+                f.write("################ Page: " + page + "################\n")
                 f.write(prompt + "\n")
-                f.write(res + "\n")
+
+            if(not operations_str):
+                continue
+
+
+            # os.environ["https_proxy"] = "http://192.168.72.1:1083"
+            # res = query_config_resource_mapping(prompt)
+
+            # with open(outputdir + "/ConfigResourceMappingResponse.txt", "a") as f:
+            #     f.write("################ Page: " + page + "################\n")
+            #     f.write(prompt + "\n")
+            #     f.write(res + "\n")

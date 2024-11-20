@@ -1,4 +1,5 @@
 import os, sys
+import json
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 sys.path.append(BASE_DIR + "/../../")
@@ -21,9 +22,16 @@ class ConfiotOracle():
         UI_new = xml_new
         hierachy_compare_result = output_dir
 
+        # if (not UI_old and UI_new):
+        #     # 如果没UI_old is None，代表UI_new为刚刚delegation后的UI
+
+
+        if (not UI_old or UI_new):
+            print("[ERR]: Do not found files:", UI_old, UI_new)
+            return None
         if (not os.path.exists(UI_old) or not os.path.exists(UI_new)):
             print("[ERR]: Do not found files:", UI_old, UI_new)
-            return {}
+            return None
 
         comparator.compare_xml_files(UI_old, UI_new, hierachy_compare_result)
 
@@ -35,9 +43,9 @@ class ConfiotOracle():
     # Return Type: [Configuration List, "str", ...]
     def ParseCapabilities(self):
         # Load capablities criteria from the file
-        with open("criterias.json") as f:
-            capab = json.load(f)
-            pass
+        # with open("criterias.json") as f:
+        #     capab = json.load(f)
+        #     pass
 
         # 解析UI changes为capablities
         pass
@@ -63,3 +71,11 @@ class ConfiotOracle():
         # }
 
         pass
+
+
+
+if __name__ == "__main__":
+    from Confiot_main.settings import settings
+    oracle = ConfiotOracle()
+    oracle.ParseUIChagnes(None, settings.UIHierarchy_comparation_output+"000/Page-0.xml")
+    pass
