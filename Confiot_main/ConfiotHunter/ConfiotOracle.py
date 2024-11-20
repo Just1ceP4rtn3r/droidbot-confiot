@@ -5,6 +5,7 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 sys.path.append(BASE_DIR + "/../../")
 
 from Confiot_main.ConfiotHunter.UIComparator import UIComparator
+from Confiot_main.ConfigurationParser.ConfigurationParser import ConfigurationParser
 from TestingPhase import Phase
 
 
@@ -12,6 +13,7 @@ class ConfiotOracle():
 
     def __init__(self) -> None:
         self.stage = Phase.Initilization
+        # {"page-0": (File_dir, UIchanges)}
         self.UIChanges = None
         pass
 
@@ -41,14 +43,28 @@ class ConfiotOracle():
         print(UI_add, UI_delete)
 
     # Return Type: [Configuration List, "str", ...]
-    def ParseCapabilities(self):
+    def ParseCapabilities(self, configurationparser:ConfigurationParser):
         # Load capablities criteria from the file
         # with open("criterias.json") as f:
         #     capab = json.load(f)
         #     pass
 
         # 解析UI changes为capablities
-        pass
+        Add_capabilities = []
+        Delete_capabilities = []
+
+        operation_configuration_mapping = configurationparser.operation_configuration_mapping
+        if (self.stage == Phase.AfterDelegation):
+            for page in operation_configuration_mapping:
+                for caps in operation_configuration_mapping[page]:
+                    Add_capabilities.append(caps)
+
+        else:
+            for page in self.UIChanges:
+                pass
+
+
+
 
         # 比较criteria 与changed capablities
 
@@ -72,10 +88,3 @@ class ConfiotOracle():
 
         pass
 
-
-
-if __name__ == "__main__":
-    from Confiot_main.settings import settings
-    oracle = ConfiotOracle()
-    oracle.ParseUIChagnes(None, settings.UIHierarchy_comparation_output+"000/Page-0.xml")
-    pass

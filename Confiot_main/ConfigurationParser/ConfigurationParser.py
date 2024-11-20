@@ -41,7 +41,7 @@ class ConfigurationParser():
         self.pagecontext_extraction()
 
         # LLM configuration mapping
-        # {"page-1": {"viewhash": "configuration"}}
+        # {"page-1": {"configuration": [viewhash,...]}}
         self.operation_configuration_mapping = {}
         self.query_LLM_for_configuration_mapping(settings.Confiot_output)
 

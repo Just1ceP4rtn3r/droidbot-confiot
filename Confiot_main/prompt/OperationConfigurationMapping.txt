@@ -6,6 +6,7 @@ You need to analyze the semantic similarity among the operations and the context
 
 Please respond in the following pattern:'''
 Configuration tasks: <1. Makes Guest to the house owner>
+Related operations: <operation_id1, operation_id2, operation_id3>
 why this configuration is generated from operations, please think step by step: <reason>'''
 
 The Page ID is:'''{{PAGE}}'''

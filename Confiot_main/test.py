@@ -229,6 +229,21 @@ def test_Configuration_parser():
     CP = ConfigurationParser(Agent)
 
 
+
+def test_ConfioT_Hunter():
+    from Confiot_main.settings import settings
+    from Confiot_main.ConfigurationParser.ConfigurationParser import ConfigurationParser
+    from Confiot_main.ConfiotHunter.ConfiotOracle import ConfiotOracle
+
+    Agent = Confiot()
+
+    CP = ConfigurationParser(Agent)
+
+    oracle = ConfiotOracle()
+    oracle.ParseUIChagnes(None, settings.UIHierarchy_comparation_output+"000/Page-0.xml")
+
+
+
 if __name__ == "__main__":
     #test_device_guest_config_walker()
     # test_STEP0()
