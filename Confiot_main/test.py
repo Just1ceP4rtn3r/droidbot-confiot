@@ -230,7 +230,7 @@ def test_Configuration_parser():
 
     # Agent.device_get_UIElement(store_path="/tmp/", store_file="tmp.xml")
 
-    OperationExtractor(page_xml_file="/tmp/tmp.xml").extract_operations()
+    OperationExtractor(page_xml_file="/tmp/test3.xml_droidbot").extract_operations()
 
 
 def test_ConfioT_Hunter():

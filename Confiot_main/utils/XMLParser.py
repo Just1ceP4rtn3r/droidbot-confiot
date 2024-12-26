@@ -3,6 +3,7 @@
 # 3. get the controllability and text of each path
 # 4. get text of each node
 
+from xml.dom import minidom
 from xml.dom.minidom import parse
 import ast
 
@@ -11,8 +12,15 @@ class XMLParser():
 
     def __init__(self, xml_path):
         self.xml_path = xml_path
+
         self.dom_tree = self.get_dom_tree()
         self.root = self.get_root()
+
+        if (self.root.nodeName == "hierarchy"):
+            self.convert_uiautomator_to_droidbot(xml_path, xml_path + "_droidbot")
+            self.dom_tree = self.get_dom_tree()
+            self.root = self.get_root()
+
         self.nodes = self.get_nodes()
         self.graph = self.get_node_tree()
 
@@ -20,6 +28,7 @@ class XMLParser():
 
         self.views = []
         self.viewsId = {}
+
         for n in self.nodes:
             view = {}
             view["checkable"] = eval(self.get_elements_by_tag_name(n, "checkable"))
@@ -77,8 +86,11 @@ class XMLParser():
                 rc.append(node.data)
         return ''.join(rc)
 
-    def get_elements_by_tag_name(self, node, tag_name):
-        return self.get_text(node.getElementsByTagName(tag_name)[0].childNodes)
+    def get_elements_by_tag_name(self, node: minidom.Node, tag_name):
+        if (node.hasAttribute(tag_name)):
+            return node.getAttribute(tag_name)
+        else:
+            return self.get_text(node.getElementsByTagName(tag_name)[0].childNodes)
 
     def get_node_tree(self):
         graph = {}
@@ -142,21 +154,109 @@ class XMLParser():
                         })
         return paths_text
 
+    def parse_uiautomator_node(self, n, temp_id_counter, parent_temp_id=None):
+        """解析单个节点，并将其信息存储为字典"""
+        temp_id = temp_id_counter[0]
+        temp_id_counter[0] += 1
+
+        if (n.nodeName == "hierarchy"):
+            return {"temp_id": temp_id, "children": []}
+        node_info = {
+            "checkable":
+                self.get_elements_by_tag_name(n, "checkable"),
+            "selected":
+                self.get_elements_by_tag_name(n, "selected"),
+            "scrollable":
+                self.get_elements_by_tag_name(n, "scrollable"),
+            "long_clickable":
+                self.get_elements_by_tag_name(n, "long-clickable"),
+            "resource_id":
+                self.get_elements_by_tag_name(n, "resource-id"),
+            "visible":
+                "True",
+            "enabled":
+                self.get_elements_by_tag_name(n, "enabled"),
+            "clickable":
+                self.get_elements_by_tag_name(n, "clickable"),
+            "is_password":
+                self.get_elements_by_tag_name(n, "password"),
+            "checked":
+                self.get_elements_by_tag_name(n, "checked"),
+            "content_description":
+                self.get_elements_by_tag_name(n, "content-desc"),
+            "focused":
+                self.get_elements_by_tag_name(n, "focused"),
+            "class":
+                self.get_elements_by_tag_name(n, "class"),
+            "children": [],
+            "child_count":
+                0,
+            "package":
+                self.get_elements_by_tag_name(n, "package"),
+            "text":
+                self.get_elements_by_tag_name(n, "text"),
+            "bounds":
+                "[" + self.get_elements_by_tag_name(n, "bounds").split("][")[0] + "],[" +
+                self.get_elements_by_tag_name(n, "bounds").split("][")[1] + "]",
+            "editable":
+                "false",
+            "focusable":
+                self.get_elements_by_tag_name(n, "focusable"),
+            "parent":
+                parent_temp_id,
+            "temp_id":
+                temp_id,
+            "size":
+                "",
+            "signature":
+                None,
+            "view_str":
+                None,
+            "content_free_signature":
+                None
+        }
+
+        for key in node_info:
+            try:
+                node_info[key] = node_info[key].replace("false", "False").replace("true", "True")
+            except:
+                pass
+        return node_info
+
+    def convert_uiautomator_to_droidbot(self, uiautomator_xml, output_xml):
+        dom = parse(uiautomator_xml)
+        hierarchy = dom.documentElement
+
+        temp_id_counter = [0]
+        nodes_list = []
+
+        def traverse(node, parent_temp_id=None):
+            if node.nodeType == minidom.Node.ELEMENT_NODE:
+                node_info = self.parse_uiautomator_node(node, temp_id_counter, parent_temp_id)
+                if (node_info["temp_id"] != 0):
+                    nodes_list.append(node_info)
+                for child in node.childNodes:
+                    child_temp_id = traverse(child, node_info["temp_id"])
+                    if (child_temp_id):
+                        node_info["children"].append(child_temp_id)
+                return node_info["temp_id"]
+            return None
+
+        traverse(hierarchy)
+
+        import xml.etree.ElementTree as ET
+        root = ET.Element('Hierarchy')
+
+        for item in nodes_list:
+            entry = ET.SubElement(root, 'Node')
+            for key, value in item.items():
+                ET.SubElement(entry, key).text = str(value)
+        tree = ET.ElementTree(root)
+        tree.write(output_xml)
+        return nodes_list
+
 
 if __name__ == "__main__":
-    xml_file_path = "/root/documents/Output/mihome/mihome-smartscale/guest/result/Confiot/UI/000/guest:view_1d4feb9d2f14f7caa67cbbf3edb9ee2a.jpg16/before.xml"
+    xml_file_path = "/tmp/test3.xml"
 
     parser = XMLParser(xml_file_path)
-
-    # test graph
-    print(f"Node graph: {parser.graph}")
-
-    # test paths
-    for path in parser.all_paths:
-        print(path)
-
-    # test controllability
-    print(parser.paths_controllability)
-
-    # test text
-    print(parser.paths_text)
