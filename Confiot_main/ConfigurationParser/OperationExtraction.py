@@ -139,19 +139,30 @@ class OperationExtractor():
 
                         if (hash(str(view)) not in complete_operation_views):
                             complete_operation_views.append(hash(str(view)))
-                        if (tview["clickable"] and hash(str(tview)) not in complete_operation_views):
-                            complete_operation_views.append(hash(str(tview)))
+                        # if (hash(str(view)) == hash(str(tview)) and tview["clickable"] and hash(str(tview)) not in complete_operation_views):
+                        #     complete_operation_views.append(hash(str(tview)))
 
         # 2. 无人认领的label进行额外处理
 
         # 3. 一个label被对应多个operation_views的情况，根据距离判断?
         for view_hash in self.operations:
+            op = self.hashable_views[view_hash]
+            op_center = [(op['bounds'][1][0] - op['bounds'][0][0]) / 2, (op['bounds'][1][1] - op['bounds'][0][1]) / 2]
             for label in self.operations[view_hash]:
                 tview = label[0]
                 magnitude = label[1]
+
+                tview_center = [(tview['bounds'][1][0] - tview['bounds'][0][0]) / 2,
+                                (tview['bounds'][1][1] - tview['bounds'][0][1]) / 2]
                 if (hash(str(tview)) not in self.labels):
                     self.labels[hash(str(tview))] = {}
-                self.labels[hash(str(tview))][view_hash] = magnitude
+                # viewgroup可能会包含多个text
+
+                if (magnitude == -1 and len(self.operations[view_hash]) > 1):
+                    self.labels[hash(str(tview))][view_hash] = math.sqrt((op_center[0] - tview_center[0])**2 +
+                                                                         (op_center[1] - tview_center[1])**2)
+                else:
+                    self.labels[hash(str(tview))][view_hash] = magnitude
 
         self.operations = {}
         for label in self.labels:

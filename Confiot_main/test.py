@@ -222,12 +222,15 @@ def test_Enumerate_pages():
 def test_Configuration_parser():
     from Confiot_main.settings import settings
     from Confiot_main.ConfigurationParser.ConfigurationParser import ConfigurationParser
+    from Confiot_main.ConfigurationParser.OperationExtraction import OperationExtractor
     from Confiot_main.utils.util import query_config_resource_mapping, parse_config_resource_mapping, get_ConfigResourceMapper_from_file
 
-    Agent = Confiot()
+    # Agent = Confiot()
+    # Agent.device_connect()
 
-    CP = ConfigurationParser(Agent)
+    # Agent.device_get_UIElement(store_path="/tmp/", store_file="tmp.xml")
 
+    OperationExtractor(page_xml_file="/tmp/tmp.xml").extract_operations()
 
 
 def test_ConfioT_Hunter():
@@ -240,8 +243,7 @@ def test_ConfioT_Hunter():
     CP = ConfigurationParser(Agent)
 
     oracle = ConfiotOracle()
-    oracle.ParseUIChagnes(None, settings.UIHierarchy_comparation_output+"000/Page-0.xml")
-
+    oracle.ParseUIChagnes(None, settings.UIHierarchy_comparation_output + "000/Page-0.xml")
 
 
 if __name__ == "__main__":
