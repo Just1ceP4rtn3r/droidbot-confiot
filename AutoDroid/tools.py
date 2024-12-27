@@ -59,7 +59,7 @@ def query_gpt(prompt):
     headers = {"Content-Type": "application/json", "Authorization": f"Bearer {api_key}"}
 
     # syncxxx: use gpt-4 new model
-    payload = {"model": "gpt-4-1106-preview", "messages": [{"role": "user", "content": prompt}]}
+    payload = {"model": "GPT-4o", "messages": [{"role": "user", "content": prompt}]}
     # payload = {"model": "gpt-3.5-turbo", "messages": [{"role": "user", "content": prompt}]}
 
     response = requests.post("https://api.openai.com/v1/chat/completions", headers=headers, json=payload)
@@ -165,6 +165,10 @@ def make_prompt(task, ui_desc, history):
     question_prompt = "Your answer should always use the following format:\n1. Completing this task on a smartphone usually involves these steps: <?>.\n2. Analyse the relations between the task and the previous UI actions and current UI state: <?>.\n3. Based on the analyses, is the task already finished? <Y/N>. The next step should be <?/None>.\n4. Can the task be proceeded with the current UI state? <Y/N>. Fill in the blank about next interaction: - id=<id/-1 for finished> - action=<tap/input> - input text=<text or N/A>"
     return introduction_prompt + '\n' + task_prompt + task + '\n' + history_prompt + '\n' + history + '\n' + interface_prompt + '\n' + ui_desc + '\n' + question_prompt
 
+
+
+# syncxxx-2024-12-27
+# 尝试完成一个普通的operation，如果提示error，让LLM推测完成这个配置的步骤
 
 def visualize_network(G):
     from pyvis.network import Network

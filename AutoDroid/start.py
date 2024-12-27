@@ -114,6 +114,6 @@ def main():
 if __name__ == "__main__":
 
     import os
-    os.environ["http_proxy"] = "http://192.168.2.132:1080"
-    os.environ["https_proxy"] = "http://192.168.2.132:1080"
+    os.environ["http_proxy"] = "http://192.168.2.177:1083"
+    os.environ["https_proxy"] = "http://192.168.2.177:1083"
     main()

@@ -35,9 +35,9 @@ def test_resize_png():
 def test_goto_state():
     from Confiot_main.settings import settings
     from Confiot_main.utils.util import query_config_resource_mapping, parse_config_resource_mapping, get_ConfigResourceMapper_from_file
-    settings.device_serial = "192.168.31.218:5555"
-    settings.app_path = "/root/documents/Output/Huawei_AI_Life/Huawei.apk"
-    settings.droid_output = "/root/documents/Output/Huawei_AI_Life/host/result"
+    # settings.device_serial = "192.168.2.176:5555"
+    # settings.app_path = "/root/documents/Output/mihome/mihome-smartscale-10-25/mihome.apk"
+    # settings.droid_output = "/root/documents/Output/mihome/mihome-smartscale-10-25/host/result"
     confiot = ConfiotGuest()
     confiot.device_connect()
 
@@ -249,4 +249,4 @@ def test_ConfioT_Hunter():
 if __name__ == "__main__":
     #test_device_guest_config_walker()
     # test_STEP0()
-    test_Configuration_parser()
+    test_goto_state()

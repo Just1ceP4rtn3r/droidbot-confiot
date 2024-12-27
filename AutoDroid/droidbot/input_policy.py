@@ -80,7 +80,7 @@ class InputPolicy(object):
         try:
             stack = self.device.get_current_activity_stack()
             current_package = None
-            if(stack):
+            if (stack):
                 for acts in stack:
                     acts_package = acts.split("/")[0]
                     if (acts_package != current_package and acts_package != "com.android.systemui" and acts_package != ""):
@@ -118,7 +118,7 @@ class InputPolicy(object):
         """
         self.action_count = 0
 
-        # self.Confiot_toState(input_manager)
+        self.Confiot_toState(input_manager)
         while input_manager.enabled and self.action_count < input_manager.event_count:
             try:
                 # # make sure the first event is go to HOME screen

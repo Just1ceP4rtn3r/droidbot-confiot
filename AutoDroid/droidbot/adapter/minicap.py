@@ -6,9 +6,8 @@ import os
 from datetime import datetime
 from .adapter import Adapter
 
-
 MINICAP_REMOTE_ADDR = "localabstract:minicap"
-ROTATION_CHECK_INTERVAL_S = 1 # Check rotation once per second
+ROTATION_CHECK_INTERVAL_S = 1  # Check rotation once per second
 
 
 class MinicapException(Exception):
@@ -22,6 +21,7 @@ class Minicap(Adapter):
     """
     a connection with target device through minicap.
     """
+
     def __init__(self, device=None):
         """
         initiate a minicap connection
@@ -79,7 +79,7 @@ class Minicap(Adapter):
                 minicap_bin = "minicap-nopie"
             minicap_bin_path = os.path.join(local_minicap_path, 'libs', abi, minicap_bin)
             device.push_file(local_file=minicap_bin_path, remote_dir=self.remote_minicap_path)
-            minicap_so_path = os.path.join(local_minicap_path, 'jni', 'libs', f'android-{31}', abi, 'minicap.so')
+            minicap_so_path = os.path.join(local_minicap_path, 'jni', 'libs', f'android-{sdk}', abi, 'minicap.so')
             device.push_file(local_file=minicap_so_path, remote_dir=self.remote_minicap_path)
             self.logger.debug("minicap installed.")
 
@@ -118,8 +118,7 @@ class Minicap(Adapter):
         p = subprocess.Popen(grant_minicap_perm_cmd.split(), stderr=subprocess.PIPE, stdout=subprocess.PIPE)
         out, err = p.communicate()
 
-        self.minicap_process = subprocess.Popen(start_minicap_cmd.split(),
-                                                stdin=subprocess.PIPE, stdout=subprocess.PIPE)
+        self.minicap_process = subprocess.Popen(start_minicap_cmd.split(), stdin=subprocess.PIPE, stdout=subprocess.PIPE)
         # Wait 2 seconds for starting minicap
         time.sleep(2)
         self.logger.debug("minicap started.")
@@ -199,7 +198,7 @@ class Minicap(Adapter):
                     readFrameBytes += 1
                 else:
                     if chunk_len - cursor >= frameBodyLength:
-                        frameBody += chunk[cursor: cursor + frameBodyLength]
+                        frameBody += chunk[cursor:cursor + frameBodyLength]
                         self.handle_image(frameBody)
                         cursor += frameBodyLength
                         frameBodyLength = readFrameBytes = 0
@@ -281,21 +280,16 @@ class Minicap(Adapter):
         from . import cv
         img = cv.load_image_from_buf(self.last_screen)
         view_bounds = cv.find_views(img)
-        root_view = {
-            "class": "CVViewRoot",
-            "bounds": [[0, 0], [self.width, self.height]],
-            "enabled": True,
-            "temp_id": 0
-        }
+        root_view = {"class": "CVViewRoot", "bounds": [[0, 0], [self.width, self.height]], "enabled": True, "temp_id": 0}
         views = [root_view]
         temp_id = 1
-        for x,y,w,h in view_bounds:
+        for x, y, w, h in view_bounds:
             view = {
                 "class": "CVView",
-                "bounds": [[x,y], [x+w, y+h]],
+                "bounds": [[x, y], [x + w, y + h]],
                 "enabled": True,
                 "temp_id": temp_id,
-                "signature": cv.calculate_dhash(img[y:y+h, x:x+w]),
+                "signature": cv.calculate_dhash(img[y:y + h, x:x + w]),
                 "parent": 0,
                 "children": []
             }
