@@ -79,7 +79,7 @@ class Minicap(Adapter):
                 minicap_bin = "minicap-nopie"
             minicap_bin_path = os.path.join(local_minicap_path, 'libs', abi, minicap_bin)
             device.push_file(local_file=minicap_bin_path, remote_dir=self.remote_minicap_path)
-            minicap_so_path = os.path.join(local_minicap_path, 'jni', 'libs', f'android-{sdk}', abi, 'minicap.so')
+            minicap_so_path = os.path.join(local_minicap_path, 'jni', 'libs', f'android-{31}', abi, 'minicap.so')
             device.push_file(local_file=minicap_so_path, remote_dir=self.remote_minicap_path)
             self.logger.debug("minicap installed.")
 
