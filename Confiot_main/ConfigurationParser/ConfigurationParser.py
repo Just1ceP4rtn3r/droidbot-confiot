@@ -75,6 +75,9 @@ class ConfigurationParser():
         for page in self.pages:
             if (page not in replay_paths):
                 continue
+            xml_path = settings.UIHierarchy_comparation_output + "/000/" + f"{page}.xml"
+            if (not os.path.exists(xml_path)):
+                continue
             # 最后到达page所需要的最后一步，可选的operations
             last_page = list(replay_paths[page].keys())[-1]
             last_operations = replay_paths[page][last_page]

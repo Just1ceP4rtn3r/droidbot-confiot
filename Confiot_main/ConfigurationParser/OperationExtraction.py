@@ -152,6 +152,9 @@ class OperationExtractor():
                 tview = label[0]
                 magnitude = label[1]
 
+                if 'bounds' not in tview:
+                    continue
+
                 tview_center = [(tview['bounds'][1][0] - tview['bounds'][0][0]) / 2,
                                 (tview['bounds'][1][1] - tview['bounds'][0][1]) / 2]
                 if (hash(str(tview)) not in self.labels):
