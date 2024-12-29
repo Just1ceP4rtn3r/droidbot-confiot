@@ -56,6 +56,7 @@ class ConfiotOracle():
 
         print(UI_add, UI_delete)
         return UI_add, UI_delete
+        
 
     def ParseSnapshotChanges(self, snapshot_old: str, snapshot_new: str):
         '''After doing a configuration, we need to compare the snapshot (contains all xml files) changes.'''
@@ -123,7 +124,7 @@ class ConfiotOracle():
         similarity = cosine_similarity(embeddings1, embeddings2)
 
         return similarity
-    
+
     def get_dirs(self, path):
         dirs = []
         if not os.path.isdir(path):
@@ -132,14 +133,14 @@ class ConfiotOracle():
             if os.path.isdir(path + "/" + dir):
                 dirs.append(dir)
         return dirs
-    
+
     def get_tokens(self, text_list):
         token = '[CLS]'
         for text in text_list:
             token += text.lower() + '[SEP]'
 
         return token
-    
+
     def compare_textList_similarity(self, list, text):
         res = []
         for l in list:
@@ -147,14 +148,14 @@ class ConfiotOracle():
             if sim > 0.65:
                 res.append({l: sim})
         return res
-    
+
     def get_textList_contains(self, list, text):
         res = []
         for l in list:
             l = [t.lower() for t in l]
             if text[0] in l and text[1] in l:
                 res.append(l)
-    
+
         return res
 
     # Return Type: [Data List]
@@ -200,7 +201,7 @@ class ConfiotOracle():
         # algorithm: too simple and slow, need to improve
 
         return [privacy_diff, shared_diff]
-    
+
     def ParseDevice(self, device_path):
         data = dict() # key: configuration, value: effects(add, delete, change)
         conf_UI_path = device_path + "guest/Confiot/UI"

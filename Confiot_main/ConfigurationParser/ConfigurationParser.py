@@ -75,6 +75,9 @@ class ConfigurationParser():
         for page in self.pages:
             if (page not in replay_paths):
                 continue
+            xml_path = settings.UIHierarchy_comparation_output + "/000/" + f"{page}.xml"
+            if (not os.path.exists(xml_path)):
+                continue
             # 最后到达page所需要的最后一步，可选的operations
             last_page = list(replay_paths[page].keys())[-1]
             last_operations = replay_paths[page][last_page]
@@ -136,19 +139,18 @@ class ConfigurationParser():
                 else:
                     op_action = "Click"
 
-
                 op_str = f"({op_id}) <{op_action}, {op_type}, \"{op_text}\">"
                 operations_str.append(op_str)
                 op_id += 1
 
             context_operation = ''
             for context in self.page_context[page]:
-                context_view,context_text = context
-                if(context_text == '' or not context_text):
+                context_view, context_text = context
+                if (context_text == '' or not context_text):
                     continue
                 else:
                     op_action = None
-                    if(not context_view):
+                    if (not context_view):
                         context_operation = f"<\"{context_text}\">"
                     else:
                         if ("select" in context_view["class"].lower()):
@@ -173,9 +175,8 @@ class ConfigurationParser():
                 f.write("################ Page: " + page + "################\n")
                 f.write(prompt + "\n")
 
-            if(not operations_str):
+            if (not operations_str):
                 continue
-
 
             # os.environ["https_proxy"] = "http://192.168.72.1:1083"
             # res = query_config_resource_mapping(prompt)
