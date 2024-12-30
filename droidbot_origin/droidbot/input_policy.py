@@ -375,6 +375,7 @@ class UtgGreedySearchPolicy(UtgBasedInputPolicy):
     from typing import List
 
     def ConfioT_sort_events(self, possible_events: List[InputEvent]) -> List[InputEvent]:
+        sorted_events = []
         # {temp_id : (event, weight: 0-10)}
         weighted_events = {}
 
@@ -385,6 +386,9 @@ class UtgGreedySearchPolicy(UtgBasedInputPolicy):
             # 如果e.view存在
             if (hasattr(e, "view")):
                 id = e.view["temp_id"]
+                if ("ScrollView" in e.view["class"]):
+                    sorted_events.append(e)
+                    continue
                 # size = e.view["size"]
                 # length,width = size.split("*")
                 weighted_events[id] = (e, 10)
@@ -394,7 +398,8 @@ class UtgGreedySearchPolicy(UtgBasedInputPolicy):
 
         # 记录events相关的view、parent view、grandparent view
         event_views = {}
-        for e in possible_events:
+        for id in weighted_events:
+            e = weighted_events[id][0]
             if (hasattr(e, "view")):
                 id = e.view["temp_id"]
                 current_view = e.view
@@ -402,7 +407,7 @@ class UtgGreedySearchPolicy(UtgBasedInputPolicy):
                 grandpa_view = None
                 if (current_view["parent"] != -1):
                     parent_view = views[current_view["parent"]]
-                    assert (parent_view["temp_id"] == current_view["parent"])
+                    # assert (parent_view["temp_id"] == current_view["parent"])
                 if (parent_view is not None and parent_view["parent"] != -1 and "group" in parent_view["class"].lower()):
                     grandpa_view = views[parent_view["parent"]]
 
@@ -417,7 +422,11 @@ class UtgGreedySearchPolicy(UtgBasedInputPolicy):
             for v in view_list:
                 size = v["size"]
                 cl = v["class"]
-                key = size + "_" + cl
+                length, width = size.split("*")
+                length = int(length) // 10 * 10
+                width = int(width) // 10 * 10
+
+                key = f"{length}*{width}" + "_" + cl
                 if (key in potential_LIST):
                     if (v["temp_id"] not in potential_LIST[key]):
                         potential_LIST[key].append(v["temp_id"])
@@ -429,7 +438,8 @@ class UtgGreedySearchPolicy(UtgBasedInputPolicy):
         # 当前view的LIST分析
         LIST_1 = calc_size_repeat([event_views[id]["view"] for id in event_views])
 
-        for L in LIST_1:
+        for k in LIST_1:
+            L = LIST_1[k]
             L_size = len(L)
             if (L_size >= 6):
                 clicked = False
@@ -447,16 +457,19 @@ class UtgGreedySearchPolicy(UtgBasedInputPolicy):
                     weighted_events[id] = (weighted_events[id][0], 10 - (L_size))
                     completed_views.add(id)
 
-        parent_views = set()
+        parent_views = []
+        parent_ids = []
         for id in event_views:
             if (id in completed_views):
                 continue
             parent = event_views[id]["parent_view"]
-            if (parent is not None):
-                parent_views.add(parent)
+            if (parent is not None and parent["temp_id"] not in parent_ids):
+                parent_views.append(parent)
+                parent_ids.append(parent["temp_id"])
         # parent view的LIST分析
         LIST_2 = calc_size_repeat(parent_views)
-        for L in LIST_1:
+        for k in LIST_2:
+            L = LIST_2[k]
             L_size = len(L)
             if (L_size >= 6):
                 child_ids = {}
@@ -486,8 +499,8 @@ class UtgGreedySearchPolicy(UtgBasedInputPolicy):
                         weighted_events[cid] = (weighted_events[cid][0], 1)
 
         # 将weighted_events按照weight排序, 如果weight =-1， 则删除
-        sorted_events = sorted(weighted_events.items(), key=lambda x: x[1][1], reverse=True)
-        sorted_events = [x[1][0] for x in sorted_events if x[1][1] != -1]
+        tmp_events = sorted(weighted_events.items(), key=lambda x: x[1][1], reverse=True)
+        sorted_events = [x[1][0] for x in tmp_events if x[1][1] != -1] + sorted_events
         return sorted_events
 
     def generate_event_based_on_utg(self):
@@ -564,6 +577,8 @@ class UtgGreedySearchPolicy(UtgBasedInputPolicy):
         if self.random_input:
             random.shuffle(possible_events)
 
+        possible_events = self.ConfioT_sort_events(possible_events)
+
         if self.search_method == POLICY_GREEDY_DFS:
             possible_events.append(KeyEvent(name="BACK"))
         elif self.search_method == POLICY_GREEDY_BFS:
@@ -601,14 +616,21 @@ class UtgGreedySearchPolicy(UtgBasedInputPolicy):
                     else:
                         settings.bounds_map[current_state.foreground_activity][bounds_str] = 1
 
-                if (hasattr(input_event, "view") and "parent" in input_event.view):
-                    parent = input_event.view["parent"]
-                    if (parent in settings.parent_map):
-                        settings.parent_map[parent] += 1
-                        if (settings.parent_map[parent] > settings.parent_limit):
+                # if (hasattr(input_event, "view") and "parent" in input_event.view):
+                #     parent = input_event.view["parent"]
+                #     if (parent in settings.parent_map):
+                #         settings.parent_map[parent] += 1
+                #         if (settings.parent_map[parent] > settings.parent_limit):
+                #             continue
+                #     else:
+                #         settings.parent_map[parent] = 1
+                if (hasattr(input_event, "name") and input_event.name == "BACK"):
+                    if (current_state.state_str in settings.back_map):
+                        settings.back_map[current_state.state_str] += 1
+                        if (settings.back_map[current_state.state_str] > settings.back_limit):
                             continue
                     else:
-                        settings.parent_map[parent] = 1
+                        settings.back_map[current_state.state_str] = 1
 
                 return input_event
 

@@ -26,10 +26,10 @@ class settings:
     ##### Crawler Limitation ######
     # {"activity": {bounds_str : view_id}}
     bounds_map = {}
-    parent_map = {}
+    back_map = {}
     # 仅仅只允许同一个center point的view被点击{bounds_limit}次
     bounds_limit = 50
-    parent_limit = 50
+    back_limit = 5
 
     ##### BackButton ######
     # backs: 匹配中心点举例backs坐标50 pixel距离的views
