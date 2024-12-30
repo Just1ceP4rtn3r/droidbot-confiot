@@ -31,18 +31,19 @@ class ConfiotOracle():
             data = json.load(f)
         return data
 
-    def ParseUIChanges(self, xml_old: str, xml_new: str, output_dir=""):
-        comparator = UIComparator(xml_old, xml_new)
+    def ParseUIChanges(self, xml_old: str, xml_new: str, output: str):
+        comparator = UIComparator()
+        comparator.compare_xml_files(xml_old, xml_new, output)
 
         UI_old = xml_old
         UI_new = xml_new
-        hierachy_compare_result = output_dir
+        hierachy_compare_result = output
 
         # if (not UI_old and UI_new):
         #     # 如果没UI_old is None，代表UI_new为刚刚delegation后的UI
 
 
-        if (not UI_old or UI_new):
+        if (not UI_old or not UI_new):
             print("[ERR]: Do not found files:", UI_old, UI_new)
             return None
         if (not os.path.exists(UI_old) or not os.path.exists(UI_new)):
@@ -60,10 +61,17 @@ class ConfiotOracle():
     def ParseSnapshotChanges(self, snapshot_old: str, snapshot_new: str):
         '''After doing a configuration, we need to compare the snapshot (contains all xml files) changes.'''
         # todo: consider xml files align to get aligned xml paris (xml old and xml new)
-        xml_pairs = []
+        # snapshot_old: /Users/tracy/workspace/projects/ConfioT/usenix-output/mihome/guest/Confiot/Comparation/UIHierarchy/000
+        # output: /Users/tracy/workspace/projects/ConfioT/usenix-output/mihome/guest/Confiot/Comparation/UIHierarchy/Comparation/000_to_001
+        for root, dirs, files in os.walk(snapshot_old):
+            xml_pairs = []
+            for file in files:
+                if file.endswith(".xml"):
+                    xml_pairs.append((os.path.join(snapshot_old, file), os.path.join(snapshot_new, file)))
         snapshot_add, snapshot_delete = [], []
         for file in xml_pairs:
-            UI_add, UI_delete = self.ParseUIChanges(file[0], file[1])
+            output = os.path.join(os.path.dirname(snapshot_old), "Comparation", os.path.basename(snapshot_old) + "_to_" + os.path.basename(snapshot_new), ".html")
+            UI_add, UI_delete = self.ParseUIChanges(file[0], file[1], output)
             snapshot_add.append(UI_add)
             snapshot_delete.append(UI_delete)
 
@@ -89,8 +97,6 @@ class ConfiotOracle():
         else:
             for page in self.UIChanges:
                 pass
-
-
 
 
         # 比较criteria 与changed capablities
