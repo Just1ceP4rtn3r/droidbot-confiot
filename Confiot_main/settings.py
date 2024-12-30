@@ -28,8 +28,8 @@ class settings:
     bounds_map = {}
     parent_map = {}
     # 仅仅只允许同一个center point的view被点击{bounds_limit}次
-    bounds_limit = 3
-    parent_limit = 10
+    bounds_limit = 50
+    parent_limit = 50
 
     ##### BackButton ######
     # backs: 匹配中心点举例backs坐标50 pixel距离的views

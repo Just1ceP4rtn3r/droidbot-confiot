@@ -293,8 +293,7 @@ class UtgNaiveSearchPolicy(UtgBasedInputPolicy):
         for view in views:
             view_text = view['text'] if view['text'] is not None else ''
             view_text = view_text.lower().strip()
-            if view_text in self.preferred_buttons \
-                    and (state.foreground_activity, view['view_str']) not in self.explored_views:
+            if view_text in self.preferred_buttons and (state.foreground_activity, view['view_str']) not in self.explored_views:
                 self.logger.info("selected an preferred view: %s" % view['view_str'])
                 return view
 
@@ -370,6 +369,127 @@ class UtgGreedySearchPolicy(UtgBasedInputPolicy):
         self.__missed_states = set()
         self.__random_explore = False
 
+    # syncxxx-2024-12-30, 基于BFS， sort events 使得爬虫更快地到达new pages
+    # 1. back button, 权重最低
+    # 2. 识别LIST layout, 重复的日期、时间、星期、月份等，权重降低
+    from typing import List
+
+    def ConfioT_sort_events(self, possible_events: List[InputEvent]) -> List[InputEvent]:
+        # {temp_id : (event, weight: 0-10)}
+        weighted_events = {}
+
+        views = self.current_state.views
+        # 初始化weighted_events
+        no_view_event_id = 888
+        for e in possible_events:
+            # 如果e.view存在
+            if (hasattr(e, "view")):
+                id = e.view["temp_id"]
+                # size = e.view["size"]
+                # length,width = size.split("*")
+                weighted_events[id] = (e, 10)
+            else:
+                weighted_events[no_view_event_id] = (e, 10)
+                no_view_event_id += 1
+
+        # 记录events相关的view、parent view、grandparent view
+        event_views = {}
+        for e in possible_events:
+            if (hasattr(e, "view")):
+                id = e.view["temp_id"]
+                current_view = e.view
+                parent_view = None
+                grandpa_view = None
+                if (current_view["parent"] != -1):
+                    parent_view = views[current_view["parent"]]
+                    assert (parent_view["temp_id"] == current_view["parent"])
+                if (parent_view is not None and parent_view["parent"] != -1 and "group" in parent_view["class"].lower()):
+                    grandpa_view = views[parent_view["parent"]]
+
+                event_views[id] = {"view": current_view, "parent_view": parent_view, "grandpa_view": grandpa_view}
+
+        ###############################
+        # LIST Layout分析
+        ###############################
+        def calc_size_repeat(view_list):
+            # key: "63*63_class.button"
+            potential_LIST = {}
+            for v in view_list:
+                size = v["size"]
+                cl = v["class"]
+                key = size + "_" + cl
+                if (key in potential_LIST):
+                    if (v["temp_id"] not in potential_LIST[key]):
+                        potential_LIST[key].append(v["temp_id"])
+                else:
+                    potential_LIST[key] = [v["temp_id"]]
+            return potential_LIST
+
+        completed_views = set()
+        # 当前view的LIST分析
+        LIST_1 = calc_size_repeat([event_views[id]["view"] for id in event_views])
+
+        for L in LIST_1:
+            L_size = len(L)
+            if (L_size >= 6):
+                clicked = False
+                for id in L:
+                    weighted_events[id] = (weighted_events[id][0], -1)
+                    if self.utg.is_event_explored(event=weighted_events[id][0], state=self.current_state):
+                        clicked = True
+                    completed_views.add(id)
+                if (not clicked):
+                    weighted_events[L[0]] = (weighted_events[L[0]][0], 1)
+
+            # 可能并非重复的项，例如：Home, profile, store等nav bar...
+            elif (L_size >= 2):
+                for id in L:
+                    weighted_events[id] = (weighted_events[id][0], 10 - (L_size))
+                    completed_views.add(id)
+
+        parent_views = set()
+        for id in event_views:
+            if (id in completed_views):
+                continue
+            parent = event_views[id]["parent_view"]
+            if (parent is not None):
+                parent_views.add(parent)
+        # parent view的LIST分析
+        LIST_2 = calc_size_repeat(parent_views)
+        for L in LIST_1:
+            L_size = len(L)
+            if (L_size >= 6):
+                child_ids = {}
+                for id in L:
+                    child_ids[id] = []
+                    for child_id in event_views:
+                        if (child_id in completed_views):
+                            continue
+                        if (event_views[child_id]["parent_view"]["temp_id"] == id):
+                            child_ids[id].append(child_id)
+
+                lens = {}
+                for id in L:
+                    length = len(child_ids[id])
+                    if (length not in lens):
+                        lens[length] = []
+                    lens[length].append(id)
+                # 以key的大小排序
+                lens = sorted(lens.items(), key=lambda x: x[0], reverse=True)
+                if (lens[0] >= 6):
+                    parent_ids = lens[0][1]
+                    for id in parent_ids:
+                        for cid in child_ids[id]:
+                            weighted_events[cid] = (weighted_events[cid][0], -1)
+                            completed_views.add(id)
+                    for cid in child_ids[parent_ids[0]]:
+                        weighted_events[cid] = (weighted_events[cid][0], 1)
+
+        # 将weighted_events按照weight排序, 如果weight =-1， 则删除
+        sorted_events = sorted(weighted_events.items(), key=lambda x: x[1][1], reverse=True)
+        sorted_events = [x[1][0] for x in sorted_events if x[1][1] != -1]
+        return sorted_events
+
     def generate_event_based_on_utg(self):
         """
         generate an event based on current UTG
@@ -392,8 +512,8 @@ class UtgGreedySearchPolicy(UtgBasedInputPolicy):
             # 3) nothing
             #    a normal start. clear self.__num_restarts.
 
-            if self.__event_trace.endswith(EVENT_FLAG_START_APP + EVENT_FLAG_STOP_APP) \
-                    or self.__event_trace.endswith(EVENT_FLAG_START_APP):
+            if self.__event_trace.endswith(EVENT_FLAG_START_APP +
+                                           EVENT_FLAG_STOP_APP) or self.__event_trace.endswith(EVENT_FLAG_START_APP):
                 self.__num_restarts += 1
                 self.logger.info("The app had been restarted %d times.", self.__num_restarts)
             else:
@@ -608,8 +728,7 @@ class UtgReplayPolicy(InputPolicy):
         @return: InputEvent
         """
         import time
-        while self.event_idx < len(self.event_paths) and \
-              self.num_replay_tries < MAX_REPLY_TRIES:
+        while self.event_idx < len(self.event_paths) and self.num_replay_tries < MAX_REPLY_TRIES:
             self.num_replay_tries += 1
             current_state = self.device.get_current_state()
             if current_state is None:

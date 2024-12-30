@@ -506,15 +506,6 @@ class DeviceState(object):
                 print("[DBG]: Found precise matching back button:", bounds)
                 continue
 
-            # # syncxxx: 过滤同一位置的按钮
-            # if (self.foreground_activity not in settings.bounds_map):
-            #     settings.bounds_map[self.foreground_activity] = {}
-            # if (bounds and bounds_str in settings.bounds_map[self.foreground_activity]):
-            #     if (settings.bounds_map[self.foreground_activity][bounds_str] > settings.bounds_limit):
-            #         continue
-            # elif (bounds):
-            #     settings.bounds_map[self.foreground_activity][bounds_str] = 0
-
             # exclude navigation bar if exists
             # if self.__safe_dict_get(view_dict, 'enabled') and \
             #         self.__safe_dict_get(view_dict, 'visible') and \
