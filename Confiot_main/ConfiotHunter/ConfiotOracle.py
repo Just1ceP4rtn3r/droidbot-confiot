@@ -42,7 +42,6 @@ class ConfiotOracle():
         # if (not UI_old and UI_new):
         #     # 如果没UI_old is None，代表UI_new为刚刚delegation后的UI
 
-
         if (not UI_old or not UI_new):
             print("[ERR]: Do not found files:", UI_old, UI_new)
             return None
@@ -55,6 +54,7 @@ class ConfiotOracle():
         UI_add = comparator.get_UI_add(hierachy_compare_result)
         UI_delete = comparator.get_UI_delete(hierachy_compare_result)
 
+        # todo: add UI_changes
         print(UI_add, UI_delete)
         return UI_add, UI_delete
         
@@ -98,10 +98,7 @@ class ConfiotOracle():
         else:
             for page in self.UIChanges:
                 pass
-
-
         # 比较criteria 与changed capablities
-
         pass
 
     def compare_similarity(self, text1, text2):
@@ -140,100 +137,124 @@ class ConfiotOracle():
                 dirs.append(dir)
         return dirs
 
-    def get_tokens(self, text_list):
-        token = '[CLS]'
-        for text in text_list:
-            token += text.lower() + '[SEP]'
-
-        return token
-
     def compare_textList_similarity(self, list, text):
         res = []
         for l in list:
-            sim = self.compare_similarity(self.get_tokens(l), text)
-            if sim > 0.65:
-                res.append({l: sim})
+            sim = self.compare_similarity(l, text)
+            if sim > 0.5:
+                res.append({l: [sim, text]})
         return res
 
-    def get_textList_contains(self, list, text):
-        res = []
-        for l in list:
-            l = [t.lower() for t in l]
-            if text[0] in l and text[1] in l:
-                res.append(l)
+    # def get_textList_contains(self, list, text):
+    #     res = []
+    #     for l in list:
+    #         l = [t.lower() for t in l]
+    #         if text[0] in l and text[1] in l:
+    #             res.append([l, text])
 
-        return res
+    #     return res
+    
+    def get_clean_text(self, text):
+        if type(text) == str:
+            return text.replace('\xa0', ' ')
+        else:
+            return str(text).replace('\xa0', ' ')
+    
+    def GetTexts(self, snapshot_change):
+        texts = []
+        for page in snapshot_change:
+            if page == []:
+                continue
+            for item in page:
+                element = item["element"]
+                if "<text>" in element:
+                    text = re.findall(r'<text>(.*?)</text>', element)[0]
+                    texts.append(self.get_clean_text(text))
+        return texts
 
     # Return Type: [Data List]
-    def ParseData(self, before_conf_UI_path, after_conf_UI_path):
+    def ParsePrivacyData(self, snapshot_old, snapshot_new, criteria):
         '''1. Parse the data (texts) from the snapshot UI add and delete
         2. compare with crateria table to get the similarities, get sensitive added and deleted data
         3. todo: consider the data ownership'''
-        path = os.path.dirname(os.path.abspath(__file__)) + "/criterias.json"
-        data = self.LoadCriterias(path)
 
-        # ui_add_texts, ui_delete_texts, ui_change_texts
-        snapshot_add, snapshot_delete = self.ParseSnapshotChanges(before_conf_UI_path, after_conf_UI_path) # todo
+        # 1. get texts from snapshot changes
+        snapshot_add, snapshot_delete = self.ParseSnapshotChanges(snapshot_old, snapshot_new)
+        snapshot_add_texts = self.GetTexts(snapshot_add)
+        snapshot_delete_texts = self.GetTexts(snapshot_delete)
 
         privacy_additions, privacy_deletions, privacy_changes = [], [], []
-        shared_additions, shared_deletions, shared_changes = [], [], []
-        privacy_diff = [privacy_additions, privacy_deletions, privacy_changes]
-        shared_diff = [shared_additions, shared_deletions, shared_changes]
 
-        # update structure of data
-        for data_type in data:
-            if data_type == "privacy_sensitive_data":
-                for pri_data in data[data_type]:
-                    privacy_additions = [*privacy_additions, *self.compare_textList_similarity(snapshot_add, pri_data)]
-                    privacy_deletions = [*privacy_deletions, *self.compare_textList_similarity(snapshot_delete, pri_data)]
+        # 2. Given each texts add/delete/change, use 3 solutions to justify whether it is a privacy sensitive data
+        # solution 1: compare similarity between the data and the criteria table
+        for data_type in criteria:
+            if data_type == "Privacy Data":
+                for pri_data in criteria[data_type]:
+                    privacy_additions = [*privacy_additions, *self.compare_textList_similarity(snapshot_add_texts, pri_data)]
+                    privacy_deletions = [*privacy_deletions, *self.compare_textList_similarity(snapshot_delete_texts, pri_data)]
                     # privacy_changes = [*privacy_changes, *compare_textList_similarity(ui_change_texts, pri_data)]
 
-            elif data_type == "Shared Data":
-                for shared_data in data[data_type]:
-                    match shared_data:
-                        case "user list":
-                            shared_additions = [*shared_additions,  *self.get_textList_contains(snapshot_add, data[data_type][shared_data])]
-                            shared_deletions = [*shared_deletions,  *self.get_textList_contains(snapshot_delete, data[data_type][shared_data])]
-                            # shared_changes = [*shared_changes,  *get_textList_contains(ui_change_texts, data[data_type]  [shared_data])]
-                        case "control ways" | "activity logs":
-                            for s_d in data[data_type][shared_data]:
-                                shared_additions = [*shared_additions,  *self.compare_textList_similarity(snapshot_add, s_d)]
-                                shared_deletions = [*shared_deletions,  *self.compare_textList_similarity(snapshot_delete, s_d)]
-                                # shared_changes = [*shared_changes,  *compare_textList_similarity(ui_change_texts, s_d)]
+        # solution 2: use gpt-4o few shots learning to justify the data
 
-        # bug: can not recognize the privacy sensitive data as a category
-        # for example: +1 800-xxx-xxxx is a phone number, but the model can not     recognize it as a phone number
 
-        # algorithm: too simple and slow, need to improve
+        # solution 3: use the pre-trained model to justify the data
 
-        return [privacy_diff, shared_diff]
 
-    def ParseDevice(self, device_path):
+        # 2. Given each data add/delete/change, consider data value
+        # e.g., phone number, email, address, etc. +1 800-xxx-xxxx is a phone number, but the model can not recognize it as a phone number
+        pass
+
+        privacy_diff = [privacy_additions, privacy_deletions]
+        return privacy_diff
+    
+    def ParseSharedData(self, snapshot_old: str, snapshot_new: str):
+        # elif data_type == "Shared Data":
+            #     for shared_data in data[data_type]:
+            #         match shared_data:
+            #             case "user list":
+            #                 shared_additions = [*shared_additions,  *self.get_textList_contains(snapshot_add, data[data_type][shared_data])]
+            #                 shared_deletions = [*shared_deletions,  *self.get_textList_contains(snapshot_delete, data[data_type][shared_data])]
+            #                 # shared_changes = [*shared_changes,  *get_textList_contains(ui_change_texts, data[data_type]  [shared_data])]
+            #             case "control ways" | "activity logs":
+            #                 for s_d in data[data_type][shared_data]:
+            #                     shared_additions = [*shared_additions,  *self.compare_textList_similarity(snapshot_add, s_d)]
+            #                     shared_deletions = [*shared_deletions,  *self.compare_textList_similarity(snapshot_delete, s_d)]
+            #                     # shared_changes = [*shared_changes,  *compare_textList_similarity(ui_change_texts, s_d)]
+        pass
+
+    def ParseDeviceSnapshots(self, droidbot_output):
         data = dict() # key: configuration, value: effects(add, delete, change)
-        conf_UI_path = device_path + "guest/Confiot/UI"
+        conf_UI_path = droidbot_output + "/Confiot/UI"
         conf_dirs = self.get_dirs(conf_UI_path)
         for conf_dir in conf_dirs:
             before_conf_UI_path = conf_UI_path + "/" + conf_dir
             after_conf_UI_path = conf_UI_path + "/" + conf_dirs[conf_dirs.index(conf_dir) + 1]
-            output_path = device_path + "guest/Confiot/Comparation/UIHierarchy/" + conf_dir + "_to_" + conf_dirs[conf_dirs.index(conf_dir) + 1]
+            output_path = droidbot_output + "guest/Confiot/Comparation/UIHierarchy/" + conf_dir + "_to_" + conf_dirs[conf_dirs.index(conf_dir) + 1]
 
             data[conf_dir] = self.ParseData(before_conf_UI_path, after_conf_UI_path, output_path)
 
         return data
 
     # Report the Confiot Chaoses
-    def IdnetifyConfiot(self, device_output, criteria_table, capablity_list, data_list):
-
+    def IdnetifyConfiot(self, droidbot_output, criteria_table, capablity_list, data_list):
         # Rules for excessive capablities
-        pass
+        # pass
 
         # Rules for different data
         # Data = {
         #     "Privacy": {},
         #     "User-entitled": {}
         # }
-        # if mode == "device":
-        data = self.ParseDevice(device_output)
+        
+        # 1. Load the criteria table
+        path = os.path.dirname(os.path.abspath(__file__)) + "/criterias.json"
+        criteria = self.LoadCriterias(path)
+
+        # 2. Parse the data (texts) from the snapshot UI add and delete
+        # ui_add_texts, ui_delete_texts, todo: ui_change_texts
+        snapshot_old, snapshot_new = self.ParseDeviceSnapshots(droidbot_output)
+        snapshot_add, snapshot_delete = self.ParseSnapshotChanges(snapshot_old, snapshot_new)
+        
         for conf_dir in data:
             if len(data[conf_dir]) == 2:
                 [privacy_diff, shared_diff] = data[conf_dir]
