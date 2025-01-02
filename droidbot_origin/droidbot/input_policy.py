@@ -636,6 +636,7 @@ class UtgGreedySearchPolicy(UtgBasedInputPolicy):
 
                 return input_event
 
+        self.utg.explored_state_strs.add(current_state.state_str)
         target_state = self.__get_nav_target(current_state)
         if target_state:
             navigation_steps = self.utg.get_navigation_steps(from_state=current_state, to_state=target_state)
