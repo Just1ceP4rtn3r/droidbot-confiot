@@ -246,6 +246,7 @@ class UTG(object):
         if state.state_str in self.explored_state_strs:
             return True
         for possible_event in state.get_possible_input():
+            
             if not self.is_event_explored(possible_event, state):
                 return False
         self.explored_state_strs.add(state.state_str)
