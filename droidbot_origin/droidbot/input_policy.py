@@ -628,6 +628,8 @@ class UtgGreedySearchPolicy(UtgBasedInputPolicy):
                     if (current_state.state_str in settings.back_map):
                         settings.back_map[current_state.state_str] += 1
                         if (settings.back_map[current_state.state_str] > settings.back_limit):
+                            target_state = self.__get_nav_target(current_state)
+                            self.utg.explored_state_strs.add(target_state.state_str)
                             continue
                     else:
                         settings.back_map[current_state.state_str] = 1
