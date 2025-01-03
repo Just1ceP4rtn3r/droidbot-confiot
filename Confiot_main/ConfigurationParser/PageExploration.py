@@ -240,7 +240,6 @@ class PageExplorer():
 
     # step-3: 遍历所有page，并获取snapshot
     def device_page_replay(self, outputdir):
-
         replay_paths = {}
         for page in self.pages:
             steps = self.find_path_to_page(page)
@@ -258,6 +257,23 @@ class PageExplorer():
             if (target_page in complete_pages):
                 continue
             self.to_page(target_page, replay_paths[target_page], complete_pages, outputdir)
+
+    def test_device_page_replay(self, outputdir, page):
+        replay_paths = {}
+        for page in self.pages:
+            steps = self.find_path_to_page(page)
+
+            if (page == self.page_navigation_graph.start_node or not steps):
+                continue
+
+            replay_paths[page] = steps
+
+        replay_paths = dict(sorted(replay_paths.items(), key=lambda item: len(item[1]), reverse=True))
+
+        print("[DBG]: Start go to page: " + page)
+        if (page in complete_pages):
+            continue
+        self.to_page(page, replay_paths[page], complete_pages, outputdir)
 
     def to_page(self, target_page, steps, complete_pages, outputdir):
 
@@ -298,7 +314,7 @@ class PageExplorer():
             event = InputEvent.from_dict(event_dict)
             print("[DBG]: Action: " + event_str)
             event.send(self.Agent.device)
-            time.sleep(2)
+            time.sleep(3)
 
         if (target_page != self.page_navigation_graph.start_node):
             self.Agent.device_get_UIElement(store_path=outputdir, store_file="tmp.xml")
