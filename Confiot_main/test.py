@@ -225,12 +225,10 @@ def test_Configuration_parser():
     from Confiot_main.ConfigurationParser.OperationExtraction import OperationExtractor
     from Confiot_main.utils.util import query_config_resource_mapping, parse_config_resource_mapping, get_ConfigResourceMapper_from_file
 
-    # Agent = Confiot()
-    # Agent.device_connect()
+    Agent = Confiot()
+    Agent.device_connect()
 
-    # Agent.device_get_UIElement(store_path="/tmp/", store_file="tmp.xml")
-
-    OperationExtractor(page_xml_file="/tmp/test3.xml_droidbot").extract_operations()
+    ConfigurationParser(Agent)
 
 
 def test_ConfioT_Hunter():
@@ -249,4 +247,4 @@ def test_ConfioT_Hunter():
 if __name__ == "__main__":
     #test_device_guest_config_walker()
     # test_STEP0()
-    test_goto_state()
+    test_Configuration_parser()

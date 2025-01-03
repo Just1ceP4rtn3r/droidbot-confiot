@@ -282,15 +282,21 @@ class PageExplorer():
                     return False
 
             candidate_operations = steps[page]
-            # [TODO]: 结合find_view_in_page，修改这里
             chosen_operation = candidate_operations[0]
 
             view = chosen_operation[0]
             event_str = chosen_operation[1]
 
+            if ("TouchEvent" in event_str):
+                # 某些view位置变化
+                real_view = self.find_view_in_page(view)
+                if (real_view):
+                    view = real_view
+                    self.Agent.events[event_str]['view'] = view
+
             event_dict = self.Agent.events[event_str]
             event = InputEvent.from_dict(event_dict)
-            print("    [DBG]: Action: " + event_str)
+            print("[DBG]: Action: " + event_str)
             event.send(self.Agent.device)
             time.sleep(2)
 
@@ -306,6 +312,7 @@ class PageExplorer():
             else:
                 # [TODO]: 如果是一个新的page，或跳转到别的page了（page navigation存在问题）
                 print("[ERR]: Failed: ", target_page)
+                # input()
                 return False
 
         print("[DBG]: Finished: ", target_page)
@@ -342,12 +349,38 @@ class PageExplorer():
         if (not max_similar_page or page_similarities[max_similar_page] < 0.8):
             # 创建一个新page
             print("[DBG]: Found a new page!")
-            # input()
             return None
         else:
             # 将state加入最相似的page
             return max_similar_page
 
-    # [TODO]: 某些view可能由于页面变动，仍然存在但是位置变了
-    def find_view_in_page(self, view, page):
-        pass
+    # 某些view可能由于页面变动，仍然存在但是位置变了
+    def find_view_in_page(self, view):
+        found_view = None
+
+        if (not view):
+            return None
+
+        current_state = self.Agent.device.get_current_state()
+        if current_state is None:
+            return None
+
+        views_in_state = current_state.views
+        if (view["temp_id"] < len(views_in_state)):
+            v = views_in_state[view["temp_id"]]
+            if (v["resource_id"] == view["resource_id"] and v["class"] == view["class"] and
+                    v["content_description"] == view["content_description"] and v["text"] == view["text"] and
+                    v["size"] == view["size"]):
+                found_view = v
+                return found_view
+
+        for v in views_in_state:
+            if (v["resource_id"] == view["resource_id"] and v["class"] == view["class"] and
+                    v["content_description"] == view["content_description"] and v["text"] == view["text"] and
+                    v["size"] == view["size"]):
+                found_view = v
+                if (v["bounds"] != view["bounds"]):
+                    print("[DBG]: The position of the view changed!")
+                break
+
+        return found_view
