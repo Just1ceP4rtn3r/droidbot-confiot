@@ -374,13 +374,27 @@ class PageExplorer():
                 found_view = v
                 return found_view
 
+        candidates = []
         for v in views_in_state:
             if (v["resource_id"] == view["resource_id"] and v["class"] == view["class"] and
                     v["content_description"] == view["content_description"] and v["text"] == view["text"] and
                     v["size"] == view["size"]):
-                found_view = v
-                if (v["bounds"] != view["bounds"]):
-                    print("[DBG]: The position of the view changed!")
-                break
+                candidates.append(v)
+                if (v["bounds"] == view["bounds"]):
+                    found_view = v
+                    return found_view
 
+        # 按照直线距离排序
+        view_center = [(view['bounds'][1][0] - view['bounds'][0][0]) / 2, (view['bounds'][1][1] - view['bounds'][0][1]) / 2]
+        min_dist = 9999999
+        for v in candidates:
+            v_center = [(v['bounds'][1][0] - v['bounds'][0][0]) / 2, (v['bounds'][1][1] - v['bounds'][0][1]) / 2]
+            dist = math.sqrt((view_center[0] - v_center[0])**2 + (view_center[1] - v_center[1])**2)
+
+            if (dist < min_dist):
+                min_dist = dist
+                found_view = v
+
+        if (found_view["bounds"] != view["bounds"]):
+            print("[DBG]: The position of the view changed!")
         return found_view
