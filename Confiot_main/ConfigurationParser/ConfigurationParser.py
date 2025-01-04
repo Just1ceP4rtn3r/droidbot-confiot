@@ -1,4 +1,5 @@
 import os, sys
+import json
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 sys.path.append(BASE_DIR + "/../../")
@@ -33,6 +34,7 @@ class ConfigurationParser():
         #   )
         # }
         self.operations = {}
+        self.plain_labels = {}
         self.operations_extraction()
 
         # Page Contexts
@@ -62,8 +64,9 @@ class ConfigurationParser():
                 page_xmls[page] = xml_path
 
         for page in page_xmls:
-            operations, hashable_views = OperationExtractor(page_xml_file=page_xmls[page]).extract_operations()
+            operations, plain_labels, hashable_views = OperationExtractor(page_xml_file=page_xmls[page]).extract_operations()
             self.operations[page] = (operations, hashable_views)
+            self.plain_labels[page] = plain_labels
 
     def pagecontext_extraction(self):
         replay_paths = {}
@@ -116,17 +119,22 @@ class ConfigurationParser():
     def device_state_replay(self, outputdir):
         self.PE.device_page_replay(outputdir)
 
+    # - Operations
+    # | - Page-1
+    # | | - context
+    # | | - operation_hash
     def save_operations_to_file(self, outputdir):
         save_dir = outputdir + "/Operations/"
         if (not os.path.exists(save_dir)):
             os.makedirs(save_dir)
 
         for page in self.operations:
-            # create a page dir under outputdir
-            page_dir = outputdir + f"/{page}/"
-            if (not os.path.exists(page_dir)):
-                os.makedirs(page_dir)
+            overview = {"PAGE": page, "CONTEXT": {}, "OPERATIONS": {}, "LABELS": {}}
 
+            # save labels
+            overview["LABELS"] = {"label_views": self.plain_labels[page]}
+
+            # save operations
             operations_str = []
             operations, hashable_views = self.operations[page]
             op_id = 0
@@ -146,6 +154,13 @@ class ConfigurationParser():
 
                 op_str = f"({op_id}) <{op_action}, {op_type}, \"{op_text}\">"
                 operations_str.append(op_str)
+
+                overview["OPERATIONS"][op] = {
+                    "op_id": op_id,
+                    "op_str": op_str,
+                    "op_views": op_view,
+                    "op_text": [tview[0] for tview in operations[op]]
+                }
                 op_id += 1
 
             context_operation = ''
@@ -167,6 +182,14 @@ class ConfigurationParser():
                         else:
                             op_action = "Click"
                         context_operation = f"<{op_action}, {context_view['class']}, \"{context_text}\">"
+
+                ctx_str = context_operation
+                overview["CONTEXT"] = {"ctx_str": ctx_str, "ctx_view": context_view}
+                break
+            # save overview to f{page}.json
+            import json
+            with open(save_dir + f"{page}.json", "w") as f:
+                f.write(json.dumps(overview, indent=2))
 
     def query_LLM_for_configuration_mapping(self, outputdir):
         prompt_template = ''
@@ -175,66 +198,47 @@ class ConfigurationParser():
             prompt_template = f.read()
 
         for page in self.operations:
-            operations_str = []
-            operations, hashable_views = self.operations[page]
-            op_id = 0
-            for op in operations:
-                op_view = hashable_views[op]
-                op_type = op_view["class"]
-                op_text = ','.join([tview[0]["text"] for tview in operations[op]])
-                op_action = None
-                if ("select" in op_type.lower()):
-                    op_action = "Select"
-                elif ("check" in op_type.lower()):
-                    op_action = "check"
-                elif ("input" in op_type.lower()):
-                    op_action = "Input"
-                else:
-                    op_action = "Click"
+            operations_file = outputdir + f"/Operations/{page}.json"
+            if (not os.path.exists(operations_file)):
+                print(f"[ERR]: missing file {operations_file}")
+                break
 
-                op_str = f"({op_id}) <{op_action}, {op_type}, \"{op_text}\">"
-                operations_str.append(op_str)
-                op_id += 1
+            # parse the operations file
+            with open(operations_file) as f:
+                operations = json.loads(f.read())
 
-            context_operation = ''
-            for context in self.page_context[page]:
-                context_view, context_text = context
-                if (context_text == '' or not context_text):
-                    continue
-                else:
-                    op_action = None
-                    if (not context_view):
-                        context_operation = f"<\"{context_text}\">"
-                    else:
-                        if ("select" in context_view["class"].lower()):
-                            op_action = "Select"
-                        elif ("check" in context_view["class"].lower()):
-                            op_action = "check"
-                        elif ("input" in context_view["class"].lower()):
-                            op_action = "Input"
-                        else:
-                            op_action = "Click"
-                        context_operation = f"<{op_action}, {context_view['class']}, \"{context_text}\">"
+                operations_str = []
+                context_str = ""
+                plain_texts_str = []
 
-            prompt = prompt_template.replace("{{PAGE}}", page)
-            prompt = prompt.replace("{{CONTEXT}}", context_operation)
-            prompt = prompt.replace("{{LIST}}", '\n'.join(operations_str))
+                if (operations["OPERATIONS"]):
+                    for op in operations["OPERATIONS"]:
+                        operations_str.append(operations["OPERATIONS"][op]["op_str"])
+                if (operations["CONTEXT"]):
+                    context_str = operations["CONTEXT"]["ctx_str"]
 
-            print(prompt)
-            print(
-                "----------------------------------------------------------------------------------------------------------------------------------------------"
-            )
-            with open(outputdir + "/ConfigResourceMappingPrompt.txt", "a") as f:
-                f.write("################ Page: " + page + "################\n")
-                f.write(prompt + "\n")
+                if (operations["LABELS"]):
+                    for label in operations["LABELS"]["label_views"]:
+                        plain_texts_str.append("<p>" + label["text"] + "</p>")
 
-            if (not operations_str):
-                continue
+                prompt = prompt_template.replace("{{PAGE}}", page)
+                prompt = prompt.replace("{{CONTEXT}}", context_str)
+                prompt = prompt.replace("{{LIST}}", '\n'.join(operations_str))
+                prompt = prompt.replace("{{TEXT}}", '\n'.join(plain_texts_str))
 
-            # os.environ["https_proxy"] = "http://192.168.72.1:1083"
-            # res = query_config_resource_mapping(prompt)
+                print(prompt)
+                print(
+                    "----------------------------------------------------------------------------------------------------------------------------------------------"
+                )
+                with open(outputdir + "/ConfigResourceMappingPrompt.txt", "a") as f:
+                    f.write("################ Page: " + page + "################\n")
+                    f.write(prompt + "\n")
 
-            # with open(outputdir + "/ConfigResourceMappingResponse.txt", "a") as f:
-            #     f.write("################ Page: " + page + "################\n")
-            #     f.write(prompt + "\n")
-            #     f.write(res + "\n")
+
+
+                res = query_config_resource_mapping(prompt)
+
+                with open(outputdir + "/ConfigResourceMappingResponse.txt", "a") as f:
+                    f.write("################ Page: " + page + "################\n")
+                    f.write(prompt + "\n")
+                    f.write(res + "\n")

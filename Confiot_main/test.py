@@ -226,7 +226,10 @@ def test_Configuration_parser():
     from Confiot_main.utils.util import query_config_resource_mapping, parse_config_resource_mapping, get_ConfigResourceMapper_from_file
 
     Agent = Confiot()
-    Agent.device_connect()
+    # Agent.device_connect()
+
+    import os
+    os.environ["https_proxy"] = "http://192.168.72.1:1083"
 
     ConfigurationParser(Agent)
 

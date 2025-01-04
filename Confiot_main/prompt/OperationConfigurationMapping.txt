@@ -4,12 +4,19 @@ An operation is defined as: <Action, UIType:,RelatedText>, such as <Click, andro
 You need to analyze the semantic similarity among the operations and the context to group operations that potentially work together to achieve a goal. Next, divide these operations according to different and discrete configuration goals, merging and assembling them into a configuration task list.
 
 
-Please respond in the following pattern:'''
-Configuration tasks: <1. Makes Guest to the house owner>
-Related operations: <operation_id1, operation_id2, operation_id3>
-why this configuration is generated from operations, please think step by step: <reason>'''
-
 The Page ID is:'''{{PAGE}}'''
 The operation lead to this page is: "{{CONTEXT}}"
 The operation list in this page is:
-'''{{LIST}}'''
+'''
+{{LIST}}
+'''
+The plain texts in this page is:
+'''
+{{TEXT}}
+'''
+
+
+**Important**: Please respond in the following pattern:'''
+Configuration tasks: <1. Makes Guest to the house owner>
+Related operations: <operation_id1, operation_id2, operation_id3>
+why this configuration is generated from operations, please think step by step: <reason>'''

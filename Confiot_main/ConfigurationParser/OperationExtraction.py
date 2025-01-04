@@ -1,5 +1,6 @@
 import os, sys
 import math
+import hashlib
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 sys.path.append(BASE_DIR + "/../../")
@@ -11,11 +12,12 @@ from Confiot_main.utils.LabelResolution import Rectangle, Vector, calc_collision
 class OperationExtractor():
 
     def __init__(self, page_xml_file) -> None:
+        print("[DBG]: OperationExtractor, ", page_xml_file)
         self.page = XMLParser(page_xml_file)
         self.views = self.page.views
 
         self.hashable_views = {}
-        # {"state": {hash(str(operation)): [(text_view, distance_vector),...]}}
+        # {"state": {hashlib.sha256(str(operation).encode("utf-8")).hexdigest(): [(text_view, distance_vector),...]}}
         self.operations = {}
         self.labels = {}
 
@@ -52,11 +54,11 @@ class OperationExtractor():
                 view["text"] = d
 
                 Textual_views.append(view)
-                Textual_views_hash.append(hash(str(view)))
+                Textual_views_hash.append(hashlib.sha256(str(view).encode("utf-8")).hexdigest())
             else:
                 view["text"] = ''
 
-            view_hash = hash(str(view))
+            view_hash = hashlib.sha256(str(view).encode("utf-8")).hexdigest()
             self.hashable_views[view_hash] = view
 
             if (view["checkable"] == True):
@@ -86,30 +88,32 @@ class OperationExtractor():
                     "ok" in lowertext or "确定" in lowertext or "取消" in lowertext):
                 diagram_view.append(tview)
                 is_diagram = True
-            elif (is_diagram):
-                title_view.append(title_view)
+        if (is_diagram):
+            for tview in Textual_views:
+                title_view.append(tview)
 
         if (is_diagram):
             view = diagram_view[0]
-            if (hash(str(view)) not in self.operations):
-                self.operations[hash(str(view))] = []
+            if (hashlib.sha256(str(view).encode("utf-8")).hexdigest() not in self.operations):
+                self.operations[hashlib.sha256(str(view).encode("utf-8")).hexdigest()] = []
             for title in title_view:
-                self.operations[hash(str(view))].append((title, Vector(Coordinate(0, 0), Coordinate(0, 0), 0).get_magnitude()))
+                self.operations[hashlib.sha256(str(view).encode("utf-8")).hexdigest()].append(
+                    (title, Vector(Coordinate(0, 0), Coordinate(0, 0), 0).get_magnitude()))
 
         # Layout-2：上下左右的文本，根据距离判断，将文本与最近的clickable view建立联系
         if (not is_diagram):
             complete_operation_views = []
             for view in operation_views:
-                if (hash(str(view)) in complete_operation_views):
+                if (hashlib.sha256(str(view).encode("utf-8")).hexdigest() in complete_operation_views):
                     continue
 
-                if (hash(str(view)) in Textual_views_hash):
-                    if (hash(str(view)) not in self.operations):
-                        self.operations[hash(str(view))] = []
-                    self.operations[hash(str(view))].append((view, Vector(Coordinate(0, 0), Coordinate(0, 0),
-                                                                          0).get_magnitude()))
-                    if (hash(str(view)) not in complete_operation_views):
-                        complete_operation_views.append(hash(str(view)))
+                if (hashlib.sha256(str(view).encode("utf-8")).hexdigest() in Textual_views_hash):
+                    if (hashlib.sha256(str(view).encode("utf-8")).hexdigest() not in self.operations):
+                        self.operations[hashlib.sha256(str(view).encode("utf-8")).hexdigest()] = []
+                    self.operations[hashlib.sha256(str(view).encode("utf-8")).hexdigest()].append(
+                        (view, Vector(Coordinate(0, 0), Coordinate(0, 0), 0).get_magnitude()))
+                    if (hashlib.sha256(str(view).encode("utf-8")).hexdigest() not in complete_operation_views):
+                        complete_operation_views.append(hashlib.sha256(str(view).encode("utf-8")).hexdigest())
                     continue
                 o_rec = Rectangle(view["bounds"][0][0], view["bounds"][0][1], view["bounds"][1][0], view["bounds"][1][1])
                 # 三种情况
@@ -133,16 +137,15 @@ class OperationExtractor():
                             is_related = Vector(Coordinate(0, 0.5), Coordinate(0, 0), 0)
 
                     if (is_related):
-                        if (hash(str(view)) not in self.operations):
-                            self.operations[hash(str(view))] = []
-                        self.operations[hash(str(view))].append((tview, is_related.get_magnitude()))
+                        if (hashlib.sha256(str(view).encode("utf-8")).hexdigest() not in self.operations):
+                            self.operations[hashlib.sha256(str(view).encode("utf-8")).hexdigest()] = []
+                        self.operations[hashlib.sha256(str(view).encode("utf-8")).hexdigest()].append(
+                            (tview, is_related.get_magnitude()))
 
-                        if (hash(str(view)) not in complete_operation_views):
-                            complete_operation_views.append(hash(str(view)))
-                        # if (hash(str(view)) == hash(str(tview)) and tview["clickable"] and hash(str(tview)) not in complete_operation_views):
-                        #     complete_operation_views.append(hash(str(tview)))
-
-        # 2. 无人认领的label进行额外处理
+                        if (hashlib.sha256(str(view).encode("utf-8")).hexdigest() not in complete_operation_views):
+                            complete_operation_views.append(hashlib.sha256(str(view).encode("utf-8")).hexdigest())
+                        # if (hashlib.sha256(str(view).encode("utf-8")).hexdigest() == hashlib.sha256(str(tview).encode("utf-8")).hexdigest() and tview["clickable"] and hashlib.sha256(str(tview).encode("utf-8")).hexdigest() not in complete_operation_views):
+                        #     complete_operation_views.append(hashlib.sha256(str(tview).encode("utf-8")).hexdigest())
 
         # 3. 一个label被对应多个operation_views的情况，根据距离判断?
         for view_hash in self.operations:
@@ -157,15 +160,16 @@ class OperationExtractor():
 
                 tview_center = [(tview['bounds'][1][0] - tview['bounds'][0][0]) / 2,
                                 (tview['bounds'][1][1] - tview['bounds'][0][1]) / 2]
-                if (hash(str(tview)) not in self.labels):
-                    self.labels[hash(str(tview))] = {}
+                if (hashlib.sha256(str(tview).encode("utf-8")).hexdigest() not in self.labels):
+                    self.labels[hashlib.sha256(str(tview).encode("utf-8")).hexdigest()] = {}
                 # viewgroup可能会包含多个text
 
                 if (magnitude == -1 and len(self.operations[view_hash]) > 1):
-                    self.labels[hash(str(tview))][view_hash] = math.sqrt((op_center[0] - tview_center[0])**2 +
-                                                                         (op_center[1] - tview_center[1])**2)
+                    self.labels[hashlib.sha256(
+                        str(tview).encode("utf-8")).hexdigest()][view_hash] = math.sqrt((op_center[0] - tview_center[0])**2 +
+                                                                                        (op_center[1] - tview_center[1])**2)
                 else:
-                    self.labels[hash(str(tview))][view_hash] = magnitude
+                    self.labels[hashlib.sha256(str(tview).encode("utf-8")).hexdigest()][view_hash] = magnitude
 
         self.operations = {}
         for label in self.labels:
@@ -178,6 +182,12 @@ class OperationExtractor():
             self.operations[most_related_operation_hash].append(
                 (self.hashable_views[label], potential_operations[most_related_operation_hash]))
 
+        # 3. 无人认领的label进行额外处理
+        self.plain_labels = []
+        for label in Textual_views:
+            if (hashlib.sha256(str(label).encode("utf-8")).hexdigest() not in self.labels):
+                self.plain_labels.append(label)
+
         # 根据self.operations[view_hash]的magnitude进行排序
         for view_hash in self.operations:
             self.operations[view_hash] = sorted(self.operations[view_hash], key=lambda x: x[1])
@@ -188,4 +198,4 @@ class OperationExtractor():
                 view = label[0]
                 magnitude = label[1]
                 print("        - Text: ", view["text"], magnitude)
-        return self.operations, self.hashable_views
+        return self.operations, self.plain_labels, self.hashable_views
