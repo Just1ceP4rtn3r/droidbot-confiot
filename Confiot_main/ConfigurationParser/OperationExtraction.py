@@ -178,6 +178,9 @@ class OperationExtractor():
             self.operations[most_related_operation_hash].append(
                 (self.hashable_views[label], potential_operations[most_related_operation_hash]))
 
+        # 根据self.operations[view_hash]的magnitude进行排序
+        for view_hash in self.operations:
+            self.operations[view_hash] = sorted(self.operations[view_hash], key=lambda x: x[1])
         # [DEBUG] print label resolution
         for view_hash in self.operations:
             print("    + View: ", self.hashable_views[view_hash]["bounds"])

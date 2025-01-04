@@ -115,6 +115,53 @@ class ConfigurationParser():
         self.Agent.device_connect()
         self.PE.device_page_replay(outputdir)
 
+    # def save_operations_to_file(self, outputdir):
+    # for page in self.operations:
+    #     operations_str = []
+    #     operations, hashable_views = self.operations[page]
+    #     op_id = 0
+    #     for op in operations:
+    #         op_view = hashable_views[op]
+    #         op_type = op_view["class"]
+    #         op_text = ','.join([tview[0]["text"] for tview in operations[op]])
+    #         op_action = None
+    #         if ("select" in op_type.lower()):
+    #             op_action = "Select"
+    #         elif ("check" in op_type.lower()):
+    #             op_action = "check"
+    #         elif ("input" in op_type.lower()):
+    #             op_action = "Input"
+    #         else:
+    #             op_action = "Click"
+
+    #         op_str = f"({op_id}) <{op_action}, {op_type}, \"{op_text}\">"
+    #         operations_str.append(op_str)
+    #         op_id += 1
+
+    #     context_operation = ''
+    #     for context in self.page_context[page]:
+    #         context_view, context_text = context
+    #         if (context_text == '' or not context_text):
+    #             continue
+    #         else:
+    #             op_action = None
+    #             if (not context_view):
+    #                 context_operation = f"<\"{context_text}\">"
+    #             else:
+    #                 if ("select" in context_view["class"].lower()):
+    #                     op_action = "Select"
+    #                 elif ("check" in context_view["class"].lower()):
+    #                     op_action = "check"
+    #                 elif ("input" in context_view["class"].lower()):
+    #                     op_action = "Input"
+    #                 else:
+    #                     op_action = "Click"
+    #                 context_operation = f"<{op_action}, {context_view['class']}, \"{context_text}\">"
+
+    #     prompt = prompt_template.replace("{{PAGE}}", page)
+    #     prompt = prompt.replace("{{CONTEXT}}", context_operation)
+    #     prompt = prompt.replace("{{LIST}}", '\n'.join(operations_str))
+
     def query_LLM_for_configuration_mapping(self, outputdir):
         prompt_template = ''
         BASE_DIR = os.path.dirname(os.path.abspath(__file__))
