@@ -258,7 +258,7 @@ class PageExplorer():
                 continue
             self.to_page(target_page, replay_paths[target_page], complete_pages, outputdir)
 
-    def test_device_page_replay(self, outputdir, page):
+    def test_device_page_replay(self, outputdir, test_page):
         replay_paths = {}
         for page in self.pages:
             steps = self.find_path_to_page(page)
@@ -270,16 +270,15 @@ class PageExplorer():
 
         replay_paths = dict(sorted(replay_paths.items(), key=lambda item: len(item[1]), reverse=True))
 
-        print("[DBG]: Start go to page: " + page)
-        if (page in complete_pages):
-            continue
-        self.to_page(page, replay_paths[page], complete_pages, outputdir)
+        complete_pages = []
+        print("[DBG]: Start go to page: " + test_page)
+        self.to_page(test_page, replay_paths[test_page], complete_pages, outputdir)
 
     def to_page(self, target_page, steps, complete_pages, outputdir):
 
         self.Agent.device_stop_app()
-        self.Agent.device.start_app(self.Agent.app)
-        time.sleep(3)
+        # self.Agent.device.start_app(self.Agent.app)
+        time.sleep(1)
 
         # 在当前page，需要做的操作
         for page in steps:
@@ -314,7 +313,7 @@ class PageExplorer():
             event = InputEvent.from_dict(event_dict)
             print("[DBG]: Action: " + event_str)
             event.send(self.Agent.device)
-            time.sleep(3)
+            time.sleep(2)
 
         if (target_page != self.page_navigation_graph.start_node):
             self.Agent.device_get_UIElement(store_path=outputdir, store_file="tmp.xml")
@@ -386,7 +385,7 @@ class PageExplorer():
             v = views_in_state[view["temp_id"]]
             if (v["resource_id"] == view["resource_id"] and v["class"] == view["class"] and
                     v["content_description"] == view["content_description"] and v["text"] == view["text"] and
-                    v["size"] == view["size"]):
+                    v["size"] == view["size"] and v["bounds"] == view["bounds"]):
                 found_view = v
                 return found_view
 

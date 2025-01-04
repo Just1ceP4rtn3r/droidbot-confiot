@@ -247,4 +247,5 @@ def test_ConfioT_Hunter():
 if __name__ == "__main__":
     #test_device_guest_config_walker()
     # test_STEP0()
+    # test_Enumerate_pages()
     test_Configuration_parser()
