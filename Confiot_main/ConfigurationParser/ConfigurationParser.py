@@ -7,7 +7,7 @@ from Confiot_main.Confiot import Confiot
 from Confiot_main.settings import settings
 from Confiot_main.ConfigurationParser.PageExploration import PageExplorer
 from Confiot_main.ConfigurationParser.OperationExtraction import OperationExtractor
-from Confiot_main.utils.util import query_config_resource_mapping, parse_config_resource_mapping
+from Confiot_main.utils.util import query_config_resource_mapping, parse_config_resource_mapping_v2_0, get_ConfigResourceMapper_from_file
 
 
 class ConfigurationParser():
@@ -152,7 +152,13 @@ class ConfigurationParser():
                 else:
                     op_action = "Click"
 
-                op_str = f"({op_id}) <{op_action}, {op_type}, \"{op_text}\">"
+                lowertext = op_text.lower()
+                # popup dialog
+                if ("cancel" in lowertext or "apply" in lowertext or "yes" in lowertext or "confirm" in lowertext or
+                        "ok" == lowertext or "确定" in lowertext or "取消" in lowertext):
+                    op_str = f"({op_id}) <Confirm, Popup dialog, \"{op_text}\">"
+                else:
+                    op_str = f"({op_id}) <{op_action}, {op_type}, \"{op_text}\">"
                 operations_str.append(op_str)
 
                 overview["OPERATIONS"][op] = {
@@ -192,6 +198,8 @@ class ConfigurationParser():
                 f.write(json.dumps(overview, indent=2))
 
     def query_LLM_for_configuration_mapping(self, outputdir):
+        Configurations = []
+
         prompt_template = ''
         BASE_DIR = os.path.dirname(os.path.abspath(__file__))
         with open(BASE_DIR + "/../prompt/OperationConfigurationMapping.txt") as f:
@@ -226,7 +234,7 @@ class ConfigurationParser():
                 prompt = prompt.replace("{{LIST}}", '\n'.join(operations_str))
                 prompt = prompt.replace("{{TEXT}}", '\n'.join(plain_texts_str))
 
-                print(prompt)
+                print(page)
                 print(
                     "----------------------------------------------------------------------------------------------------------------------------------------------"
                 )
@@ -234,11 +242,18 @@ class ConfigurationParser():
                     f.write("################ Page: " + page + "################\n")
                     f.write(prompt + "\n")
 
-
-
                 res = query_config_resource_mapping(prompt)
 
                 with open(outputdir + "/ConfigResourceMappingResponse.txt", "a") as f:
                     f.write("################ Page: " + page + "################\n")
                     f.write(prompt + "\n")
                     f.write(res + "\n")
+
+                mapper = parse_config_resource_mapping_v2_0(res)
+                for idx, value in enumerate(mapper):
+                    mapper[idx]["Page"] = page
+                    mapper[idx]["Id"] = len(Configurations)
+                    Configurations.append(mapper[idx])
+
+        with open(outputdir + "/ConfigResourceMapping.txt", 'w') as f:
+            f.write(json.dumps(Configurations))

@@ -362,35 +362,34 @@ def Plugin_parse_config_resource_mapping(text):
 def parse_config_resource_mapping_v2_0(text):
     ConfigResourceMapper = []
 
-    pattern = re.compile(r'Action path id: (.*?)\n.*?Action path: (.*?)\n.*?Tasks: (.*?)\n.*?Related resources: (.*?)\n',
-                         re.DOTALL)
-    matches = pattern.findall(text)
+    matches = re.findall(r"\{(.|\n)*?\"Configuration tasks\":(.*?)\n.*?\"Related operations\":(.*?)\n.*?\"Reason\"", text)
 
     # print(matches)
 
     for match in matches:
         try:
-            config_id = eval(match[0].replace('<', '').replace('>', ''))
-            config_path = match[1].replace('<', '').replace('>', '')  # 使用 eval 将字符串转为列表
-            if ("<" in match[2] and ">" in match[2]):
-                task = match[2].split(">,")
-            elif ("\n" in match[2]):
-                task = match[2].split("\n")
-            else:
-                task = match[2].split(",")
-            related_resources = match[3].split(',')
-            related_resources = [r.strip() for r in related_resources]
+            task = match[1].replace("\",", "")
+            realted_operations = []
+            _operations = match[2].replace("],", "]").replace('"', '').replace('(', '').replace(')', '').replace(
+                '{', '').replace('}', '').replace('`',
+                                                  '').replace("'",
+                                                              '').replace('<',
+                                                                          '').replace('>',
+                                                                                      '').replace('[',
+                                                                                                  '').replace(']',
+                                                                                                              '').split(',')
 
-            for i in range(len(task)):
-                task[i] = task[i].replace('<', '').replace('>', '')
-                # task[i] = add_testdata_for_task(task[i])
+            for o in _operations:
+                digits = re.findall(r'\d', o)
+                realted_operations.append(int(''.join(digits)))
 
-            ConfigResourceMapper.append({"Id": config_id, "Path": config_path, "Tasks": task, "Resources": related_resources})
+            if ("none" in task.lower() or len(realted_operations) == 0):
+                continue
 
-            print("Configuration Id:", config_id)
-            print("Configuration Path:", config_path)
+            ConfigResourceMapper.append({"Id": 0, "Path": realted_operations, "Tasks": [task,], "Resources": []})
+
+            print("Configuration operations:", realted_operations)
             print("Task:", task)
-            print("Related Resources:", related_resources)
         except Exception as e:
             print(e)
 

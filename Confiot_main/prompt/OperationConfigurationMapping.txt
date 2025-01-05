@@ -16,7 +16,16 @@ The plain texts in this page is:
 '''
 
 
-**Important**: Please respond in the following pattern:'''
-Configuration tasks: <1. Makes Guest to the house owner>
-Related operations: <operation_id1, operation_id2, operation_id3>
-why this configuration is generated from operations, please think step by step: <reason>'''
+**Important**: Please respond in json:'''
+{
+    "Taks-1":{
+        "Configuration tasks": "detailed task", // or "None" if no specific task can be determined
+        "Related operations": ["operation_id1", "operation_id2", "operation_id3"],
+        "Reason": "reason" // why this configuration is generated from operations, please think step by step
+    },
+    "Taks-2":{
+        ...
+    }
+}
+'''
+

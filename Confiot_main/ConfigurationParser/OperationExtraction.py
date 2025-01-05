@@ -49,6 +49,7 @@ class OperationExtractor():
             if (not view["visible"]):
                 continue
             d = self.get_view_text(view)
+            view["origin_text"] = view["text"]
             if (d != ''):
                 # 更新view的文本描述
                 view["text"] = d
@@ -85,7 +86,7 @@ class OperationExtractor():
         for tview in Textual_views:
             lowertext = tview["text"].lower()
             if ("cancel" in lowertext or "apply" in lowertext or "yes" in lowertext or "confirm" in lowertext or
-                    "ok" in lowertext or "确定" in lowertext or "取消" in lowertext):
+                    "ok" == lowertext or "确定" in lowertext or "取消" in lowertext):
                 diagram_view.append(tview)
                 is_diagram = True
         if (is_diagram):
@@ -94,6 +95,7 @@ class OperationExtractor():
 
         if (is_diagram):
             view = diagram_view[0]
+
             if (hashlib.sha256(str(view).encode("utf-8")).hexdigest() not in self.operations):
                 self.operations[hashlib.sha256(str(view).encode("utf-8")).hexdigest()] = []
             for title in title_view:
