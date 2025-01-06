@@ -390,14 +390,14 @@ class ConfigurationParser:
                     if not os.path.exists(outputdir + f"/{child_page}"):
                         continue
 
-                    with open(outputdir + f"/{child_page}/PageInfo.txt", "w") as f:
+                    with open(outputdir + f"/{child_page}/PageInfo.txt", "r") as f:
                         childpage_info = f.read()
 
-                    with open(outputdir + f"/{child_page}/Response.txt", "w") as f:
+                    with open(outputdir + f"/{child_page}/Response.txt", "r") as f:
                         response = f.read()
 
                     with open(
-                        outputdir + f"/{child_page}/ConfigResourceMapping.json", "w"
+                        outputdir + f"/{child_page}/ConfigResourceMapping.json", "r"
                     ) as f:
                         result = f.read()
 
@@ -410,13 +410,31 @@ class ConfigurationParser:
                 for child_page in children_info:
                     if child_page not in page_infos:
                         continue
-                    prompt += (
-                        ChildPage_template.replace(
-                            "{{CONTEXT}}", page_infos[child_page]
-                        )
-                        .replace("{{PAGEINFO}}", children_info[child_page]["PageInfo"])
-                        .replace("{{RESPONSE}}", children_info[child_page]["Response"])
-                    ) + "\n\n\n"
+
+                    if not page_infos[child_page]["context"].strip():
+                        prompt += (
+                            ChildPage_template.replace(
+                                "{{CONTEXT}}", "<click, A button without text>"
+                            )
+                            .replace(
+                                "{{PAGEINFO}}", children_info[child_page]["PageInfo"]
+                            )
+                            .replace(
+                                "{{RESPONSE}}", children_info[child_page]["Response"]
+                            )
+                        ) + "\n\n\n"
+                    else:
+                        prompt += (
+                            ChildPage_template.replace(
+                                "{{CONTEXT}}", page_infos[child_page]["context"]
+                            )
+                            .replace(
+                                "{{PAGEINFO}}", children_info[child_page]["PageInfo"]
+                            )
+                            .replace(
+                                "{{RESPONSE}}", children_info[child_page]["Response"]
+                            )
+                        ) + "\n\n\n"
 
             res = query_config_resource_mapping(prompt)
             with open(outputdir + f"/{page}/Response.txt", "w") as f:
