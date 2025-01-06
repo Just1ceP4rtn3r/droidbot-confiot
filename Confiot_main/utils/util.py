@@ -10,7 +10,9 @@ import json
 def deprecated(func):
 
     def wrapper(*args, **kwargs):
-        warnings.warn(f"Function {func.__name__} is deprecated.", category=DeprecationWarning)
+        warnings.warn(
+            f"Function {func.__name__} is deprecated.", category=DeprecationWarning
+        )
         return func(*args, **kwargs)
 
     return wrapper
@@ -60,10 +62,10 @@ def png_resize(file, resol_x, resol_y):
 
 
 def is_blank_or_empty(s: str):
-    if (not s.strip()):
+    if not s.strip():
         return True
 
-    if (not bool(re.search(r'\b[a-zA-Z\u4e00-\u9fff]+\b', s))):
+    if not bool(re.search(r"\b[a-zA-Z\u4e00-\u9fff]+\b", s)):
         return True
 
     return False
@@ -72,16 +74,16 @@ def is_blank_or_empty(s: str):
 def decode_bytes(byte_data):
     try:
         # 尝试用UTF-8解码
-        decoded_str = byte_data.decode('utf-8')
+        decoded_str = byte_data.decode("utf-8")
 
-        if (bool(re.search(r'\\[uU]{1}[0-9a-fA-F]+', decoded_str))):
-            decoded_str = decoded_str.encode('utf-8').decode('unicode_escape')
+        if bool(re.search(r"\\[uU]{1}[0-9a-fA-F]+", decoded_str)):
+            decoded_str = decoded_str.encode("utf-8").decode("unicode_escape")
 
         return decoded_str
     except UnicodeDecodeError:
         try:
             # 尝试用Unicode转义序列解码
-            unicode_str = byte_data.decode('unicode_escape')
+            unicode_str = byte_data.decode("unicode_escape")
             return unicode_str
         except UnicodeDecodeError:
             print("无法解码字节数据")
@@ -89,7 +91,7 @@ def decode_bytes(byte_data):
 
 class Node:
 
-    def __init__(self, name, description='', state='', screenshot=None):
+    def __init__(self, name, description="", state="", screenshot=None):
         self.name = name
         self.description = description
         self.state = state
@@ -133,22 +135,26 @@ class DirectedGraph:
 
     def add_edge(self, edge: Edge):
         self.edges.append(edge)
-        if (edge.start_node.name not in self.edges_dict):
+        if edge.start_node.name not in self.edges_dict:
             self.edges_dict[edge.start_node.name] = {}
 
-        if (edge.end_node.name not in self.edges_dict[edge.start_node.name]):
+        if edge.end_node.name not in self.edges_dict[edge.start_node.name]:
             self.edges_dict[edge.start_node.name][edge.end_node.name] = []
 
-        if (edge.event_str):
-            self.edges_dict[edge.start_node.name][edge.end_node.name].append(edge.event_str)
+        if edge.event_str:
+            self.edges_dict[edge.start_node.name][edge.end_node.name].append(
+                edge.event_str
+            )
 
-        if (edge.description):
-            self.edges_dict[edge.start_node.name][edge.end_node.name].append(edge.description)
+        if edge.description:
+            self.edges_dict[edge.start_node.name][edge.end_node.name].append(
+                edge.description
+            )
 
     def set_node_level(self):
         for idx, node in enumerate(self.nodes):
             steps = self.find_shortest_path(self.start_node, node.name)
-            if(not steps):
+            if not steps:
                 self.nodes[idx].level = 0
             else:
                 self.nodes[idx].level = len(steps) - 1
@@ -223,16 +229,18 @@ class UITree(DirectedGraph):
 
     def add_edge(self, edge: Edge):
         self.edges.append(edge)
-        if (edge.start_node.name not in self.edges_dict):
+        if edge.start_node.name not in self.edges_dict:
             self.edges_dict[edge.start_node.name] = {}
 
-        if (edge.end_node.name not in self.edges_dict[edge.start_node.name]):
+        if edge.end_node.name not in self.edges_dict[edge.start_node.name]:
             self.edges_dict[edge.start_node.name][edge.end_node.name] = []
 
         self.edges_dict[edge.start_node.name][edge.end_node.name].append(edge)
 
-        if (edge.description):
-            self.edges_dict[edge.start_node.name][edge.end_node.name].append(edge.description)
+        if edge.description:
+            self.edges_dict[edge.start_node.name][edge.end_node.name].append(
+                edge.description
+            )
 
 
 def get_longest_task(tasks):
@@ -256,23 +264,29 @@ def add_testdata_for_task(task):
 
     result = task
     for key in username:
-        if (key in task.lower()):
-            if (key == "name"):
+        if key in task.lower():
+            if key == "name":
                 result = result + ", with the name `TESTName`"
             else:
-                result = result + ", with the user name `guest`, age 18, gender `male`, weight `100`, height `150`"
+                result = (
+                    result
+                    + ", with the user name `guest`, age 18, gender `male`, weight `100`, height `150`"
+                )
             break
 
     for i in log:
-        if (i in task.lower()):
+        if i in task.lower():
             result = result + ", and remove it."
 
     for i in automation:
-        if (i in task.lower()):
-            result = result + ", with the name `TESTAutomation` and the task: Activate it in 1 minute."
+        if i in task.lower():
+            result = (
+                result
+                + ", with the name `TESTAutomation` and the task: Activate it in 1 minute."
+            )
 
     for key in testdata:
-        if (key in task.lower()):
+        if key in task.lower():
             result = result + f", {testdata[key]}"
 
     return result
@@ -282,30 +296,41 @@ def add_testdata_for_task(task):
 def parse_config_resource_mapping(text):
     ConfigResourceMapper = []
 
-    pattern = re.compile(r'Action path id: (.*?)\n.*?Action path: (.*?)\n.*?Tasks: (.*?)\n.*?Related resources: (.*?)\n',
-                         re.DOTALL)
+    pattern = re.compile(
+        r"Action path id: (.*?)\n.*?Action path: (.*?)\n.*?Tasks: (.*?)\n.*?Related resources: (.*?)\n",
+        re.DOTALL,
+    )
     matches = pattern.findall(text)
 
     # print(matches)
 
     for match in matches:
         try:
-            config_id = eval(match[0].replace('<', '').replace('>', ''))
-            config_path = match[1].replace('<', '').replace('>', '')  # 使用 eval 将字符串转为列表
-            if ("<" in match[2] and ">" in match[2]):
+            config_id = eval(match[0].replace("<", "").replace(">", ""))
+            config_path = (
+                match[1].replace("<", "").replace(">", "")
+            )  # 使用 eval 将字符串转为列表
+            if "<" in match[2] and ">" in match[2]:
                 task = match[2].split(">,")
-            elif ("\n" in match[2]):
+            elif "\n" in match[2]:
                 task = match[2].split("\n")
             else:
                 task = match[2].split(",")
-            related_resources = match[3].split(',')
+            related_resources = match[3].split(",")
             related_resources = [r.strip() for r in related_resources]
 
             for i in range(len(task)):
-                task[i] = task[i].replace('<', '').replace('>', '')
+                task[i] = task[i].replace("<", "").replace(">", "")
                 # task[i] = add_testdata_for_task(task[i])
 
-            ConfigResourceMapper.append({"Id": config_id, "Path": config_path, "Tasks": task, "Resources": related_resources})
+            ConfigResourceMapper.append(
+                {
+                    "Id": config_id,
+                    "Path": config_path,
+                    "Tasks": task,
+                    "Resources": related_resources,
+                }
+            )
 
             print("Configuration Id:", config_id)
             print("Configuration Path:", config_path)
@@ -324,19 +349,23 @@ def parse_config_resource_mapping(text):
 def Plugin_parse_config_resource_mapping(text):
     ConfigResourceMapper = []
 
-    pattern = re.compile(r'Action path id: (.*?)\n.*?Action path: (.*?)\n.*?Tasks: (.*?)\n.*?Related resources: (.*?)\n',
-                         re.DOTALL)
+    pattern = re.compile(
+        r"Action path id: (.*?)\n.*?Action path: (.*?)\n.*?Tasks: (.*?)\n.*?Related resources: (.*?)\n",
+        re.DOTALL,
+    )
     matches = pattern.findall(text)
 
     # print(matches)
 
     for match in matches:
         try:
-            config_id = eval(match[0].replace('<', '').replace('>', ''))
-            config_path = match[1].replace('<', '').replace('>', '')  # 使用 eval 将字符串转为列表
-            if ("<" in match[2] and ">" in match[2]):
+            config_id = eval(match[0].replace("<", "").replace(">", ""))
+            config_path = (
+                match[1].replace("<", "").replace(">", "")
+            )  # 使用 eval 将字符串转为列表
+            if "<" in match[2] and ">" in match[2]:
                 task = match[2].split(">,")
-            elif ("\n" in match[2]):
+            elif "\n" in match[2]:
                 task = match[2].split("\n")
             else:
                 task = match[2].split(",")
@@ -344,16 +373,25 @@ def Plugin_parse_config_resource_mapping(text):
             related_resources = []
 
             for r in _resources:
-                if ("," not in r):
+                if "," not in r:
                     continue
                 op_index = r.index(",")
-                related_resources.append([r[:op_index].strip(), r[op_index + 1:].strip()])
+                related_resources.append(
+                    [r[:op_index].strip(), r[op_index + 1 :].strip()]
+                )
 
             for i in range(len(task)):
-                task[i] = task[i].replace('<', '').replace('>', '')
+                task[i] = task[i].replace("<", "").replace(">", "")
                 task[i] = add_testdata_for_task(task[i])
 
-            ConfigResourceMapper.append({"Id": config_id, "Path": config_path, "Tasks": task, "Resources": related_resources})
+            ConfigResourceMapper.append(
+                {
+                    "Id": config_id,
+                    "Path": config_path,
+                    "Tasks": task,
+                    "Resources": related_resources,
+                }
+            )
 
             print("Configuration Id:", config_id)
             print("Configuration Path:", config_path)
@@ -371,31 +409,57 @@ def Plugin_parse_config_resource_mapping(text):
 def parse_config_resource_mapping_v2_0(text):
     ConfigResourceMapper = []
 
-    matches = re.findall(r"\{(.|\n)*?\"Configuration tasks\":(.*?)\n.*?\"Related operations\":(.*?)\n.*?\"Reason\"", text)
+    matches = re.findall(
+        r"\{(.|\n)*?\"Page ID\":(.*?)\n.*?\"Configuration tasks\":(.*?)\n.*?\"Related operations\":(.*?)\n.*?\"Dependencies\":(.*?)\n.*?\"Reason\"",
+        text,
+    )
 
     # print(matches)
 
+    task_id = 0
     for match in matches:
+        task_id += 1
         try:
-            task = match[1].replace("\",", "")
+            page = match[1].replace('",', "").replace('"', "").strip()
+            task = match[2].replace('",', "")
             realted_operations = []
-            _operations = match[2].replace("],", "]").replace('"', '').replace('(', '').replace(')', '').replace(
-                '{', '').replace('}', '').replace('`',
-                                                  '').replace("'",
-                                                              '').replace('<',
-                                                                          '').replace('>',
-                                                                                      '').replace('[',
-                                                                                                  '').replace(']',
-                                                                                                              '').split(',')
+            dependencies = match[4].replace("],", "]").strip()
+
+            _operations = (
+                match[3]
+                .replace("],", "]")
+                .replace('"', "")
+                .replace("(", "")
+                .replace(")", "")
+                .replace("{", "")
+                .replace("}", "")
+                .replace("`", "")
+                .replace("'", "")
+                .replace("<", "")
+                .replace(">", "")
+                .replace("[", "")
+                .replace("]", "")
+                .split(",")
+            )
 
             for o in _operations:
-                digits = re.findall(r'\d', o)
-                realted_operations.append(int(''.join(digits)))
+                digits = re.findall(r"\d", o)
+                realted_operations.append(int("".join(digits)))
 
-            if ("none" in task.lower() or len(realted_operations) == 0):
+            if "none" in task.lower() or len(realted_operations) == 0:
                 continue
 
-            ConfigResourceMapper.append({"Id": 0, "Path": realted_operations, "Tasks": [task,], "Resources": []})
+            ConfigResourceMapper.append(
+                {
+                    "Task ID": task_id,
+                    "Page ID": page,
+                    "Tasks": [
+                        task,
+                    ],
+                    "Related operations": realted_operations,
+                    "Dependencies": dependencies,
+                }
+            )
 
             print("Configuration operations:", realted_operations)
             print("Task:", task)
@@ -410,6 +474,7 @@ def parse_config_resource_mapping_v2_0(text):
 
 def query_config_resource_mapping(prompt):
     import requests
+
     api_key = os.environ.get("OPENAI_API_KEY")
     headers = {"Content-Type": "application/json", "Authorization": f"Bearer {api_key}"}
 
@@ -417,13 +482,15 @@ def query_config_resource_mapping(prompt):
     payload = {"model": "gpt-4o", "messages": [{"role": "user", "content": prompt}]}
     # payload = {"model": "gpt-3.5-turbo", "messages": [{"role": "user", "content": prompt}]}
 
-    response = requests.post("https://api.openai.com/v1/chat/completions", headers=headers, json=payload)
+    response = requests.post(
+        "https://api.openai.com/v1/chat/completions", headers=headers, json=payload
+    )
 
     # URL = os.environ['OPENAI_API_KEY']  # NOTE: replace with your own GPT API
     # body = {"model": "gpt-3.5-turbo", "messages": [{"role": "user", "content": prompt}], "stream": True}
     # headers = {'Content-Type': 'application/json', 'path': 'v1/chat/completions'}
     # r = requests.post(url=URL, json=body, headers=headers)
-    #return response.content.decode()
+    # return response.content.decode()
 
     try:
         return response.json()["choices"][0]["message"]["content"]
@@ -436,28 +503,56 @@ def filter_configurations(ConfigResourceMapper):
     FilteredConfigResourceMapper = []
 
     resources = [
-        "Device sensor status", "Device actuator status", "Device metadata", "Device usage log",
-        "Personally Identifiable Information", "User list", "User's role", "Device list", "Automation list",
-        "Third-party services"
+        "Device sensor status",
+        "Device actuator status",
+        "Device metadata",
+        "Device usage log",
+        "Personally Identifiable Information",
+        "User list",
+        "User's role",
+        "Device list",
+        "Automation list",
+        "Third-party services",
     ]
-    access = ['view', 'access', 'retrieve', 'open', 'obtain', 'read', 'inspect']
-    adds = ['add ', 'include', 'append', 'insert', 'attach', 'incorporate', 'integrate', 'augment', 'expand', 'combine']
+    access = ["view", "access", "retrieve", "open", "obtain", "read", "inspect"]
+    adds = [
+        "add ",
+        "include",
+        "append",
+        "insert",
+        "attach",
+        "incorporate",
+        "integrate",
+        "augment",
+        "expand",
+        "combine",
+    ]
     removes = [
-        "initiate", "set ", "edit", "modify", "change", "configure", "remove", "erase", "delete", "eliminate", "replace",
-        "clear"
+        "initiate",
+        "set ",
+        "edit",
+        "modify",
+        "change",
+        "configure",
+        "remove",
+        "erase",
+        "delete",
+        "eliminate",
+        "replace",
+        "clear",
     ]
 
     norepeat_mapper = []
     norepeat_tasks = []
     for c in ConfigResourceMapper[::-1]:
-        if (c["Tasks"] not in norepeat_tasks):
+        if c["Tasks"] not in norepeat_tasks:
             norepeat_mapper.append(c)
             norepeat_tasks.append(c["Tasks"])
 
     for c in norepeat_mapper:
         tasks = c["Tasks"]
 
-        if (len(tasks) < 1):
+        if len(tasks) < 1:
             continue
         else:
             access_tasks = []
@@ -466,46 +561,52 @@ def filter_configurations(ConfigResourceMapper):
             for task in tasks:
                 task = task.lower()
                 for v_1 in access:
-                    if (v_1 in task):
+                    if v_1 in task:
                         access_tasks.append(task)
                 for v_2 in adds:
-                    if (v_2 in task):
+                    if v_2 in task:
                         add_tasks.append(task)
                 for v_3 in removes:
-                    if (v_3 in task):
+                    if v_3 in task:
                         remove_tasks.append(task)
             # 如果resource只有N/A或是空的
-            if (len(c["Resources"]) == 0):
+            if len(c["Resources"]) == 0:
                 continue
-            elif (len(c["Resources"]) == 1):
-                if (c["Resources"][0].strip().replace("'", '').replace('"', '') == '' or
-                        'N/A'.lower() in c["Resources"][0].lower()):
+            elif len(c["Resources"]) == 1:
+                if (
+                    c["Resources"][0].strip().replace("'", "").replace('"', "") == ""
+                    or "N/A".lower() in c["Resources"][0].lower()
+                ):
                     continue
-            if (len(tasks) == 1):
-                if (tasks[0].strip() == '' or "lack of information" in tasks[0] or "unable to" in tasks[0]):
+            if len(tasks) == 1:
+                if (
+                    tasks[0].strip() == ""
+                    or "lack of information" in tasks[0]
+                    or "unable to" in tasks[0]
+                ):
                     continue
-                if (len(add_tasks) == 0 and len(remove_tasks) == 0):
+                if len(add_tasks) == 0 and len(remove_tasks) == 0:
                     continue
                 FilteredConfigResourceMapper.append(c)
                 continue
 
             # 如果同时有remove和add，则保留remove
-            if (len(add_tasks) > 0 and len(remove_tasks) > 0):
+            if len(add_tasks) > 0 and len(remove_tasks) > 0:
                 c["Tasks"] = [
                     get_longest_task(remove_tasks),
                 ]
                 FilteredConfigResourceMapper.append(c)
-            elif (len(add_tasks) > 0):
+            elif len(add_tasks) > 0:
                 c["Tasks"] = [
                     get_longest_task(add_tasks),
                 ]
                 FilteredConfigResourceMapper.append(c)
-            elif (len(remove_tasks) > 0):
+            elif len(remove_tasks) > 0:
                 c["Tasks"] = [
                     get_longest_task(remove_tasks),
                 ]
                 FilteredConfigResourceMapper.append(c)
-            elif (len(add_tasks) == 0 and len(remove_tasks) == 0):
+            elif len(add_tasks) == 0 and len(remove_tasks) == 0:
                 continue
             else:
                 c["Tasks"] = [
@@ -516,18 +617,21 @@ def filter_configurations(ConfigResourceMapper):
 
 
 def get_ConfigResourceMapper_from_file(file, dir=None):
-    content = ''
-    with open(file, 'r') as f:
+    content = ""
+    with open(file, "r") as f:
         content = f.read()
 
     ConfigResourceMapper = json.loads(content)
-    filtered_mapping_path = ''
-    if (dir):
+    filtered_mapping_path = ""
+    if dir:
         filtered_mapping_path = dir + "/FilteredConfigResourceMapping.txt"
-    if ("FilteredConfigResourceMapping" not in file and filtered_mapping_path != '' and
-            not os.path.exists(filtered_mapping_path)):
+    if (
+        "FilteredConfigResourceMapping" not in file
+        and filtered_mapping_path != ""
+        and not os.path.exists(filtered_mapping_path)
+    ):
         FilteredConfigResourceMapper = filter_configurations(ConfigResourceMapper)
-        with open(dir + "/FilteredConfigResourceMapping.txt", 'w') as f:
+        with open(dir + "/FilteredConfigResourceMapping.txt", "w") as f:
             f.write(json.dumps(FilteredConfigResourceMapper))
     return ConfigResourceMapper
 
@@ -536,8 +640,8 @@ def progress(percent, width=50):
     if percent >= 100:
         percent = 100
 
-    show_str = ('[%%-%ds]' % width) % (int(width * percent / 100) * "#")
-    print('\r%s %d%%' % (show_str, percent), end='')
+    show_str = ("[%%-%ds]" % width) % (int(width * percent / 100) * "#")
+    print("\r%s %d%%" % (show_str, percent), end="")
 
 
 if __name__ == "__main__":

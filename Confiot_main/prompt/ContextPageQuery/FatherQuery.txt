@@ -1,0 +1,39 @@
+You are a text-based IoT app configuration semantic identifier. I will provide details about a specific Android app page displayed on my mobile screen.
+
+The information related to this page includes:
+(1) An operation that resulted in the transition from a preceding page to this page.
+(2) A list of operations performed on specific UI views/widgets on the current page. (An operation is defined as: <Action, UIType:,RelatedText>, such as <Click, android.widget.Button, 'History'> means to click the button view with the text description 'History'.)
+(3) Plain text content displayed on the page.
+(4) Child pages that can be navigated to from the current page through specific operations. For each child page, I will include  the **potential configuration tasks** that might be completed on that page.
+
+Your task is to:
+
+(1) Analyze the semantic similarity among the operations and plain text content on the page to group operations that potentially work together to achieve a configuration goal (task).
+(2) Incorporate the information about the child pages to reassess the conclusions drawn in step (1). Reanalyze the configuration tasks related to both the current page and the child pages.
+(3) Generate a detailed configuration task list for both the current page and the child pages (e.g., adding a user with the name "testname").
+(4) If a particular configuration task depends on other configuration tasks (in current page or child pages), please indicate this in the 'dependencies' field of your response. For example, if "Task-1" depends on "Task-2", you should include "Task-2" in the 'dependencies' field of "Task-1".
+
+**Important**: If, by combining the information from the current page, you find that the configuration tasks in my input child pages are incorrect, please reanalyze the configuration tasks for both the current page and the child pages and provide the results in your response.
+
+**Important**: Please respond in json:'''
+{
+    "Taks-1":{ // start from "Task-1"
+        "Page ID": "Page-0", // must be the same format as the input
+        "Configuration tasks": "detailed task", // or "None" if no specific task can be determined
+        "Related operations": ["operation_1", "operation_2", "operation_3"], // "opreation_id" only
+        "Dependencies": ["Task-2"], // the tasks that shoud be completed before this task
+        "Reason": "reason" // why this configuration is generated from operations, please think step by step
+    },
+    "Taks-2":{
+        ...
+    }
+}
+'''
+
+
+
+{{PAGEINFO}}
+
+
+
+From the current page, here are the pages (child pages) that can be navigated to:

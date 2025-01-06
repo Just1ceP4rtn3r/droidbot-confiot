@@ -16,6 +16,7 @@ HOST_CONFIG_ANALYZED = "host:August_on"
 # util.py
 def test_parse_config_resource_map():
     from Confiot_main.utils.util import parse_config_resource_mapping
+
     with open("prompt/response.txt") as f:
         respond = f.read()
         parse_config_resource_mapping(respond)
@@ -23,9 +24,12 @@ def test_parse_config_resource_map():
 
 def test_resize_png():
     from Confiot_main.utils.util import png_resize
+
     png_resize(
         "/root/documents/droidbot-new/a2dp/Confiot/UI/host:A2DP_Start_at_Boot_off/guest:view_0fe88b3189e686f7242ae495c9b79a4a.png/after.png",
-        230, 512)
+        230,
+        512,
+    )
 
 
 #####################################
@@ -34,7 +38,12 @@ def test_resize_png():
 
 def test_goto_state():
     from Confiot_main.settings import settings
-    from Confiot_main.utils.util import query_config_resource_mapping, parse_config_resource_mapping, get_ConfigResourceMapper_from_file
+    from Confiot_main.utils.util import (
+        query_config_resource_mapping,
+        parse_config_resource_mapping,
+        get_ConfigResourceMapper_from_file,
+    )
+
     # settings.device_serial = "192.168.2.176:5555"
     # settings.app_path = "/root/documents/Output/mihome/mihome-smartscale-10-25/mihome.apk"
     # settings.droid_output = "/root/documents/Output/mihome/mihome-smartscale-10-25/host/result"
@@ -43,9 +52,9 @@ def test_goto_state():
 
     # print(confiot.events)
 
-    while (1):
+    while 1:
         target_str = input("state: ")
-        if (target_str == '\n' or target_str == ''):
+        if target_str == "\n" or target_str == "":
             confiot.device_stop_app()
             break
         confiot.device_to_state(HOST_CONFIG_ANALYZED, target_str)
@@ -70,7 +79,7 @@ def test_state_walker():
 
 def test_config_extract():
     confiot = ConfiotGuest()
-    #confiot.device_connect()
+    # confiot.device_connect()
 
     # print(confiot.events)
 
@@ -91,10 +100,10 @@ def test_xml_parse():
 
     # 打印相关的node元素
     for node in before_config_node:
-        print(ET.tostring(node, encoding='unicode'))
+        print(ET.tostring(node, encoding="unicode"))
 
     for node in after_config_node:
-        print(ET.tostring(node, encoding='unicode'))
+        print(ET.tostring(node, encoding="unicode"))
 
 
 def test_identify_alert():
@@ -112,7 +121,9 @@ def check_nearby_rectangles(rectangle, target_rectangle, threshold):
     center_x = (rectangle[0][0] + rectangle[1][0]) / 2
     center_y = (rectangle[0][1] + rectangle[1][1]) / 2
 
-    distance = math.sqrt((center_x - target_center_x)**2 + (center_y - target_center_y)**2)
+    distance = math.sqrt(
+        (center_x - target_center_x) ** 2 + (center_y - target_center_y) ** 2
+    )
     print(distance)
     if distance < threshold:
         return True
@@ -156,11 +167,14 @@ def test_STEP1():
 def test_get_ui_hierarchy():
     from Confiot_main.settings import settings
     import json
+
     settings.device_serial = "192.168.31.218:5555"
     confiot = ConfiotHost()
     confiot.device_connect()
-    while (input() != '1'):
-        confiot.device_get_UIElement("", "", "/root/documents/droidbot-confiot/Confiot_main/", "output.json")
+    while input() != "1":
+        confiot.device_get_UIElement(
+            "", "", "/root/documents/droidbot-confiot/Confiot_main/", "output.json"
+        )
 
     # while(input() != '1'):
     #     a= confiot.device.get_views()
@@ -173,11 +187,15 @@ def test_get_ui_hierarchy():
 
 def test_mapping_uitree():
     from Confiot_main.settings import settings
-    from Confiot_main.utils.util import query_config_resource_mapping, parse_config_resource_mapping, get_ConfigResourceMapper_from_file
+    from Confiot_main.utils.util import (
+        query_config_resource_mapping,
+        parse_config_resource_mapping,
+        get_ConfigResourceMapper_from_file,
+    )
 
     confiot = Confiot()
     policy_generator = PolicyGenerator()
-    #confiot.device_connect()
+    # confiot.device_connect()
 
     # print(confiot.events)
 
@@ -193,7 +211,11 @@ def test_mapping_uitree():
 
 def test_Enumerate_operations():
     from Confiot_main.settings import settings
-    from Confiot_main.utils.util import query_config_resource_mapping, parse_config_resource_mapping, get_ConfigResourceMapper_from_file
+    from Confiot_main.utils.util import (
+        query_config_resource_mapping,
+        parse_config_resource_mapping,
+        get_ConfigResourceMapper_from_file,
+    )
 
     confiot = V2_Confiot()
     confiot.label_resolution()
@@ -202,7 +224,11 @@ def test_Enumerate_operations():
 def test_Enumerate_pages():
     from Confiot_main.settings import settings
     from Confiot_main.ConfigurationParser.PageExploration import PageExplorer
-    from Confiot_main.utils.util import query_config_resource_mapping, parse_config_resource_mapping, get_ConfigResourceMapper_from_file
+    from Confiot_main.utils.util import (
+        query_config_resource_mapping,
+        parse_config_resource_mapping,
+        get_ConfigResourceMapper_from_file,
+    )
 
     Agent = Confiot()
 
@@ -215,7 +241,9 @@ def test_Enumerate_pages():
     PE.extract_navigations()
 
     Agent.device_connect()
-    PE.test_device_page_replay(settings.UIHierarchy_comparation_output + "/000/", "Page-11")
+    PE.test_device_page_replay(
+        settings.UIHierarchy_comparation_output + "/000/", "Page-11"
+    )
     # print(PE.pages)
 
 
@@ -223,15 +251,24 @@ def test_Configuration_parser():
     from Confiot_main.settings import settings
     from Confiot_main.ConfigurationParser.ConfigurationParser import ConfigurationParser
     from Confiot_main.ConfigurationParser.OperationExtraction import OperationExtractor
-    from Confiot_main.utils.util import query_config_resource_mapping, parse_config_resource_mapping, get_ConfigResourceMapper_from_file
+    from Confiot_main.utils.util import (
+        query_config_resource_mapping,
+        parse_config_resource_mapping,
+        get_ConfigResourceMapper_from_file,
+    )
 
     Agent = Confiot()
     # Agent.device_connect()
 
     import os
+
     os.environ["https_proxy"] = "http://192.168.72.1:1083"
 
-    ConfigurationParser(Agent)
+    CP = ConfigurationParser(Agent)
+
+    CP.query_LLM_for_configuration_mapping_based_on_page_graph(
+        settings.Confiot_output + "/LLM_ContextPageQuery"
+    )
 
 
 def test_ConfioT_Hunter():
@@ -244,11 +281,13 @@ def test_ConfioT_Hunter():
     CP = ConfigurationParser(Agent)
 
     oracle = ConfiotOracle()
-    oracle.ParseUIChagnes(None, settings.UIHierarchy_comparation_output + "000/Page-0.xml")
+    oracle.ParseUIChagnes(
+        None, settings.UIHierarchy_comparation_output + "000/Page-0.xml"
+    )
 
 
 if __name__ == "__main__":
-    #test_device_guest_config_walker()
+    # test_device_guest_config_walker()
     # test_STEP0()
     # test_Enumerate_pages()
     test_Configuration_parser()
