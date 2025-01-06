@@ -236,6 +236,8 @@ class PageExplorer():
                                     self.page_navigation_graph.nodes_dict[target_page], event_str)
                         self.page_navigation_graph.add_edge(edge)
                         self.page_navigation_graph.start_node = start_page
+
+        self.page_navigation_graph.set_node_level()
         UITree.draw(self.page_navigation_graph, settings.Confiot_output)
 
     # step-3: 遍历所有page，并获取snapshot

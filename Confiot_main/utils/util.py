@@ -94,6 +94,7 @@ class Node:
         self.description = description
         self.state = state
         self.screenshot = screenshot
+        self.level = -1
 
     def __str__(self):
         return self.name
@@ -144,6 +145,14 @@ class DirectedGraph:
         if (edge.description):
             self.edges_dict[edge.start_node.name][edge.end_node.name].append(edge.description)
 
+    def set_node_level(self):
+        for idx, node in enumerate(self.nodes):
+            steps = self.find_shortest_path(self.start_node, node.name)
+            if(not steps):
+                self.nodes[idx].level = 0
+            else:
+                self.nodes[idx].level = len(steps) - 1
+
     def find_shortest_path(self, node_1: str, node_2: str):
         if node_1 not in self.nodes_dict or node_2 not in self.nodes_dict:
             print("[ERR]: Cannot find node")
@@ -190,7 +199,7 @@ class DirectedGraph:
                 dot_content += edge_str + "\n"
                 added_edges.add(edge_str)
         for node in graph.nodes:
-            dot_content += f'  "{node.name}" [label="{node.name}\\n{node.description}"]\n'
+            dot_content += f'  "{node.name}" [label="{node.name}, level = {node.level}\\n{node.description}"]\n'
 
         dot_content += "}"
 
