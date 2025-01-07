@@ -1,0 +1,34 @@
+{
+  "id": "chatcmpl-AmR6D01UceYFVFLAFfn6c3wGCidkM",
+  "object": "chat.completion",
+  "created": 1736107277,
+  "model": "gpt-4o-2024-08-06",
+  "choices": [
+    {
+      "index": 0,
+      "message": {
+        "role": "assistant",
+        "content": "{'feedback': 'false', 'what we recommend': 'false', 'save $30 on a wifi thermostat': 'false', 'contact us': 'false', 'Apps we like': 'false', 'automatic firmware updates': 'false', 'rate the app': 'false', 'cleanliness': 'false', 'cold temperature': 'false', 'Home view': 'false', 'bluetooth information': 'true', 'Friends of brand': 'false', 'current saturation': 'false', 'select a device to run offline diagnostics': 'false', 'audio output': 'false', 'view all products': 'false', 'suggestions': 'false', 'carbon monoxide': 'false', 'connected': 'false', 'grouping of lights': 'false', 'bssid': 'true', 'ask questions': 'false', 'settings': 'false', 'add a device': 'false', 'climate data': 'true', 'view details': 'false', 'learn more': 'false', 'charge status': 'false', 'user agreement': 'false', 'blood glucose': 'true', 'my routines': 'false', 'auto update devices and services': 'false', 'device description': 'false', 'about this feature': 'false', 'auto-detecting nearby devices': 'false', 'set your own wallpaper for each location and room': 'false', 'active power max': 'false', 'shortcut card': 'false', 'auto relock time': 'false', 'QR code': 'false', 'cook time': 'false', 'auto time': 'false', 'suggestion cards': 'false', 'ble version': 'false', 'get the deal': 'false', 'at home time': 'false', 'import QR code': 'false', 'plugins follow the system dark mode': 'false', 'Group with other accessories': 'false', 'bright state': 'false', 'button event': 'false', 'carbon dioxide': 'false', 'basal metabolism': 'true', 'random color': 'false', 'version': 'false', 'app version': 'false', 'dashboard': 'false', 'celsius': 'false', 'barrier safety status': 'false', 'power outage recovery': 'false', 'camera video': 'true', 'beep volume': 'false', '30-day money back guarantee': 'false', 'grouping of cameras': 'false', 'barrier position': 'false', 'camera image': 'true', 'grouping of environment devices': 'false', \"you can organize routines by category so they're easier to find\": 'false', 'alert state': 'false', 'bright value': 'false', 'redeem': 'false', 'camera location': 'true', 'Automation': 'false', 'how to use': 'false', 'device dpi': 'false', 'coupons': 'false', 'battery percentage': 'false', 'altitude': 'false', 'camera name': 'false', 'offers': 'false', 'alarm sound': 'false', 'keep screen on while using this app': 'false', 'fast free shipping': 'false', 'accessories': 'false', 'audio channel': 'false', 'power outage': 'false', 'rhythms': 'false', 'Language': 'false', 'support': 'false', 'active time': 'false', 'get help': 'false', 'reorder favorites': 'false', 'bmr': 'true', 'group devices that have been offline for 30 days or longer': 'false', 'carrier name': 'false', 'camera use': 'false', 'open source licenses': 'false', 'use paperwalls': 'false', 'battery alarm state': 'false', 'supported devices': 'false', 'show cards on the Favorites tab to let you know about useful features': 'false', 'check for updates': 'false', 'auto mode': 'false', 'air quality': 'true', 'try out experimental features': 'false', 'blood lipids': 'true', 'cart': 'false', 'device event information': 'false', 'barrier moving state': 'false', 'air purifier state': 'false', 'app info': 'false', 'bridge id': 'true', 'actuator enabled': 'false', 'automation': 'false', 'cycle time': 'false', 'add favorites': 'false', 'upgrade today': 'false', 'creation time': 'false', 'dark mode of plugins': 'false', 'access date': 'false', 'download': 'false', 'button name': 'false', 'color temperature': 'false', 'all offers': 'false', 'public preview': 'false', 'alarm light': 'false', 'carrier id': 'true', 'FAQ': 'false', 'button state': 'false', 'licenses': 'false', 'device chip id': 'true', 'blood pressure': 'true', 'filter': 'false', 'Dark Mode': 'false', 'brightness of the light': 'false', 'created at': 'false', 'cruise time': 'false', 'battery level': 'false', 'device card': 'false', 'app color': 'false', 'you may also like': 'false', 'about the home': 'false', 'bed time': 'false', 'alarm delay time': 'false', 'alarm state': 'false', 'discounts and deals': 'false', 'battery status': 'false', 'blood oxygen level': 'true', 'grouping of curtains': 'false', 'shop now': 'false', 'shortcut card touch tone': 'false', 'cooling threshold temperature': 'false', 'group offline devices': 'false', 'customer service': 'false', 'blood sugar': 'true', 'start new feature': 'false', 'body composition': 'true', 'burning time': 'false', 'add category': 'false', 'access time': 'false', 'current time': 'false', 'active power min': 'false', 'entertainment': 'false', 'blowing air': 'false', 'virtual home': 'false', 'body move times': 'false', 'activity level': 'false', 'current location': 'true', 'battery percentage remaining': 'false', 'top sellers': 'false', 'alarm time': 'false', 'data time': 'false', 'at night': 'false', 'color mode': 'false', 'air volume': 'false', 'weather': 'false', 'bluetooth unlock': 'false', 'connect time': 'false', 'activity type': 'false', 'current hour': 'false', 'clean time': 'false', 'cool temperature': 'false', 'button id': 'false', 'apnea duration': 'false', 'charge time': 'false', 'auto ring': 'false', 'copyright': 'false', 'device location': 'true', 'bmi': 'true', 'go shopping': 'false', 'alarm active': 'false', 'battery low': 'false', 'body age': 'true', 'alarm triggered': 'false', 'about': 'false', \"what's new\": 'false', 'suggestion notifications': 'false', 'alarm volume': 'false', 'audio parameter': 'false', 'audio recording': 'false', 'average heart rate': 'true', 'error reports': 'false', 'enable shotcuts': 'false', 'schedules': 'false', 'awake': 'false', 'you currently have no notifications': 'false', 'device address': 'false', 'accelerometer information': 'false', 'questions': 'false'}",
+        "refusal": null
+      },
+      "logprobs": null,
+      "finish_reason": "stop"
+    }
+  ],
+  "usage": {
+    "prompt_tokens": 4931,
+    "completion_tokens": 1596,
+    "total_tokens": 6527,
+    "prompt_tokens_details": {
+      "cached_tokens": 4736,
+      "audio_tokens": 0
+    },
+    "completion_tokens_details": {
+      "reasoning_tokens": 0,
+      "audio_tokens": 0,
+      "accepted_prediction_tokens": 0,
+      "rejected_prediction_tokens": 0
+    }
+  },
+  "system_fingerprint": "fp_e161c81bbd"
+}
