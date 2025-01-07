@@ -6,7 +6,7 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 sys.path.append(BASE_DIR + "/../../")
 from Confiot_main.utils.XMLParser import XMLParser
 import cleantext
-from Confiot_main.utils.LabelResolution import Rectangle, Vector, calc_collision_vector, Coordinate
+from Confiot_main.utils.LabelResolution import Rectangle, Vector, calc_collision_vector, Coordinate, is_in_box
 
 
 class OperationExtractor():
@@ -164,20 +164,38 @@ class OperationExtractor():
                                 (tview['bounds'][1][1] - tview['bounds'][0][1]) / 2]
                 if (hashlib.sha256(str(tview).encode("utf-8")).hexdigest() not in self.labels):
                     self.labels[hashlib.sha256(str(tview).encode("utf-8")).hexdigest()] = {}
-                # viewgroup可能会包含多个text
 
-                if (magnitude == -1 and len(self.operations[view_hash]) > 1):
-                    self.labels[hashlib.sha256(
-                        str(tview).encode("utf-8")).hexdigest()][view_hash] = math.sqrt((op_center[0] - tview_center[0])**2 +
-                                                                                        (op_center[1] - tview_center[1])**2)
-                else:
-                    self.labels[hashlib.sha256(str(tview).encode("utf-8")).hexdigest()][view_hash] = magnitude
+                self.labels[hashlib.sha256(str(tview).encode("utf-8")).hexdigest()][view_hash] = magnitude
+
+                # if (magnitude == -1 and len(self.operations[view_hash]) > 1):
+                #     self.labels[hashlib.sha256(
+                #         str(tview).encode("utf-8")).hexdigest()][view_hash] = math.sqrt((op_center[0] - tview_center[0])**2 +
+                #                                                                         (op_center[1] - tview_center[1])**2)
+                # else:
+                #     self.labels[hashlib.sha256(str(tview).encode("utf-8")).hexdigest()][view_hash] = magnitude
 
         self.operations = {}
         for label in self.labels:
             potential_operations = self.labels[label]
             potential_operations = dict(sorted(potential_operations.items(), key=lambda item: item[1]))
             most_related_operation_hash = list(potential_operations.keys())[0]
+
+            # 一个operationable viewgroup内会包含这个text view，并且viewgroup内部的另外一个operation，也与text view相关
+            if (potential_operations[most_related_operation_hash] == -1):
+                viewgroup_view = self.hashable_views[most_related_operation_hash]
+                viewgroup_rec = Rectangle(viewgroup_view["bounds"][0][0], viewgroup_view["bounds"][0][1],
+                                          viewgroup_view["bounds"][1][0], viewgroup_view["bounds"][1][1])
+                for other_op_hash in potential_operations:
+                    if (other_op_hash == most_related_operation_hash):
+                        continue
+                    op_view = self.hashable_views[other_op_hash]
+                    op_rec = Rectangle(op_view["bounds"][0][0], op_view["bounds"][0][1], op_view["bounds"][1][0],
+                                       op_view["bounds"][1][1])
+                    # 如果op_view 在 viewgroup_view内部，则保留op_view与当前label的绑定
+                    if (is_in_box(viewgroup_rec, op_rec)):
+                        if (other_op_hash not in self.operations):
+                            self.operations[other_op_hash] = []
+                        self.operations[other_op_hash].append((self.hashable_views[label], potential_operations[other_op_hash]))
 
             if (most_related_operation_hash not in self.operations):
                 self.operations[most_related_operation_hash] = []
