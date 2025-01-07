@@ -1,21 +1,25 @@
 import os, base64, requests, json
+import pandas as pd
+from sklearn.model_selection import train_test_split
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.svm import SVC
+from sklearn.metrics import precision_score, recall_score
+from sklearn.metrics import classification_report, accuracy_score
+from sklearn.utils import shuffle
 
-def similarityGPT(privacy_file, non_privacy_file):
+def GetDataList(current_dir, file):
+    with open(os.path.join(current_dir, file), 'r') as f:
+        content = json.load(f)
+    data = []
+    for key in content.keys():
+        for items in content[key]:
+            data.append(items)
+    return data
+
+def ClassifierGPT(privacy_file, non_privacy_file):
         current_dir = os.path.dirname(os.path.abspath(__file__))
-    
-        with open(os.path.join(current_dir, privacy_file), 'r') as f:
-            content = json.load(f)
-        privacy_data = []
-        for key in content.keys():
-             for items in content[key]:
-                  privacy_data.append(items)
-
-        with open(os.path.join(current_dir, non_privacy_file), 'r') as f:
-            content = json.load(f)
-        non_privacy_data = []
-        for key in content.keys():
-            for items in content[key]:
-                non_privacy_data.append(items)
+        privacy_data = GetDataList(current_dir, privacy_file)
+        non_privacy_data = GetDataList(current_dir, non_privacy_file)
         
         with open(os.path.join(current_dir, "dataset/testDataset.json"), 'r') as f:
             content = json.load(f)
@@ -73,5 +77,57 @@ def similarityGPT(privacy_file, non_privacy_file):
         # except Exception as e:
         #     return "unknown"
 
+# def GPTResult():
+
+
+
+def ClassifierSVMTraining(privacy_training_file, non_privacy_training_file, privacy_testing_file, non_privacy_testing_file):
+    # 1. Data Preparation
+    # Assume `texts` is a list of 1000 text samples and `labels` is a list of binary labels (1 for privacy, 0 for non-privacy)
+    # Example: texts = ["Privacy text 1", "Non-privacy text 2", ...]
+    # labels = [1, 0, ...]
+    current_dir = os.path.dirname(os.path.abspath(__file__))
+    privacy_training_data = GetDataList(current_dir, privacy_training_file)
+    non_privacy_training_data = GetDataList(current_dir, non_privacy_training_file)
+    X_train = privacy_training_data + non_privacy_training_data
+    y_train = [1] * len(privacy_training_data) + [0] * len(non_privacy_training_data)
+
+    privacy_testing_data = GetDataList(current_dir, privacy_testing_file)
+    non_privacy_testing_data = GetDataList(current_dir, non_privacy_testing_file)
+    X_test = privacy_testing_data + non_privacy_testing_data
+    y_test = [1] * len(privacy_testing_data) + [0] * len(non_privacy_testing_data)
+
+    X_train, y_train = shuffle(X_train, y_train, random_state=42)
+
+    # 2. Feature Extraction
+    tfidf = TfidfVectorizer(max_features=1000)  # You can adjust `max_features` for dimensionality
+    X_train_tfidf = tfidf.fit_transform(X_train)
+    X_test_tfidf = tfidf.transform(X_test)
+
+    # 3. Train the SVM Classifier
+    svm = SVC(kernel='linear', random_state=42)  # Use 'linear' kernel for text classification
+    svm.fit(X_train_tfidf, y_train)
+
+    # 4. Evaluate the Model
+    y_pred = svm.predict(X_test_tfidf)
+
+    # Calculate precision and recall
+    precision = precision_score(y_test, y_pred)
+    recall = recall_score(y_test, y_pred)
+
+    print(f"Precision: {precision:.2f}")
+    print(f"Recall: {recall:.2f}")
+    print("Classification Report:\n", classification_report(y_test, y_pred))
+
+    # Save the model and vectorizer for future use
+    import joblib
+    with open(os.path.join(current_dir, "model/svm_model.pkl"), 'wb') as f:
+        joblib.dump(svm, f)
+    with open(os.path.join(current_dir, "model/tfidf_vectorizer.pkl"), 'wb') as f:
+        joblib.dump(tfidf, f)
+
+
 if __name__ == "__main__":
-    similarityGPT("dataset/privacy_training_data.json", "dataset/non_privacy_training_data.json")
+    # ClassifierGPT("dataset/privacy_training_data.json", "dataset/non_privacy_training_data.json")
+    ClassifierSVMTraining("dataset/privacy_training_data.json", "dataset/non_privacy_training_data.json", "dataset/privacy_testing_data.json", "dataset/non_privacy_testing_data.json")
+
