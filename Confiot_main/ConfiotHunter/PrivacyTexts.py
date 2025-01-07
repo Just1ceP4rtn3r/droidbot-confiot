@@ -1,4 +1,4 @@
-import os, base64, requests, json
+import os, requests, json
 import pandas as pd
 from sklearn.model_selection import train_test_split
 from sklearn.feature_extraction.text import TfidfVectorizer
@@ -6,6 +6,8 @@ from sklearn.svm import SVC
 from sklearn.metrics import precision_score, recall_score
 from sklearn.metrics import classification_report, accuracy_score
 from sklearn.utils import shuffle
+from gensim.models import Word2Vec, KeyedVectors
+import numpy as np
 
 def GetDataList(current_dir, file):
     with open(os.path.join(current_dir, file), 'r') as f:
@@ -77,15 +79,38 @@ def ClassifierGPT(privacy_file, non_privacy_file):
         # except Exception as e:
         #     return "unknown"
 
-# def GPTResult():
+def GPTResult(result_file, test_file):
+    # Chatgpt result format: {"feedback": "false", "what we recommend": "false"}
+    current_dir = os.path.dirname(os.path.abspath(__file__))
+    with open(os.path.join(current_dir, result_file), 'r') as f:
+        content = json.load(f)
+    result_label = []
+    for key in content.keys():
+        if content[key] == "true":
+            result_label.append(1)
+        else:
+            result_label.append(0)
+    
+    with open(os.path.join(current_dir, test_file), 'r') as f:
+        content = json.load(f)
+    test_label = []
+    for key in content.keys():
+        if content[key] == "true":
+            test_label.append(1)
+        else:
+            test_label.append(0)
+
+    precision = precision_score(test_label, result_label)
+    recall = recall_score(test_label, result_label)
+
+    print(f"Precision: {precision:.2f}")
+    print(f"Recall: {recall:.2f}")
+    print("Classification Report:\n", classification_report(test_label, result_label))
+    
 
 
-
-def ClassifierSVMTraining(privacy_training_file, non_privacy_training_file, privacy_testing_file, non_privacy_testing_file):
+def ClassifierSVM(privacy_training_file, non_privacy_training_file, privacy_testing_file, non_privacy_testing_file):
     # 1. Data Preparation
-    # Assume `texts` is a list of 1000 text samples and `labels` is a list of binary labels (1 for privacy, 0 for non-privacy)
-    # Example: texts = ["Privacy text 1", "Non-privacy text 2", ...]
-    # labels = [1, 0, ...]
     current_dir = os.path.dirname(os.path.abspath(__file__))
     privacy_training_data = GetDataList(current_dir, privacy_training_file)
     non_privacy_training_data = GetDataList(current_dir, non_privacy_training_file)
@@ -100,7 +125,7 @@ def ClassifierSVMTraining(privacy_training_file, non_privacy_training_file, priv
     X_train, y_train = shuffle(X_train, y_train, random_state=42)
 
     # 2. Feature Extraction
-    tfidf = TfidfVectorizer(max_features=1000)  # You can adjust `max_features` for dimensionality
+    tfidf = TfidfVectorizer(max_features=1000)  
     X_train_tfidf = tfidf.fit_transform(X_train)
     X_test_tfidf = tfidf.transform(X_test)
 
@@ -126,8 +151,66 @@ def ClassifierSVMTraining(privacy_training_file, non_privacy_training_file, priv
     with open(os.path.join(current_dir, "model/tfidf_vectorizer.pkl"), 'wb') as f:
         joblib.dump(tfidf, f)
 
+def SimilarityBert():
+    pass
+
+def GetEmbedding(words, model, embedding_dim=100):
+    embeddings = []
+    for word in words:
+        if word in model:  # Check if the word is in the Word2Vec vocabulary
+            embeddings.append(model[word])
+    if embeddings:
+        return np.mean(embeddings, axis=0)  # Average the word embeddings for the sentence
+    else:
+        return np.zeros(embedding_dim)  # Return a zero vector if no words are found
+
+def WordClassifierSVM(word_emb, privacy_training_file, non_privacy_training_file, privacy_testing_file, non_privacy_testing_file):
+    current_dir = os.path.dirname(os.path.abspath(__file__))
+    privacy_training_data = GetDataList(current_dir, privacy_training_file)
+    non_privacy_training_data = GetDataList(current_dir, non_privacy_training_file)
+    training_data = privacy_training_data + non_privacy_training_data
+    y_train = [1] * len(privacy_training_data) + [0] * len(non_privacy_training_data)
+    privacy_testing_data = GetDataList(current_dir, privacy_testing_file)
+    non_privacy_testing_data = GetDataList(current_dir, non_privacy_testing_file)
+    testing_data = privacy_testing_data + non_privacy_testing_data
+    y_test = [1] * len(privacy_testing_data) + [0] * len(non_privacy_testing_data)
+    if word_emb == "Word2Vec":
+        train_tokens = [text.split() for text in training_data]
+        test_tokens = [text.split() for text in testing_data]
+        # Train a Word2Vec model
+        # model = Word2Vec(sentences=train_tokens, vector_size=100, window=5, min_count=1, workers=4)
+        model = KeyedVectors.load_word2vec_format('GoogleNews-vectors-negative300.bin', binary=True)
+        # with open(os.path.join(current_dir, "model/word2vec_privacy.model"), 'wb') as f:
+        #     model.save(f)
+        # model = Word2Vec.load("word2vec_privacy.model")
+
+        X_train = np.array([GetEmbedding(sentence, model, embedding_dim=100) for sentence in training_data])
+        print("X_train shape:", X_train.shape)
+        X_test = np.array([GetEmbedding(sentence, model, embedding_dim=100) for sentence in testing_data])
+
+        X_train, y_train = shuffle(X_train, y_train, random_state=42)
+
+        # Train SVM classifier
+        svm = SVC(kernel='linear', random_state=42)
+        svm.fit(X_train, y_train)
+
+        # Predict and evaluate
+        y_pred = svm.predict(X_test)  # Example on training data for demonstration
+
+        precision = precision_score(y_test, y_pred)
+        recall = recall_score(y_test, y_pred)
+
+        print(f"Precision: {precision:.2f}")
+        print(f"Recall: {recall:.2f}")
+        print("Classification Report:\n", classification_report(y_test, y_pred))
+
+
+
 
 if __name__ == "__main__":
     # ClassifierGPT("dataset/privacy_training_data.json", "dataset/non_privacy_training_data.json")
-    ClassifierSVMTraining("dataset/privacy_training_data.json", "dataset/non_privacy_training_data.json", "dataset/privacy_testing_data.json", "dataset/non_privacy_testing_data.json")
+    # ClassifierSVM("dataset/privacy_training_data.json", "dataset/non_privacy_training_data.json", "dataset/privacy_testing_data.json", "dataset/non_privacy_testing_data.json")
+    # WordClassifierSVM("Word2Vec", "dataset/privacy_training_data.json", "dataset/non_privacy_training_data.json", "dataset/privacy_testing_data.json", "dataset/non_privacy_testing_data.json")
+
+    GPTResult("result/gpt_result.json", "dataset/testDataset.json")
 
