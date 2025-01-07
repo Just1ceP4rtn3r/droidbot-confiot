@@ -38,7 +38,7 @@ class OperationExtractor:
 
         if d == "" or not d:
             return ""
-        d = cleantext.clean(d, extra_spaces=True, numbers=True, punct=True)
+        d = cleantext.clean(d, extra_spaces=True, numbers=False, punct=True)
 
         return d
 
