@@ -285,8 +285,55 @@ def test_ConfioT_Hunter():
     )
 
 
+def test_LLM_json_response():
+    from Confiot_main.settings import settings
+    from Confiot_main.ConfigurationParser.ConfigurationParser import ConfigurationParser
+    from Confiot_main.utils.util import (
+        query_config_resource_mapping_with_structured_output,
+    )
+
+    os.environ["https_proxy"] = "http://192.168.72.1:1083"
+
+    system_prompt = """
+You are a text-based IoT app configuration semantic identifier. I will provide a specific Android app page, which will include a list of operations on specific UI views/widgets from the page and plain texts in the page. Additionally, I will also provide an operation that has resulted in a transition from a preceding page to this page.
+
+An operation is defined as: <Action, UIType:,RelatedText>, such as <Click, android.widget.Button, 'History'> means to click the button view with the text description 'History'.
+You need to analyze the semantic similarity among the operations and the context to group operations that potentially work together to achieve a goal. Next, divide these operations according to different concrete configuration goals (e.g., add a user with the name "testname"), merging and assembling them into a configuration task list. If a particular configuration task depends on other configuration tasks, please indicate this in the 'dependencies' field of your response. For example, if "Task-1" depends on "Task-2", you should include "Task-2" in the 'dependencies' field of "Task-1".
+
+
+**Important: Response format**:
+    task_id: str // start from "Task-1"
+    page_id: str // like "Page-0", must be the same format as the input
+    task_content: str // "detailed task", or "None" if no specific task can be determined
+    related_operations: list[str] // ["operation_1", "operation_2", "operation_3"], "opreation_id" only
+    dependencies: str  // ["Task-2"], the tasks that shoud be completed before this task
+    reason: str // why configuration task, dependencies is generated, please think step by step
+    """
+
+    user_prompt = """
+    The Page ID is:```Page-20```
+    The operation lead to this page is: "<Click, android.view.ViewGroup, "Device">"
+    The operation list in this page is:
+    ```
+    (operation_0) <Click, android.view.ViewGroup, "Kg,Jin">
+    (operation_1) <Click, android.view.ViewGroup, "Lb">
+    ```
+    The plain texts in this page is:
+    ```
+    <p>Device</p>
+    <p>Weight Unit</p>
+    ```
+    """
+
+    res = query_config_resource_mapping_with_structured_output(
+        system_prompt, user_prompt
+    )
+
+    print(res)
+
+
 if __name__ == "__main__":
     # test_device_guest_config_walker()
     # test_STEP0()
     # test_Enumerate_pages()
-    test_Configuration_parser()
+    test_LLM_json_response()

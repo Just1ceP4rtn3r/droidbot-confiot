@@ -499,6 +499,39 @@ def query_config_resource_mapping(prompt):
         return response.text
 
 
+def query_config_resource_mapping_with_structured_output(system_prompt, user_prompt):
+    from pydantic import BaseModel
+    from openai import OpenAI
+
+    class ConfigurationFormat(BaseModel):
+        task_id: str
+        page_id: str
+        task_content: str
+        related_operations: list[str]
+        dependencies: str
+        reason: str
+
+    class response(BaseModel):
+        configuration_tasks: list[ConfigurationFormat]
+
+    client = OpenAI()
+    completion = client.beta.chat.completions.parse(
+        model="gpt-4o",
+        messages=[
+            {"role": "system", "content": system_prompt},
+            {
+                "role": "user",
+                "content": user_prompt,
+            },
+        ],
+        response_format=response,
+    )
+
+    event = completion.choices[0].message.parsed
+
+    return event
+
+
 def filter_configurations(ConfigResourceMapper):
     FilteredConfigResourceMapper = []
 

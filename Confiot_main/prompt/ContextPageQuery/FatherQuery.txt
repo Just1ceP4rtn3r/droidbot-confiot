@@ -15,20 +15,13 @@ Your task is to:
 
 **Important**: If, by combining the information from the current page, you find that the configuration tasks in my input child pages are incorrect, please reanalyze the configuration tasks for both the current page and the child pages and provide the results in your response.
 
-**Important**: Please respond in json:'''
-{
-    "Taks-1":{ // start from "Task-1"
-        "Page ID": "Page-0", // must be the same format as the input
-        "Configuration tasks": "detailed task", // or "None" if no specific task can be determined
-        "Related operations": ["operation_1", "operation_2", "operation_3"], // "opreation_id" only
-        "Dependencies": ["Task-2"], // the tasks that shoud be completed before this task
-        "Reason": "reason" // why this configuration is generated from operations, please think step by step
-    },
-    "Taks-2":{
-        ...
-    }
-}
-'''
+**Important: Response format**:
+    task_id: str // start from "Task-1"
+    page_id: str // like "Page-0", must be the same format as the input
+    task_content: str // "detailed task", or "None" if no specific task can be determined
+    related_operations: list[str] // ["operation_1", "operation_2", "operation_3"], "opreation_id" only
+    dependencies: str  // ["Task-2"], the tasks that shoud be completed before this task
+    reason: str // why configuration task, dependencies is generated, please think step by step
 
 
 # Current Page information
