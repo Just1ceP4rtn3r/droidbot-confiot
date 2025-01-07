@@ -14,7 +14,10 @@ class settings:
     UIHierarchy_comparation_output = Static_comparation_output + "/UIHierarchy/"
     Feasibility_comparation_output = Static_comparation_output + "/Feasibility/"
 
-    ##### Screen Capture resolution for GPT ######
+    screen_xy = (1080, 1920)
+    LabelResoluation_threshold = 80
+
+    ##### Screen Capture resolution######
     resol_x = 230
     resol_y = 512
 
@@ -74,5 +77,9 @@ class settings:
         settings.UI_output = settings.Confiot_output + "/UI/"
         settings.Pages = settings.Confiot_output + "/Pages/"
         settings.Static_comparation_output = settings.Confiot_output + "/Comparation/"
-        settings.UIHierarchy_comparation_output = settings.Static_comparation_output + "/UIHierarchy/"
-        settings.Feasibility_comparation_output = settings.Static_comparation_output + "/Feasibility/"
+        settings.UIHierarchy_comparation_output = (
+            settings.Static_comparation_output + "/UIHierarchy/"
+        )
+        settings.Feasibility_comparation_output = (
+            settings.Static_comparation_output + "/Feasibility/"
+        )

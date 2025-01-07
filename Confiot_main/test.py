@@ -289,7 +289,7 @@ def test_LLM_json_response():
     from Confiot_main.settings import settings
     from Confiot_main.ConfigurationParser.ConfigurationParser import ConfigurationParser
     from Confiot_main.utils.util import (
-        query_config_resource_mapping_with_structured_output,
+        query_config_operation_mapping_with_structured_output,
     )
 
     os.environ["https_proxy"] = "http://192.168.72.1:1083"
@@ -325,7 +325,7 @@ You need to analyze the semantic similarity among the operations and the context
     ```
     """
 
-    res = query_config_resource_mapping_with_structured_output(
+    res = query_config_operation_mapping_with_structured_output(
         system_prompt, user_prompt
     )
 
@@ -336,4 +336,4 @@ if __name__ == "__main__":
     # test_device_guest_config_walker()
     # test_STEP0()
     # test_Enumerate_pages()
-    test_LLM_json_response()
+    test_Configuration_parser()

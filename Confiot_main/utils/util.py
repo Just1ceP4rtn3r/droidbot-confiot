@@ -499,7 +499,7 @@ def query_config_resource_mapping(prompt):
         return response.text
 
 
-def query_config_resource_mapping_with_structured_output(system_prompt, user_prompt):
+def query_config_operation_mapping_with_structured_output(system_prompt, user_prompt):
     from pydantic import BaseModel
     from openai import OpenAI
 
@@ -508,7 +508,7 @@ def query_config_resource_mapping_with_structured_output(system_prompt, user_pro
         page_id: str
         task_content: str
         related_operations: list[str]
-        dependencies: str
+        dependencies: list[str]
         reason: str
 
     class response(BaseModel):

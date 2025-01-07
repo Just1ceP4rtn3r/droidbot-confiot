@@ -11,6 +11,7 @@ from Confiot_main.utils.util import (
     query_config_resource_mapping,
     parse_config_resource_mapping_v2_0,
     get_ConfigResourceMapper_from_file,
+    query_config_operation_mapping_with_structured_output,
 )
 
 
@@ -219,69 +220,6 @@ class ConfigurationParser:
             with open(save_dir + f"{page}.json", "w") as f:
                 f.write(json.dumps(overview, indent=2))
 
-    def query_LLM_for_configuration_mapping(self, outputdir):
-        if not os.path.exists(outputdir):
-            os.makedirs(outputdir)
-        Configurations = []
-
-        prompt_template = ""
-        BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-        with open(BASE_DIR + "/../prompt/OperationConfigurationMapping.txt") as f:
-            prompt_template = f.read()
-
-        for page in self.operations:
-            operations_file = settings.Confiot_output + f"/Operations/{page}.json"
-            if not os.path.exists(operations_file):
-                print(f"[ERR]: missing file {operations_file}")
-                break
-
-            # parse the operations file
-            with open(operations_file) as f:
-                operations = json.loads(f.read())
-
-                operations_str = []
-                context_str = ""
-                plain_texts_str = []
-
-                if operations["OPERATIONS"]:
-                    for op in operations["OPERATIONS"]:
-                        operations_str.append(operations["OPERATIONS"][op]["op_str"])
-                if operations["CONTEXT"]:
-                    context_str = operations["CONTEXT"]["ctx_str"]
-
-                if operations["LABELS"]:
-                    for label in operations["LABELS"]["label_views"]:
-                        plain_texts_str.append("<p>" + label["text"] + "</p>")
-
-                prompt = prompt_template.replace("{{PAGE}}", page)
-                prompt = prompt.replace("{{CONTEXT}}", context_str)
-                prompt = prompt.replace("{{LIST}}", "\n".join(operations_str))
-                prompt = prompt.replace("{{TEXT}}", "\n".join(plain_texts_str))
-
-                print(page)
-                print(
-                    "----------------------------------------------------------------------------------------------------------------------------------------------"
-                )
-                with open(outputdir + "/ConfigResourceMappingPrompt.txt", "a") as f:
-                    f.write("################ Page: " + page + "################\n")
-                    f.write(prompt + "\n")
-
-                res = query_config_resource_mapping(prompt)
-
-                with open(outputdir + "/ConfigResourceMappingResponse.txt", "a") as f:
-                    f.write("################ Page: " + page + "################\n")
-                    f.write(prompt + "\n")
-                    f.write(res + "\n")
-
-                mapper = parse_config_resource_mapping_v2_0(res)
-                for idx, value in enumerate(mapper):
-                    mapper[idx]["Page"] = page
-                    mapper[idx]["Id"] = len(Configurations)
-                    Configurations.append(mapper[idx])
-
-        with open(outputdir + "/ConfigResourceMapping.txt", "w") as f:
-            f.write(json.dumps(Configurations))
-
     def query_LLM_for_configuration_mapping_based_on_page_graph(self, outputdir):
         if not os.path.exists(outputdir):
             os.makedirs(outputdir)
@@ -346,7 +284,12 @@ class ConfigurationParser:
 
                 if operations["LABELS"]:
                     for label in operations["LABELS"]["label_views"]:
-                        plain_texts_str.append("<p>" + label["text"] + "</p>")
+                        if "is_title" in label and label["is_title"]:
+                            plain_texts_str.append(
+                                "<title>" + label["text"] + "</title>"
+                            )
+                        else:
+                            plain_texts_str.append("<p>" + label["text"] + "</p>")
 
                 page_info = PageInfo_template.replace("{{PAGE}}", page)
                 page_info = page_info.replace("{{LIST}}", "\n".join(operations_str))
@@ -371,9 +314,16 @@ class ConfigurationParser:
             print(
                 "----------------------------------------------------------------------------------------------------------------------------------------------"
             )
+
+            system_prompt = ""
+            user_prompt = ""
+            # prompt = system_prompt + "\n" + user_prompt
             prompt = ""
+
             # 如果是叶子节点，直接总结
             if page_worklist[page] == leaf_level or len(children) == 0:
+                system_prompt = LeafQuery_template
+                user_prompt = page_info
                 prompt = LeafQuery_template + "\n" + page_info
             # 父节点，一方面总结父节点，另一方面，反省叶子节点是否正确
             else:
@@ -393,62 +343,152 @@ class ConfigurationParser:
                     with open(outputdir + f"/{child_page}/PageInfo.txt", "r") as f:
                         childpage_info = f.read()
 
-                    with open(outputdir + f"/{child_page}/Response.txt", "r") as f:
-                        response = f.read()
-
                     with open(
-                        outputdir + f"/{child_page}/ConfigResourceMapping.json", "r"
+                        outputdir + f"/{child_page}/Configurations.json", "r"
                     ) as f:
-                        result = f.read()
+                        response = f.read()
 
                     children_info[child_page] = {
                         "PageInfo": childpage_info,
                         "Response": response,
                     }
 
-                prompt = FatherQuery_template.replace("{{PAGEINFO}}", page_info)
+                system_prompt = FatherQuery_template
+                user_prompt = (
+                    "# Current Page information\n"
+                    + page_info
+                    + "\n"
+                    + "-" * 60
+                    + "\nFrom the current page, here are the pages (child pages) that can be navigated to:\n"
+                )
                 for child_page in children_info:
                     if child_page not in page_infos:
                         continue
 
                     if not page_infos[child_page]["context"].strip():
-                        prompt += (
-                            ChildPage_template.replace(
-                                "{{CONTEXT}}", "<click, A button without text>"
+                        user_prompt += (
+                            (
+                                ChildPage_template.replace(
+                                    "{{CONTEXT}}", "<click, A button without text>"
+                                )
+                                .replace(
+                                    "{{PAGEINFO}}",
+                                    children_info[child_page]["PageInfo"],
+                                )
+                                .replace(
+                                    "{{RESPONSE}}",
+                                    children_info[child_page]["Response"],
+                                )
                             )
-                            .replace(
-                                "{{PAGEINFO}}", children_info[child_page]["PageInfo"]
-                            )
-                            .replace(
-                                "{{RESPONSE}}", children_info[child_page]["Response"]
-                            )
-                        ) + "\n\n\n"
+                            + "\n"
+                            + "-" * 60
+                            + "\n"
+                        )
                     else:
-                        prompt += (
-                            ChildPage_template.replace(
-                                "{{CONTEXT}}", page_infos[child_page]["context"]
+                        user_prompt += (
+                            (
+                                ChildPage_template.replace(
+                                    "{{CONTEXT}}", page_infos[child_page]["context"]
+                                )
+                                .replace(
+                                    "{{PAGEINFO}}",
+                                    children_info[child_page]["PageInfo"],
+                                )
+                                .replace(
+                                    "{{RESPONSE}}",
+                                    children_info[child_page]["Response"],
+                                )
                             )
-                            .replace(
-                                "{{PAGEINFO}}", children_info[child_page]["PageInfo"]
-                            )
-                            .replace(
-                                "{{RESPONSE}}", children_info[child_page]["Response"]
-                            )
-                        ) + "\n\n\n"
+                            + "\n"
+                            + "-" * 60
+                            + "\n"
+                        )
 
-            res = query_config_resource_mapping(prompt)
-            with open(outputdir + f"/{page}/Response.txt", "w") as f:
-                f.write(res + "\n")
+            prompt = system_prompt + "\n" + user_prompt
+            res = query_config_operation_mapping_with_structured_output(
+                system_prompt=system_prompt, user_prompt=user_prompt
+            )
+
+            for r in res.configuration_tasks:
+                task = {
+                    "Task ID": r.task_id,
+                    "Page ID": r.page_id,
+                    "Tasks": r.task_content,
+                    "Related operations": r.related_operations,
+                    "Dependencies": r.dependencies,
+                    "Reason": r.reason,
+                }
+                Configurations.append(task)
 
             with open(outputdir + f"/{page}/Raw.txt", "w") as f:
                 f.write("################ Page: " + page + "################\n")
                 f.write(prompt + "\n")
                 f.write("################ Response: " + page + "################\n")
-                f.write(res + "\n")
+                f.write(str(Configurations) + "\n")
 
-            mapper = parse_config_resource_mapping_v2_0(res)
-            for idx, value in enumerate(mapper):
-                Configurations.append(mapper[idx])
-
-            with open(outputdir + f"/{page}/ConfigResourceMapping.json", "w") as f:
+            with open(outputdir + f"/{page}/Configurations.json", "w") as f:
                 f.write(json.dumps(Configurations))
+
+    # decrpted
+    # def query_LLM_for_configuration_mapping(self, outputdir):
+    #     if not os.path.exists(outputdir):
+    #         os.makedirs(outputdir)
+    #     Configurations = []
+
+    #     prompt_template = ""
+    #     BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+    #     with open(BASE_DIR + "/../prompt/OperationConfigurationMapping.txt") as f:
+    #         prompt_template = f.read()
+
+    #     for page in self.operations:
+    #         operations_file = settings.Confiot_output + f"/Operations/{page}.json"
+    #         if not os.path.exists(operations_file):
+    #             print(f"[ERR]: missing file {operations_file}")
+    #             break
+
+    #         # parse the operations file
+    #         with open(operations_file) as f:
+    #             operations = json.loads(f.read())
+
+    #             operations_str = []
+    #             context_str = ""
+    #             plain_texts_str = []
+
+    #             if operations["OPERATIONS"]:
+    #                 for op in operations["OPERATIONS"]:
+    #                     operations_str.append(operations["OPERATIONS"][op]["op_str"])
+    #             if operations["CONTEXT"]:
+    #                 context_str = operations["CONTEXT"]["ctx_str"]
+
+    #             if operations["LABELS"]:
+    #                 for label in operations["LABELS"]["label_views"]:
+    #                     plain_texts_str.append("<p>" + label["text"] + "</p>")
+
+    #             prompt = prompt_template.replace("{{PAGE}}", page)
+    #             prompt = prompt.replace("{{CONTEXT}}", context_str)
+    #             prompt = prompt.replace("{{LIST}}", "\n".join(operations_str))
+    #             prompt = prompt.replace("{{TEXT}}", "\n".join(plain_texts_str))
+
+    #             print(page)
+    #             print(
+    #                 "----------------------------------------------------------------------------------------------------------------------------------------------"
+    #             )
+    #             with open(outputdir + "/ConfigResourceMappingPrompt.txt", "a") as f:
+    #                 f.write("################ Page: " + page + "################\n")
+    #                 f.write(prompt + "\n")
+
+    #             res = query_config_resource_mapping(prompt)
+
+    #             with open(outputdir + "/ConfigResourceMappingResponse.txt", "a") as f:
+    #                 f.write("################ Page: " + page + "################\n")
+    #                 f.write(prompt + "\n")
+    #                 f.write(res + "\n")
+
+    #             mapper = parse_config_resource_mapping_v2_0(res)
+    #             for idx, value in enumerate(mapper):
+    #                 mapper[idx]["Page"] = page
+    #                 mapper[idx]["Id"] = len(Configurations)
+    #                 Configurations.append(mapper[idx])
+
+    #     with open(outputdir + "/ConfigResourceMapping.txt", "w") as f:
+    #         f.write(json.dumps(Configurations))
