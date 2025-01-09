@@ -8,6 +8,12 @@ from sklearn.metrics import classification_report, accuracy_score
 from sklearn.utils import shuffle
 from gensim.models import Word2Vec, KeyedVectors
 import numpy as np
+from transformers import AutoTokenizer
+import torch
+from transformers import AutoModelForSequenceClassification
+from torch.utils.data import DataLoader
+from transformers import AdamW, get_scheduler
+from tqdm import tqdm
 
 def GetDataList(current_dir, file):
     with open(os.path.join(current_dir, file), 'r') as f:
@@ -17,6 +23,19 @@ def GetDataList(current_dir, file):
         for items in content[key]:
             data.append(items)
     return data
+
+def GetDataset(current_dir, privacy_training_file, non_privacy_training_file, privacy_testing_file, non_privacy_testing_file):
+    privacy_training_data = GetDataList(current_dir, privacy_training_file)
+    non_privacy_training_data = GetDataList(current_dir, non_privacy_training_file)
+    X_train = privacy_training_data + non_privacy_training_data
+    y_train = [1] * len(privacy_training_data) + [0] * len(non_privacy_training_data)
+    
+    privacy_testing_data = GetDataList(current_dir, privacy_testing_file)
+    non_privacy_testing_data = GetDataList(current_dir, non_privacy_testing_file)
+    X_test = privacy_testing_data + non_privacy_testing_data
+    y_test = [1] * len(privacy_testing_data) + [0] * len(non_privacy_testing_data)
+
+    return X_train, y_train, X_test, y_test
 
 def ClassifierGPT(privacy_file, non_privacy_file):
         current_dir = os.path.dirname(os.path.abspath(__file__))
@@ -110,21 +129,12 @@ def GPTResult(result_file, test_file):
 
 
 def ClassifierSVM(privacy_training_file, non_privacy_training_file, privacy_testing_file, non_privacy_testing_file):
-    # 1. Data Preparation
+    # prepare dataset
     current_dir = os.path.dirname(os.path.abspath(__file__))
-    privacy_training_data = GetDataList(current_dir, privacy_training_file)
-    non_privacy_training_data = GetDataList(current_dir, non_privacy_training_file)
-    X_train = privacy_training_data + non_privacy_training_data
-    y_train = [1] * len(privacy_training_data) + [0] * len(non_privacy_training_data)
-
-    privacy_testing_data = GetDataList(current_dir, privacy_testing_file)
-    non_privacy_testing_data = GetDataList(current_dir, non_privacy_testing_file)
-    X_test = privacy_testing_data + non_privacy_testing_data
-    y_test = [1] * len(privacy_testing_data) + [0] * len(non_privacy_testing_data)
-
+    X_train, y_train, X_test, y_test = GetDataset(current_dir, privacy_training_file, non_privacy_training_file, privacy_testing_file, non_privacy_testing_file)
     X_train, y_train = shuffle(X_train, y_train, random_state=42)
 
-    # 2. Feature Extraction
+    # feature extraction
     tfidf = TfidfVectorizer(max_features=1000)  
     X_train_tfidf = tfidf.fit_transform(X_train)
     X_test_tfidf = tfidf.transform(X_test)
@@ -151,9 +161,6 @@ def ClassifierSVM(privacy_training_file, non_privacy_training_file, privacy_test
     with open(os.path.join(current_dir, "model/tfidf_vectorizer.pkl"), 'wb') as f:
         joblib.dump(tfidf, f)
 
-def SimilarityBert():
-    pass
-
 def GetEmbedding(words, model, embedding_dim=100):
     embeddings = []
     for word in words:
@@ -166,20 +173,14 @@ def GetEmbedding(words, model, embedding_dim=100):
 
 def WordClassifierSVM(word_emb, privacy_training_file, non_privacy_training_file, privacy_testing_file, non_privacy_testing_file):
     current_dir = os.path.dirname(os.path.abspath(__file__))
-    privacy_training_data = GetDataList(current_dir, privacy_training_file)
-    non_privacy_training_data = GetDataList(current_dir, non_privacy_training_file)
-    training_data = privacy_training_data + non_privacy_training_data
-    y_train = [1] * len(privacy_training_data) + [0] * len(non_privacy_training_data)
-    privacy_testing_data = GetDataList(current_dir, privacy_testing_file)
-    non_privacy_testing_data = GetDataList(current_dir, non_privacy_testing_file)
-    testing_data = privacy_testing_data + non_privacy_testing_data
-    y_test = [1] * len(privacy_testing_data) + [0] * len(non_privacy_testing_data)
+    training_data, y_train, testing_data, y_test = GetDataset(current_dir, privacy_training_file, non_privacy_training_file, privacy_testing_file, non_privacy_testing_file)
+    
     if word_emb == "Word2Vec":
         train_tokens = [text.split() for text in training_data]
         test_tokens = [text.split() for text in testing_data]
         # Train a Word2Vec model
         # model = Word2Vec(sentences=train_tokens, vector_size=100, window=5, min_count=1, workers=4)
-        model = KeyedVectors.load_word2vec_format('GoogleNews-vectors-negative300.bin', binary=True)
+        model = KeyedVectors.load_word2vec_format('/Users/tracy/Downloads/GoogleNews-vectors-negative300.bin', binary=True)
         # with open(os.path.join(current_dir, "model/word2vec_privacy.model"), 'wb') as f:
         #     model.save(f)
         # model = Word2Vec.load("word2vec_privacy.model")
@@ -204,6 +205,97 @@ def WordClassifierSVM(word_emb, privacy_training_file, non_privacy_training_file
         print(f"Recall: {recall:.2f}")
         print("Classification Report:\n", classification_report(y_test, y_pred))
 
+class CustomDataset(torch.utils.data.Dataset):
+    def __init__(self, encodings, labels):
+        self.encodings = encodings
+        self.labels = labels
+
+    def __len__(self):
+        return len(self.labels)
+
+    def __getitem__(self, idx):
+        item = {key: val[idx] for key, val in self.encodings.items()}
+        item['labels'] = torch.tensor(self.labels[idx])
+        return item
+
+def ClassifierBert(privacy_training_file, non_privacy_training_file, privacy_testing_file, non_privacy_testing_file):
+    # prepare dataset
+    current_dir = os.path.dirname(os.path.abspath(__file__))
+    X_train, y_train, X_test, y_test = GetDataset(current_dir, privacy_training_file, non_privacy_training_file, privacy_testing_file, non_privacy_testing_file)
+    X_train, y_train = shuffle(X_train, y_train, random_state=42)
+
+    # tokenize data
+    checkpoint = "bert-base-uncased"
+    tokenizer = AutoTokenizer.from_pretrained(checkpoint)
+    # tokenizer = AutoTokenizer.from_pretrained("roberta-base")
+    train_encodings = tokenizer(X_train, padding=True, truncation=True, max_length=10, return_tensors="pt") # Returns PyTorch tensors
+    test_encodings = tokenizer(X_test, padding=True, truncation=True, max_length=10, return_tensors="pt") # Returns PyTorch tensors
+
+    # create dataset in torch format
+    train_dataset = CustomDataset(train_encodings, y_train)
+    test_dataset = CustomDataset(test_encodings, y_test)
+
+    # load pre-trained model
+    model = AutoModelForSequenceClassification.from_pretrained(checkpoint, num_labels=2)  # binary classification
+
+    # create dataloader
+    train_loader = DataLoader(train_dataset, batch_size=16, shuffle=True)
+    test_loader = DataLoader(test_dataset, batch_size=16)
+
+    optimizer = AdamW(model.parameters(), lr=5e-5)
+    num_training_steps = len(train_loader) * 5  # 5 epochs is better than 3
+    lr_scheduler = get_scheduler("linear", optimizer=optimizer, num_warmup_steps=0, num_training_steps=num_training_steps)
+
+    # set device
+    device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
+    model.to(device)
+
+    # train the model
+    epochs = 5
+    for epoch in range(epochs):
+        model.train()
+        loop = tqdm(train_loader, leave=True)
+        for batch in loop:
+            # move data to device
+            batch = {key: val.to(device) for key, val in batch.items()}
+
+            # forward pass
+            outputs = model(**batch)
+            loss = outputs.loss
+
+            # backward pass
+            optimizer.zero_grad()
+            loss.backward()
+            optimizer.step()
+            lr_scheduler.step()
+
+            # print loss
+            loop.set_description(f"Epoch {epoch}")
+            loop.set_postfix(loss=loss.item())
+
+    model.eval()
+    all_preds = []
+    all_labels = []
+
+    with torch.no_grad():
+        for batch in test_loader:
+            batch = {key: val.to(device) for key, val in batch.items()}
+            outputs = model(**batch)
+            logits = outputs.logits
+            predictions = torch.argmax(logits, dim=-1)
+            all_preds.extend(predictions.cpu().numpy())
+            all_labels.extend(batch['labels'].cpu().numpy())
+
+    # Calculate metrics
+    accuracy = accuracy_score(all_labels, all_preds)
+    precision = precision_score(all_labels, all_preds)
+    recall = recall_score(all_labels, all_preds)
+
+    print(f"Accuracy: {accuracy:.2f}")
+    print(f"Precision: {precision:.2f}")
+    print(f"Recall: {recall:.2f}")
+    print("Classification Report:\n", classification_report(all_labels, all_preds))
+
 
 
 
@@ -212,5 +304,5 @@ if __name__ == "__main__":
     # ClassifierSVM("dataset/privacy_training_data.json", "dataset/non_privacy_training_data.json", "dataset/privacy_testing_data.json", "dataset/non_privacy_testing_data.json")
     # WordClassifierSVM("Word2Vec", "dataset/privacy_training_data.json", "dataset/non_privacy_training_data.json", "dataset/privacy_testing_data.json", "dataset/non_privacy_testing_data.json")
 
-    GPTResult("result/gpt_result.json", "dataset/testDataset.json")
-
+    # GPTResult("result/gpt_result.json", "dataset/testDataset.json")
+    ClassifierBert("dataset/privacy_training_data.json", "dataset/non_privacy_training_data.json", "dataset/privacy_testing_data.json", "dataset/non_privacy_testing_data.json")
