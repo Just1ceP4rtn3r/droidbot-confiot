@@ -264,10 +264,10 @@ def test_Configuration_parser():
 
     CP = ConfigurationParser(Agent)
 
-    os.environ["https_proxy"] = "http://192.168.72.1:1083"
-    CP.query_LLM_for_configuration_mapping_based_on_page_graph(
-        settings.Confiot_output + "/LLM_ContextPageQuery"
-    )
+    # os.environ["https_proxy"] = "http://192.168.72.1:1083"
+    # CP.query_LLM_for_configuration_mapping_based_on_page_graph(
+    #     settings.Confiot_output + "/LLM_ContextPageQuery"
+    # )
 
 
 def test_ConfioT_Hunter():
