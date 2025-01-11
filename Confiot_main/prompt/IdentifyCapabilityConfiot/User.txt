@@ -1,0 +1,17 @@
+The current page information is:
+'''
+{{PAGEINFO}}
+'''
+
+After configuration event, the GUI changes are:
+'''
+{{UICHANGES}}
+'''
+
+The security criteria are:
+'''
+{{CRITERIA}}
+'''
+
+
+
