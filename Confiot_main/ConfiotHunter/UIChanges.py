@@ -1,5 +1,6 @@
-import os
+import os, sys
 import json
+import re
 
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -7,16 +8,21 @@ sys.path.append(BASE_DIR + "/../../")
 from Confiot_main.Confiot import Confiot
 from Confiot_main.settings import settings
 from Confiot_main.ConfigurationParser.OperationExtraction import OperationExtractor
+from Confiot_main.utils.util import jaccard_similarity
 
 
 class ChangeType:
+    delete = 0
+    add = 1
+
     def __init__(self):
         pass
 
 
 class OperationChangeType(ChangeType):
-    def __init__(self):
-        pass
+    def __init__(self, change, operation):
+        self.change = change
+        self.opeartion = operation
 
 
 class UIChangeParser:
@@ -25,12 +31,17 @@ class UIChangeParser:
         self.xml_old = xml_old
         self.xml_new = xml_new
 
+        # {
+        #     "op_id": 1,
+        #     "op_text": '["Mi Home",]',
+        #     "op_view": {},
+        # }
         # 初始送给GPT的operations
-        self.operations_init = {}
+        self.operations_init = []
         # 当前测试前的operations
-        self.operations_old = {}
+        self.operations_old = []
         # 当前测试后的operations
-        self.operations_new = {}
+        self.operations_new = []
 
         self.load_operations()
 
@@ -42,19 +53,107 @@ class UIChangeParser:
         # parse the operations file
         with open(page_operations_file) as f:
             operations_init = json.loads(f.read())
+            for o in operations_init:
+                op = {
+                    "op_id": o["op_id"],
+                    "op_text": [tview["text"] for tview in o["op_text"]],
+                    "op_view": o["op_view"],
+                    "op_str": o["op_str"],
+                }
+                self.operations_init.append(op)
 
-        operations, _, hashable_views = OperationExtractor(
-            page_xml_file=self.xml_old
-        ).extract_operations()
-        self.operations_old = (operations, hashable_views)
+        self.operations_old = self.parse_op_from_xml(self.xml_old)
+        self.operations_new = self.parse_op_from_xml(self.xml_new)
 
-        operations, _, hashable_views = OperationExtractor(
-            page_xml_file=self.xml_new
-        ).extract_operations()
-        self.operations_new = (operations, hashable_views)
-
+    # [TODO]: 增加更多的change type识别
     def identify_change_type(self):
-        pass
+        semantic_changes = []
+
+        for target_op in self.operations_init:
+            exist_in_old = self.find_op(target_op, self.operations_old)
+            exist_in_new = self.find_op(target_op, self.operations_new)
+
+            if exist_in_old is None and exist_in_new is not None:
+                semantic_changes.append(OperationChangeType(ChangeType.add, target_op))
+            elif exist_in_old is not None and exist_in_new is None:
+                semantic_changes.append(
+                    OperationChangeType(ChangeType.delete, target_op)
+                )
+
+    # 1. 比较op_text
+    # 2. 比较op_view
+    def find_op(self, target_op, operation_LIST):
+        Similarities = {}
+
+        target_op_view = target_op["op_view"]
+        for idx, op in enumerate(operation_LIST):
+            op_view = op["op_view"]
+            jaccard = jaccard_similarity(op["op_text"], target_op["op_text"])
+
+            if (
+                op_view["resource_id"] == target_op_view["resource_id"]
+                and op_view["class"] == target_op_view["class"]
+                and op_view["content_description"]
+                == target_op_view["content_description"]
+                and op_view["text"] == target_op_view["text"]
+                and op_view["size"] == target_op_view["size"]
+            ):
+                Similarities[idx] = jaccard * 0.4 + 1 * 0.6
+            else:
+                Similarities[idx] = jaccard * 0.4
+
+        # 选择最大的相似度的op
+        sorted_similarities = sorted(
+            Similarities.items(), key=lambda x: x[1], reverse=True
+        )
+        if sorted_similarities[0][1] > 0.8:
+            return operation_LIST[sorted_similarities[0][0]]
+        return None
+
+    def parse_op_from_xml(self, xml):
+        operations, _, hashable_views = OperationExtractor(
+            page_xml_file=xml
+        ).extract_operations()
+
+        result = []
+        for op in operations:
+            op_view = hashable_views[op]
+            op_type = op_view["class"]
+            op_text = ",".join([tview[0]["text"] for tview in operations[op]])
+            op_action = None
+            if "select" in op_type.lower():
+                op_action = "Select"
+            elif "check" in op_type.lower():
+                op_action = "check"
+            elif "input" in op_type.lower():
+                op_action = "Input"
+            else:
+                op_action = "Click"
+
+            lowertext = op_text.lower()
+            # popup dialog
+            if (
+                "cancel" in lowertext
+                or "apply" in lowertext
+                or "yes" in lowertext
+                or "confirm" in lowertext
+                or "ok" == lowertext
+                or "确定" in lowertext
+                or "取消" in lowertext
+            ):
+                op_str = f'<Confirm, Popup dialog, "{op_text}">'
+            else:
+                op_str = f'<{op_action}, {op_type}, "{op_text}">'
+
+            result.append(
+                {
+                    "op_id": -1,
+                    "op_text": [tview[0]["text"] for tview in operations[op]],
+                    "op_view": op_view,
+                }
+            )
+
+        return result
 
     # def ConfioT_sort_events(self, possible_events: [InputEvent]) -> [InputEvent]:
     #     sorted_events = []

@@ -7,6 +7,14 @@ import re
 import json
 
 
+def jaccard_similarity(list1, list2):
+    set1, set2 = set(list1), set(list2)
+    intersection = len(set1.intersection(set2))
+    union = len(set1.union(set2))
+    # print(intersection / union)
+    return intersection / union
+
+
 def deprecated(func):
 
     def wrapper(*args, **kwargs):

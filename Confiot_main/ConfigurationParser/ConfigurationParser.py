@@ -186,7 +186,7 @@ class ConfigurationParser:
                 overview["OPERATIONS"][op] = {
                     "op_id": op_id,
                     "op_str": op_str,
-                    "op_views": op_view,
+                    "op_view": op_view,
                     "op_text": [tview[0] for tview in operations[op]],
                 }
                 op_id += 1
