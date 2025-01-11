@@ -31,6 +31,9 @@ class ConfiotOracle():
             data = json.load(f)
         return data
 
+
+    def Parse
+
     def ParseUIChanges(self, xml_old: str, xml_new: str, output: str):
         comparator = UIComparator()
         comparator.compare_xml_files(xml_old, xml_new, output)
@@ -57,7 +60,7 @@ class ConfiotOracle():
         # todo: add UI_changes
         print(UI_add, UI_delete)
         return UI_add, UI_delete
-        
+
 
     def ParseSnapshotChanges(self, snapshot_old: str, snapshot_new: str):
         '''After doing a configuration, we need to compare the snapshot (contains all xml files) changes.'''
@@ -153,13 +156,13 @@ class ConfiotOracle():
     #             res.append([l, text])
 
     #     return res
-    
+
     def get_clean_text(self, text):
         if type(text) == str:
             return text.replace('\xa0', ' ')
         else:
             return str(text).replace('\xa0', ' ')
-    
+
     def GetTexts(self, snapshot_change):
         texts = []
         for page in snapshot_change:
@@ -206,7 +209,7 @@ class ConfiotOracle():
 
         privacy_diff = [privacy_additions, privacy_deletions]
         return privacy_diff
-    
+
     def ParseSharedData(self, snapshot_old: str, snapshot_new: str):
         # elif data_type == "Shared Data":
             #     for shared_data in data[data_type]:
@@ -245,7 +248,7 @@ class ConfiotOracle():
         #     "Privacy": {},
         #     "User-entitled": {}
         # }
-        
+
         # 1. Load the criteria table
         path = os.path.dirname(os.path.abspath(__file__)) + "/criterias.json"
         criteria = self.LoadCriterias(path)
@@ -254,7 +257,7 @@ class ConfiotOracle():
         # ui_add_texts, ui_delete_texts, todo: ui_change_texts
         snapshot_old, snapshot_new = self.ParseDeviceSnapshots(droidbot_output)
         snapshot_add, snapshot_delete = self.ParseSnapshotChanges(snapshot_old, snapshot_new)
-        
+
         for conf_dir in data:
             if len(data[conf_dir]) == 2:
                 [privacy_diff, shared_diff] = data[conf_dir]

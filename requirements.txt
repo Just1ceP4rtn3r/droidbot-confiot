@@ -1,8 +1,8 @@
 xmldiff==2.6.3
 Pillow==10.1.0
 numpy
-tree-sitter==0.22.2
-tree-sitter-javascript==0.22.2
+tree-sitter
+tree-sitter-javascript
 graphviz
 nltk
 cleantext
