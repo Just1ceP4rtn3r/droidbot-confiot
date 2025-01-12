@@ -79,6 +79,7 @@ class UIChangeParser:
                 semantic_changes.append(
                     OperationChangeType(ChangeType.delete, target_op)
                 )
+        return semantic_changes
 
     # 1. 比较op_text
     # 2. 比较op_view

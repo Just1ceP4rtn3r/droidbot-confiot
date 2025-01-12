@@ -7,14 +7,15 @@ import xml.dom.minidom
 from transformers import BertTokenizer, BertModel
 import torch
 from sklearn.metrics.pairwise import cosine_similarity
-import util
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 sys.path.append(BASE_DIR + "/../../")
 
 from Confiot_main.ConfiotHunter.UIComparator import UIComparator
 from Confiot_main.ConfigurationParser.ConfigurationParser import ConfigurationParser
+from Confiot_main.settings import settings
 from TestingPhase import Phase
+from UIChanges import *
 
 
 class ConfiotOracle:
@@ -23,7 +24,6 @@ class ConfiotOracle:
         self.stage = Phase.Initilization
         # {"page-0": (File_dir, UIchanges)}
         self.UIChanges = None
-        pass
 
     def LoadCriterias(self, privacy_sensitive_data_path):
         # Load the data from the PKL file
@@ -326,10 +326,96 @@ class ConfiotOracle:
                 raise Exception("The data structure is not correct.")
 
 
-class CapabilityConfiotOracle(ConfiotOracle):
+class ConfigurationConfiotOracle(ConfiotOracle):
 
-    def __init__(self) -> None:
+    def __init__(self, Agent) -> None:
         super().__init__()
+
+        self.Agent = Agent
+        self.CP = ConfigurationParser(self.Agent)
+
+    def LoadCriterias(self, Configuration_criteria):
+        # Load the data from the PKL file
+        with open(Configuration_criteria, "r") as f:
+            criteria = json.load(f)
+        return criteria
+
+    def LoadUIChanges(self, task, last_task):
+        xml_old_dir = settings.UIHierarchy_comparation_output + f"/{last_task}/"
+        xml_new_dir = settings.UIHierarchy_comparation_output + f"/{task}/"
+
+        pages_in_old_dir = [
+            f.replace(".xml", "")
+            for f in os.listdir(xml_old_dir)
+            if "Page" in f and f.endswith(".xml")
+        ]
+        pages_in_new_dir = [
+            f.replace(".xml", "")
+            for f in os.listdir(xml_new_dir)
+            if "Page" in f and f.endswith(".xml")
+        ]
+
+        # 取交集
+        pages = list(set(pages_in_old_dir).intersection(set(pages_in_new_dir)))
+        UIChanges = {}
+
+        for page in pages:
+            xml_old = xml_old_dir + page + ".xml"
+            xml_new = xml_new_dir + page + ".xml"
+            output = (
+                settings.UIHierarchy_comparation_output + f"/{last_task}_to_{task}/"
+            )
+
+            UIChanges[page] = UIChangeParser(
+                page, xml_old, xml_new
+            ).identify_change_type()
+        return UIChanges
+
+    # [TODO]: 添加对于LLM configuration种Dependency的解析
+    def LoadConfigurations(self, LLMResult_dir):
+        # 得到Configuration, related_operations
+
+        # "Task...": [op_id, ..]
+        configurations = {}
+
+        page_worklist = {}
+        for node in self.page_navigation_graph.nodes:
+            page_worklist[node.name] = node.level
+
+        # 根据node.level，从小到大排序
+        page_worklist = dict(
+            sorted(page_worklist.items(), key=lambda item: item[1], reverse=False)
+        )
+
+        for page in page_worklist:
+            configurations[page] = {}
+
+        for page in page_worklist:
+            with open(LLMResult_dir + f"{page}/Configurations.json") as f:
+                tasks = json.load(f)
+                # 可能包含来自child pages的tasks
+                for t in tasks:
+                    try:
+                        page_id = t["Page ID"]
+                        task_content = t["Tasks"]
+                        related_operations = []
+
+                        page_id = "Page-" + "".join(re.findall(r"\d", page_id))
+
+                        for o in t["Related operations"]:
+                            digits = re.findall(r"\d", o)
+                            related_operations.append(int("".join(digits)))
+                        # [TODO]: 添加对于LLM configuration种Dependency的解析
+                        if page_id in configurations:
+                            continue
+                        configurations[page_id][task_content] = related_operations
+                    except:
+                        print(
+                            "[ERR]: wrong structure of the configuration file ",
+                            LLMResult_dir + f"{page}/Configurations.json",
+                        )
+                        continue
+        return configurations
 
     def IdentifyConfiot(self):
         pass
