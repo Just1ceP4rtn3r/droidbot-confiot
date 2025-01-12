@@ -1,5 +1,6 @@
 import os, sys
 import json
+import re
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 sys.path.append(BASE_DIR + "/../../")
@@ -12,6 +13,7 @@ from Confiot_main.utils.util import (
     parse_config_resource_mapping_v2_0,
     get_ConfigResourceMapper_from_file,
     query_config_operation_mapping_with_structured_output,
+    filter_configurations,
 )
 
 
@@ -224,6 +226,8 @@ class ConfigurationParser:
     def query_LLM_for_configuration_mapping_based_on_page_graph(self, outputdir):
         if not os.path.exists(outputdir):
             os.makedirs(outputdir)
+        else:
+            return
 
         LeafQuery_template = ""
         FatherQuery_template = ""
@@ -429,6 +433,82 @@ class ConfigurationParser:
 
             with open(outputdir + f"/{page}/Configurations.json", "w") as f:
                 f.write(json.dumps(Configurations))
+
+    # [TODO]: 添加对于LLM configuration种Dependency的解析
+    def save_configurations(self, LLMResult_dir):
+
+        if not os.path.exists(LLMResult_dir):
+            print(
+                "[ERR]: run query_LLM_for_configuration_mapping_based_on_page_graph first"
+            )
+            return
+
+        configurations = {}
+
+        page_worklist = {}
+        for node in self.page_navigation_graph.nodes:
+            page_worklist[node.name] = node.level
+
+        # 根据node.level，从小到大排序
+        page_worklist = dict(
+            sorted(page_worklist.items(), key=lambda item: item[1], reverse=False)
+        )
+
+        completed_pages = set()
+        for page in page_worklist:
+            if not os.path.exists(LLMResult_dir + f"/{page}/Configurations.json"):
+                continue
+            if page in completed_pages:
+                continue
+            with open(LLMResult_dir + f"/{page}/Configurations.json") as f:
+                tasks = json.load(f)
+                # 可能包含来自child pages的tasks
+                for t in tasks:
+                    try:
+                        page_id = t["Page ID"]
+                        task_content = t["Tasks"]
+                        related_operations = []
+
+                        page_id = "Page-" + "".join(re.findall(r"\d", page_id))
+
+                        for o in t["Related operations"]:
+                            digits = re.findall(r"\d", o)
+                            related_operations.append(int("".join(digits)))
+                        if page_id not in configurations:
+                            configurations[page_id] = {}
+
+                        if (
+                            task_content == "None"
+                            or task_content == ""
+                            or not task_content
+                            or not related_operations
+                        ):
+                            continue
+                        configurations[page_id][task_content] = related_operations
+                        completed_pages.add(page_id)
+                    except:
+                        print(
+                            "[ERR]: wrong structure of the configuration file ",
+                            LLMResult_dir + f"{page}/Configurations.json",
+                        )
+                        continue
+
+        config_json = []
+
+        for page in configurations:
+            for task_content in configurations[page]:
+                config_json.append(
+                    {
+                        "Id": -1,
+                        "Page ID": page,
+                        "Tasks": task_content,
+                        "Related operations": configurations[page][task_content],
+                    }
+                )
+
+        config_json = filter_configurations(config_json)
+        with open(LLMResult_dir + "/ConfigurationsSummary.json", "w") as f:
+            f.write(json.dumps(config_json))
 
     # decrpted
     # def query_LLM_for_configuration_mapping(self, outputdir):

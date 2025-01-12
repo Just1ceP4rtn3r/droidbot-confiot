@@ -387,11 +387,13 @@ class ConfigurationConfiotOracle(ConfiotOracle):
             sorted(page_worklist.items(), key=lambda item: item[1], reverse=False)
         )
 
+        completed_pages = set()
         for page in page_worklist:
-            configurations[page] = {}
-
-        for page in page_worklist:
-            with open(LLMResult_dir + f"{page}/Configurations.json") as f:
+            if not os.path.exists(LLMResult_dir + f"/{page}/Configurations.json"):
+                continue
+            if page in completed_pages:
+                continue
+            with open(LLMResult_dir + f"/{page}/Configurations.json") as f:
                 tasks = json.load(f)
                 # 可能包含来自child pages的tasks
                 for t in tasks:
@@ -405,10 +407,10 @@ class ConfigurationConfiotOracle(ConfiotOracle):
                         for o in t["Related operations"]:
                             digits = re.findall(r"\d", o)
                             related_operations.append(int("".join(digits)))
-                        # [TODO]: 添加对于LLM configuration种Dependency的解析
-                        if page_id in configurations:
-                            continue
+                        if page_id not in configurations:
+                            configurations[page_id] = {}
                         configurations[page_id][task_content] = related_operations
+                        completed_pages.add(page_id)
                     except:
                         print(
                             "[ERR]: wrong structure of the configuration file ",

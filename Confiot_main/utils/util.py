@@ -540,8 +540,8 @@ def query_config_operation_mapping_with_structured_output(system_prompt, user_pr
     return event
 
 
-def filter_configurations(ConfigResourceMapper):
-    FilteredConfigResourceMapper = []
+def filter_configurations(Configurations):
+    FilteredConfigurations = []
 
     resources = [
         "Device sensor status",
@@ -567,6 +567,7 @@ def filter_configurations(ConfigResourceMapper):
         "augment",
         "expand",
         "combine",
+        "select",
     ]
     removes = [
         "initiate",
@@ -583,78 +584,28 @@ def filter_configurations(ConfigResourceMapper):
         "clear",
     ]
 
-    norepeat_mapper = []
-    norepeat_tasks = []
-    for c in ConfigResourceMapper[::-1]:
-        if c["Tasks"] not in norepeat_tasks:
-            norepeat_mapper.append(c)
-            norepeat_tasks.append(c["Tasks"])
+    access_tasks = []
+    add_tasks = []
+    remove_tasks = []
+    for config in Configurations:
+        task = config["Tasks"].lower()
+        for v_1 in access:
+            if v_1 in task:
+                access_tasks.append(config)
+        for v_2 in adds:
+            if v_2 in task:
+                add_tasks.append(config)
+        for v_3 in removes:
+            if v_3 in task:
+                remove_tasks.append(config)
 
-    for c in norepeat_mapper:
-        tasks = c["Tasks"]
+    cid = 0
+    for config in add_tasks + remove_tasks:
+        config["Id"] = cid
+        FilteredConfigurations.append(config)
+        cid += 1
 
-        if len(tasks) < 1:
-            continue
-        else:
-            access_tasks = []
-            add_tasks = []
-            remove_tasks = []
-            for task in tasks:
-                task = task.lower()
-                for v_1 in access:
-                    if v_1 in task:
-                        access_tasks.append(task)
-                for v_2 in adds:
-                    if v_2 in task:
-                        add_tasks.append(task)
-                for v_3 in removes:
-                    if v_3 in task:
-                        remove_tasks.append(task)
-            # 如果resource只有N/A或是空的
-            if len(c["Resources"]) == 0:
-                continue
-            elif len(c["Resources"]) == 1:
-                if (
-                    c["Resources"][0].strip().replace("'", "").replace('"', "") == ""
-                    or "N/A".lower() in c["Resources"][0].lower()
-                ):
-                    continue
-            if len(tasks) == 1:
-                if (
-                    tasks[0].strip() == ""
-                    or "lack of information" in tasks[0]
-                    or "unable to" in tasks[0]
-                ):
-                    continue
-                if len(add_tasks) == 0 and len(remove_tasks) == 0:
-                    continue
-                FilteredConfigResourceMapper.append(c)
-                continue
-
-            # 如果同时有remove和add，则保留remove
-            if len(add_tasks) > 0 and len(remove_tasks) > 0:
-                c["Tasks"] = [
-                    get_longest_task(remove_tasks),
-                ]
-                FilteredConfigResourceMapper.append(c)
-            elif len(add_tasks) > 0:
-                c["Tasks"] = [
-                    get_longest_task(add_tasks),
-                ]
-                FilteredConfigResourceMapper.append(c)
-            elif len(remove_tasks) > 0:
-                c["Tasks"] = [
-                    get_longest_task(remove_tasks),
-                ]
-                FilteredConfigResourceMapper.append(c)
-            elif len(add_tasks) == 0 and len(remove_tasks) == 0:
-                continue
-            else:
-                c["Tasks"] = [
-                    get_longest_task(tasks),
-                ]
-                FilteredConfigResourceMapper.append(c)
-    return FilteredConfigResourceMapper
+    return FilteredConfigurations
 
 
 def get_ConfigResourceMapper_from_file(file, dir=None):
