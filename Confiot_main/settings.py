@@ -10,6 +10,8 @@ class settings:
     Confiot_output = f"{droid_output}/Confiot/"
     UI_output = Confiot_output + "/UI/"
     Pages = Confiot_output + "/Pages/"
+
+    violation_output = Confiot_output + "/Violation/"
     Static_comparation_output = Confiot_output + "/Comparation/"
     UIHierarchy_comparation_output = Static_comparation_output + "/UIHierarchy/"
     Feasibility_comparation_output = Static_comparation_output + "/Feasibility/"

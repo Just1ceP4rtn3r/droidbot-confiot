@@ -88,6 +88,9 @@ class Confiot:
         if not os.path.exists(settings.UIHierarchy_comparation_output):
             os.makedirs(settings.UIHierarchy_comparation_output)
 
+        if not os.path.exists(settings.violation_output):
+            os.makedirs(settings.violation_output)
+
         if not os.path.exists(settings.Feasibility_comparation_output):
             os.makedirs(settings.Feasibility_comparation_output)
 

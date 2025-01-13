@@ -12,8 +12,8 @@ from Confiot_main.utils.util import jaccard_similarity
 
 
 class ChangeType:
-    delete = 0
-    add = 1
+    DELETE = 0
+    ADD = 1
 
     def __init__(self):
         pass
@@ -52,8 +52,9 @@ class UIChangeParser:
 
         # parse the operations file
         with open(page_operations_file) as f:
-            operations_init = json.loads(f.read())
-            for o in operations_init:
+            operations_init = json.loads(f.read())["OPERATIONS"]
+            for hash in operations_init:
+                o = operations_init[hash]
                 op = {
                     "op_id": o["op_id"],
                     "op_text": [tview["text"] for tview in o["op_text"]],
@@ -74,10 +75,10 @@ class UIChangeParser:
             exist_in_new = self.find_op(target_op, self.operations_new)
 
             if exist_in_old is None and exist_in_new is not None:
-                semantic_changes.append(OperationChangeType(ChangeType.add, target_op))
+                semantic_changes.append(OperationChangeType(ChangeType.ADD, target_op))
             elif exist_in_old is not None and exist_in_new is None:
                 semantic_changes.append(
-                    OperationChangeType(ChangeType.delete, target_op)
+                    OperationChangeType(ChangeType.DELETE, target_op)
                 )
         return semantic_changes
 

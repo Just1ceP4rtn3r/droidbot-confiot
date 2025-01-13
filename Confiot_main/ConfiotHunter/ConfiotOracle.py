@@ -14,8 +14,10 @@ sys.path.append(BASE_DIR + "/../../")
 from Confiot_main.ConfiotHunter.UIComparator import UIComparator
 from Confiot_main.ConfigurationParser.ConfigurationParser import ConfigurationParser
 from Confiot_main.settings import settings
-from TestingPhase import Phase
-from UIChanges import *
+from Confiot_main.ConfiotHunter.TestingPhase import Phase
+from Confiot_main.ConfiotHunter.UIChanges import *
+from Confiot_main.utils.util import query_Confiot_identification
+
 from transformers import AutoTokenizer, AutoModelForSequenceClassification
 import requests
 
@@ -190,29 +192,35 @@ class ConfiotOracle:
                     text = re.findall(r"<text>(.*?)</text>", element)[0]
                     texts.append(self.get_clean_text(text))
         return texts
-    
+
     def GetValue(self, snapshot_change):
         api_key = os.environ.get("OPENAI_API_KEY")
-        headers = {"Content-Type": "application/json", "Authorization": f"Bearer {api_key}"}
+        headers = {
+            "Content-Type": "application/json",
+            "Authorization": f"Bearer {api_key}",
+        }
 
         payload = {
             "model": "gpt-4o",
             "messages": [
                 {
                     "role": "system",
-                    "content": "You are an assistant tasked with identifying certain format data values from given texts. You will be provided with several examples containing data types and related values. Then given some texts containing data types, please identify related values."
+                    "content": "You are an assistant tasked with identifying certain format data values from given texts. You will be provided with several examples containing data types and related values. Then given some texts containing data types, please identify related values.",
                 },
                 {
                     "role": "user",
-                    "content": f"Here are some examples. The value to 'phone number' can be '+1-123-456-7890', '(555) 555-1234', '456-7890'. The value to 'email' can be 'john@businessname.com', 'abc@test.com'. The value to 'address' can be '1234 Main St, Springfield, IL 62701', '1234 Main St, Springfield, IL'. The value to 'time' can be '12:30 PM', '3:00 AM'."
+                    "content": f"Here are some examples. The value to 'phone number' can be '+1-123-456-7890', '(555) 555-1234', '456-7890'. The value to 'email' can be 'john@businessname.com', 'abc@test.com'. The value to 'address' can be '1234 Main St, Springfield, IL 62701', '1234 Main St, Springfield, IL'. The value to 'time' can be '12:30 PM', '3:00 AM'.",
                 },
                 {
                     "role": "user",
-                    "content": f"Evaluate the following texts: {snapshot_change}."
-                }],
-            "max_tokens": 500
+                    "content": f"Evaluate the following texts: {snapshot_change}.",
+                },
+            ],
+            "max_tokens": 500,
         }
-        response = requests.post("https://api.openai.com/v1/chat/completions", headers=headers, json=payload)
+        response = requests.post(
+            "https://api.openai.com/v1/chat/completions", headers=headers, json=payload
+        )
 
         print(response.json().get("choices")[0].get("message").get("content"))
 
@@ -249,32 +257,44 @@ class ConfiotOracle:
         #                     snapshot_delete_texts, pri_data
         #                 ),
         #             ]
-                    # privacy_changes = [*privacy_changes, *compare_textList_similarity(ui_change_texts, pri_data)]
-        
+        # privacy_changes = [*privacy_changes, *compare_textList_similarity(ui_change_texts, pri_data)]
+
         # solution 2: use the fine-tuned BERT model to classify the data
         # for t in snapshot_add_texts:
         current_dir = os.path.dirname(os.path.abspath(__file__))
-        model_dir = os.path.join(current_dir, "model/fine_tuned_bert") 
+        model_dir = os.path.join(current_dir, "model/fine_tuned_bert")
         model = AutoModelForSequenceClassification.from_pretrained(model_dir)
         tokenizer = AutoTokenizer.from_pretrained(model_dir)
-        device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu") 
+        device = (
+            torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
+        )
         model.to(device)
 
-        encodings = tokenizer(snapshot_add_texts+snapshot_delete_texts, truncation=True, max_length=10, padding=True, return_tensors="pt") # map to IDs and tensors
-        encodings = {key: val.to(device) for key, val in encodings.items()} # map to device format tensors
+        encodings = tokenizer(
+            snapshot_add_texts + snapshot_delete_texts,
+            truncation=True,
+            max_length=10,
+            padding=True,
+            return_tensors="pt",
+        )  # map to IDs and tensors
+        encodings = {
+            key: val.to(device) for key, val in encodings.items()
+        }  # map to device format tensors
 
-        model.eval() # use the model in evaluation mode (rather than training mode)
+        model.eval()  # use the model in evaluation mode (rather than training mode)
 
         # Perform inference
-        with torch.no_grad(): # no need to calculate gradients, make it faster
+        with torch.no_grad():  # no need to calculate gradients, make it faster
             outputs = model(**encodings)
             logits = outputs.logits  # raw scores
-        predictions = torch.argmax(logits, dim=-1) # convert raw scores to predicted class label
+        predictions = torch.argmax(
+            logits, dim=-1
+        )  # convert raw scores to predicted class label
 
         # Print the predictions
         snapshot_privacy_add = []
         snapshot_privacy_delete = []
-        for text, pred in zip(snapshot_add_texts+snapshot_delete_texts, predictions):
+        for text, pred in zip(snapshot_add_texts + snapshot_delete_texts, predictions):
             if pred.item() == 1:
                 label = "Privacy-related"
                 if text in snapshot_add_texts:
@@ -286,13 +306,16 @@ class ConfiotOracle:
             print(f"UI text changes: '{text}' => Prediction: {label}")
 
         # test data -> need to be replaced by the real data
-        snapshot_privacy_add = ['Tracy\'s sleeping time is 10:00 PM', 'phone number is +1-123-456-7890']
+        snapshot_privacy_add = [
+            "Tracy's sleeping time is 10:00 PM",
+            "phone number is +1-123-456-7890",
+        ]
 
         # 3. Given each snapshot change, if there are privacy changes, get the privacy data
         # e.g., phone number, email, address, time, etc. +1 800-xxx-xxxx is a phone number
         # e.g., age, heart rate, blood pressure, etc. 25 is an age
-        value = self.GetValue(snapshot_privacy_add+snapshot_privacy_delete)
-        
+        value = self.GetValue(snapshot_privacy_add + snapshot_privacy_delete)
+
         return privacy_diff
 
     def ParseSharedData(self, snapshot_old: str, snapshot_new: str):
@@ -397,13 +420,21 @@ class ConfigurationConfiotOracle(ConfiotOracle):
         self.Agent = Agent
         self.CP = ConfigurationParser(self.Agent)
 
-    def LoadCriterias(self, Configuration_criteria):
+    def LoadCriterias(
+        self,
+        Configuration_criteria=os.path.dirname(os.path.abspath(__file__))
+        + "/ConfigurationCriteria.json",
+    ):
         # Load the data from the PKL file
         with open(Configuration_criteria, "r") as f:
             criteria = json.load(f)
         return criteria
 
-    def LoadUIChanges(self, task, last_task):
+    def LoadUIChanges(self, last_task, task):
+        # 表示当前是after delegation的阶段
+        if last_task is None or task == "000":
+            return -1
+
         xml_old_dir = settings.UIHierarchy_comparation_output + f"/{last_task}/"
         xml_new_dir = settings.UIHierarchy_comparation_output + f"/{task}/"
 
@@ -442,7 +473,8 @@ class ConfigurationConfiotOracle(ConfiotOracle):
         configurations = {}
 
         page_worklist = {}
-        for node in self.page_navigation_graph.nodes:
+
+        for node in ConfigurationParser(self.Agent).page_navigation_graph.nodes:
             page_worklist[node.name] = node.level
 
         # 根据node.level，从小到大排序
@@ -472,6 +504,13 @@ class ConfigurationConfiotOracle(ConfiotOracle):
                             related_operations.append(int("".join(digits)))
                         if page_id not in configurations:
                             configurations[page_id] = {}
+                        if (
+                            task_content == "None"
+                            or task_content == ""
+                            or not task_content
+                            or not related_operations
+                        ):
+                            continue
                         configurations[page_id][task_content] = related_operations
                         completed_pages.add(page_id)
                     except:
@@ -482,5 +521,59 @@ class ConfigurationConfiotOracle(ConfiotOracle):
                         continue
         return configurations
 
-    def IdentifyConfiot(self):
-        pass
+    def IdentifyConfiot(self, Criteria, Configurations, UIChanges, Role, outputdir):
+        # if not os.path.exists(outputdir):
+        #     os.makedirs(outputdir)
+        # else:
+        #     return
+
+        AfterDelegation_system_template = ""
+        AfterDelegation_user_template = ""
+        BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+        with open(
+            BASE_DIR + "/../prompt/IdentifyCapabilityConfiot/AfterDelegation_system.txt"
+        ) as f:
+            AfterDelegation_system_template = f.read()
+        with open(
+            BASE_DIR + "/../prompt/IdentifyCapabilityConfiot/AfterDelegation_user.txt"
+        ) as f:
+            AfterDelegation_user_template = f.read()
+
+        system_prompt = ""
+        user_prompt = ""
+        # After Delegation
+        if UIChanges == -1:
+            system_prompt = AfterDelegation_system_template
+
+            config_strs = []
+            cid = 0
+            for page in Configurations:
+                for c in Configurations[page]:
+                    if c != "" and c != "None":
+                        config_strs.append(f"({cid}) " + c)
+                        cid += 1
+
+            user_prompt = AfterDelegation_user_template.replace(
+                "{{CONFIG}}", "### Role: " + Role + "\n" + "\n".join(config_strs)
+            )
+
+            user_prompt = user_prompt.replace("{{CRITERIA}}", str(Criteria))
+        else:
+            pass
+
+        prompt = system_prompt + "\n" + user_prompt
+        res = query_Confiot_identification(
+            system_prompt=system_prompt, user_prompt=user_prompt
+        )
+
+        violations = []
+        for r in res.violations:
+            violation = {
+                "Violated criterion id": r.violated_criterion_id,
+                "configuration_resource": r.configuration_resource,
+                "Reason": r.reason,
+            }
+            violations.append(violation)
+
+        with open(outputdir + "/raw.txt", "w") as f:
+            f.write(system_prompt + user_prompt + "\n\n\n" + str(violations) + "\n")
