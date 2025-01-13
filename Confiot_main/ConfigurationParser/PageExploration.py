@@ -315,7 +315,7 @@ class PageExplorer():
             event = InputEvent.from_dict(event_dict)
             print("[DBG]: Action: " + event_str)
             event.send(self.Agent.device)
-            time.sleep(2)
+            time.sleep(4)
 
         if (target_page != self.page_navigation_graph.start_node):
             self.Agent.device_get_UIElement(store_path=outputdir, store_file="tmp.xml")

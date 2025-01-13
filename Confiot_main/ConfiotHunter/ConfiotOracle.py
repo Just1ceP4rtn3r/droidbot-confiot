@@ -200,7 +200,7 @@ class ConfiotOracle:
             "messages": [
                 {
                     "role": "system",
-                    "content": "You are an assistant tasked with identifying certain format data values from given texts. You will be provided with several examples containing data types and related values. Then given some texts containing data types, please identify related values."
+                    "content": "You are an privacy assistant tasked with parsing texts that extracted from IoT companion mobile apps. For provided privacy related texts, please identify corresponding privacy data in given list of texts. You will be provided with several examples containing data types and related values. Then given some texts containing data types, please identify related values. If you find privacy data, then go to the second step. If not, just return 'No privacy violations'. "
                 },
                 {
                     "role": "user",
@@ -214,9 +214,36 @@ class ConfiotOracle:
         }
         response = requests.post("https://api.openai.com/v1/chat/completions", headers=headers, json=payload)
 
-        print(response.json().get("choices")[0].get("message").get("content"))
+        result = response.json().get("choices")[0].get("message").get("content")
+        print(result)
+        return result
+    
+    def GetBelonging(self, privacy_data, snapshot_change, related_pages, current_user_id):
+        api_key = os.environ.get("OPENAI_API_KEY")
+        headers = {"Content-Type": "application/json", "Authorization": f"Bearer {api_key}"}
 
-        return response.text
+        payload = {
+            "model": "gpt-4o",
+            "messages": [
+                {
+                    "role": "system",
+                    "content": "You are an privacy assistant tasked with parsing texts that extracted from IoT companion mobile apps. For provided privacy data, please identify corresponding privacy data belongings. You will be provided with some texts examples that contains possible privacy data belonging patterns. If you do not find any belongings to the given privacy data, return 'Unknown'. " 
+                },
+                {
+                    "role": "user",
+                    "content": f"Here are some examples. 'UserA's phone number' means that 'phone number' belongs to 'userA'. "
+                },
+                {
+                    "role": "user",
+                    "content": f"Please find the belongings to data: {privacy_data} in the following texts: {snapshot_change}. You may also find some clues in the current page or the previous page texts: {related_pages}. The current other user IDs are: {current_user_id}."
+                }],
+            "max_tokens": 500
+        }
+        response = requests.post("https://api.openai.com/v1/chat/completions", headers=headers, json=payload)
+
+        result = response.json().get("choices")[0].get("message").get("content")
+        print(result)
+        return result
 
     # Return Type: [Data List]
     def ParsePrivacyData(self, snapshot_old, snapshot_new, criteria):
@@ -291,7 +318,10 @@ class ConfiotOracle:
         # 3. Given each snapshot change, if there are privacy changes, get the privacy data
         # e.g., phone number, email, address, time, etc. +1 800-xxx-xxxx is a phone number
         # e.g., age, heart rate, blood pressure, etc. 25 is an age
-        value = self.GetValue(snapshot_privacy_add+snapshot_privacy_delete)
+        privacy_data = self.GetValue(snapshot_privacy_add+snapshot_privacy_delete)
+
+        # 4. Given the privacy data, find the belonging
+        belongings = self.GetBelonging(privacy_data, snapshot_privacy_add+snapshot_privacy_delete, [], "Tracy")
         
         return privacy_diff
 
