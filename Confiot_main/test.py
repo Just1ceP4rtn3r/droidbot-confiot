@@ -247,43 +247,6 @@ def test_Enumerate_pages():
     # print(PE.pages)
 
 
-def test_Configuration_parser():
-    from Confiot_main.settings import settings
-    from Confiot_main.ConfigurationParser.ConfigurationParser import ConfigurationParser
-    from Confiot_main.ConfigurationParser.OperationExtraction import OperationExtractor
-    from Confiot_main.utils.util import (
-        query_config_resource_mapping,
-        parse_config_resource_mapping,
-        get_ConfigResourceMapper_from_file,
-    )
-
-    Agent = Confiot()
-    # Agent.device_connect()
-
-    CP = ConfigurationParser(Agent)
-
-    # os.environ["https_proxy"] = "http://192.168.72.1:1083"
-    CP.query_LLM_for_configuration_mapping_based_on_page_graph(
-        settings.Confiot_output + "/LLM_ContextPageQuery"
-    )
-    # CP.save_configurations(settings.Confiot_output + "/LLM_ContextPageQuery")
-
-
-def test_ConfioT_Hunter():
-    from Confiot_main.settings import settings
-    from Confiot_main.ConfigurationParser.ConfigurationParser import ConfigurationParser
-    from Confiot_main.ConfiotHunter.ConfiotOracle import ConfiotOracle
-
-    Agent = Confiot()
-
-    CP = ConfigurationParser(Agent)
-
-    oracle = ConfiotOracle()
-    oracle.ParseUIChagnes(
-        None, settings.UIHierarchy_comparation_output + "000/Page-0.xml"
-    )
-
-
 def test_LLM_json_response():
     from Confiot_main.settings import settings
     from Confiot_main.ConfigurationParser.ConfigurationParser import ConfigurationParser
@@ -329,6 +292,45 @@ You need to analyze the semantic similarity among the operations and the context
     )
 
     print(res)
+
+
+def test_Configuration_parser():
+    from Confiot_main.settings import settings
+    from Confiot_main.ConfigurationParser.ConfigurationParser import ConfigurationParser
+    from Confiot_main.ConfigurationParser.OperationExtraction import OperationExtractor
+    from Confiot_main.utils.util import (
+        query_config_resource_mapping,
+        parse_config_resource_mapping,
+        get_ConfigResourceMapper_from_file,
+    )
+
+    Agent = Confiot()
+    # Agent.device_connect()
+
+    CP = ConfigurationParser(Agent)
+
+    # os.environ["https_proxy"] = "http://192.168.72.1:1083"
+    CP.query_LLM_for_configuration_mapping_based_on_page_graph(
+        settings.Confiot_output + "/LLM_ContextPageQuery"
+    )
+    # CP.save_configurations(settings.Confiot_output + "/LLM_ContextPageQuery")
+
+
+def test_ConfioT_Hunter():
+    from Confiot_main.settings import settings
+    from Confiot_main.ConfigurationParser.ConfigurationParser import ConfigurationParser
+    from Confiot_main.ConfiotHunter.ConfiotOracle import ConfiotOracle
+
+    Agent = Confiot()
+    CP = ConfigurationParser(Agent)
+
+    Agent.device_connect()
+    ConfigurationParser(Agent).app_pages_exploration("000")
+
+    # oracle = ConfiotOracle()
+    # oracle.ParseUIChagnes(
+    #     None, settings.UIHierarchy_comparation_output + "000/Page-0.xml"
+    # )
 
 
 if __name__ == "__main__":

@@ -24,7 +24,7 @@ class ConfigurationParser:
 
         # App Pages
         self.PE = PageExplorer(self.Agent)
-        self.app_pages_exploration()
+        self.app_pages_exploration("000")
         self.pages = self.PE.pages
         self.page_navigation_graph = self.PE.page_navigation_graph
 
@@ -57,12 +57,16 @@ class ConfigurationParser:
         # self.operation_configuration_mapping = {}
         # self.query_LLM_for_configuration_mapping(settings.Confiot_output + "/LLM_SinglePageQuery")
 
-    def app_pages_exploration(self):
+    def app_pages_exploration(self, configuration):
         self.PE.parse_struture_unique_pages()
         self.PE.extract_navigations()
 
-        if not os.path.exists(settings.UIHierarchy_comparation_output + "/000/"):
-            self.device_state_replay(settings.UIHierarchy_comparation_output + "/000/")
+        if not os.path.exists(
+            settings.UIHierarchy_comparation_output + f"/{configuration}/"
+        ):
+            self.device_state_replay(
+                settings.UIHierarchy_comparation_output + f"/{configuration}/"
+            )
 
     def operations_extraction(self):
         page_xmls = {}
