@@ -273,6 +273,13 @@ def ClassifierBert(privacy_training_file, non_privacy_training_file, privacy_tes
             loop.set_description(f"Epoch {epoch}")
             loop.set_postfix(loss=loss.item())
 
+    # Save the trained model and tokenizer
+    output_dir = os.path.join(current_dir, "model/fine_tuned_bert") 
+    os.makedirs(output_dir, exist_ok=True)
+    model.save_pretrained(output_dir)
+    tokenizer.save_pretrained(output_dir)
+    print(f"Fine-tuned model and tokenizer are saved to {output_dir}")
+
     model.eval()
     all_preds = []
     all_labels = []
