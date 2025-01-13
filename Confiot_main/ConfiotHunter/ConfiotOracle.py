@@ -16,6 +16,8 @@ from Confiot_main.ConfigurationParser.ConfigurationParser import ConfigurationPa
 from Confiot_main.settings import settings
 from TestingPhase import Phase
 from UIChanges import *
+from transformers import AutoTokenizer, AutoModelForSequenceClassification
+import requests
 
 
 class ConfiotOracle:
@@ -188,6 +190,33 @@ class ConfiotOracle:
                     text = re.findall(r"<text>(.*?)</text>", element)[0]
                     texts.append(self.get_clean_text(text))
         return texts
+    
+    def GetValue(self, snapshot_change):
+        api_key = os.environ.get("OPENAI_API_KEY")
+        headers = {"Content-Type": "application/json", "Authorization": f"Bearer {api_key}"}
+
+        payload = {
+            "model": "gpt-4o",
+            "messages": [
+                {
+                    "role": "system",
+                    "content": "You are an assistant tasked with identifying certain format data values from given texts. You will be provided with several examples containing data types and related values. Then given some texts containing data types, please identify related values."
+                },
+                {
+                    "role": "user",
+                    "content": f"Here are some examples. The value to 'phone number' can be '+1-123-456-7890', '(555) 555-1234', '456-7890'. The value to 'email' can be 'john@businessname.com', 'abc@test.com'. The value to 'address' can be '1234 Main St, Springfield, IL 62701', '1234 Main St, Springfield, IL'. The value to 'time' can be '12:30 PM', '3:00 AM'."
+                },
+                {
+                    "role": "user",
+                    "content": f"Evaluate the following texts: {snapshot_change}."
+                }],
+            "max_tokens": 500
+        }
+        response = requests.post("https://api.openai.com/v1/chat/completions", headers=headers, json=payload)
+
+        print(response.json().get("choices")[0].get("message").get("content"))
+
+        return response.text
 
     # Return Type: [Data List]
     def ParsePrivacyData(self, snapshot_old, snapshot_new, criteria):
@@ -203,33 +232,67 @@ class ConfiotOracle:
         snapshot_delete_texts = self.GetTexts(snapshot_delete)
 
         privacy_additions, privacy_deletions, privacy_changes = [], [], []
+        privacy_diff = [privacy_additions, privacy_deletions]
 
         # 2. Given each texts add/delete/change, use 3 solutions to justify whether it is a privacy sensitive data
         # solution 1: compare similarity between the data and the criteria table
-        for data_type in criteria:
-            if data_type == "Privacy Data":
-                for pri_data in criteria[data_type]:
-                    privacy_additions = [
-                        *privacy_additions,
-                        *self.compare_textList_similarity(snapshot_add_texts, pri_data),
-                    ]
-                    privacy_deletions = [
-                        *privacy_deletions,
-                        *self.compare_textList_similarity(
-                            snapshot_delete_texts, pri_data
-                        ),
-                    ]
+        # for data_type in criteria:
+        #     if data_type == "Privacy Data":
+        #         for pri_data in criteria[data_type]:
+        #             privacy_additions = [
+        #                 *privacy_additions,
+        #                 *self.compare_textList_similarity(snapshot_add_texts, pri_data),
+        #             ]
+        #             privacy_deletions = [
+        #                 *privacy_deletions,
+        #                 *self.compare_textList_similarity(
+        #                     snapshot_delete_texts, pri_data
+        #                 ),
+        #             ]
                     # privacy_changes = [*privacy_changes, *compare_textList_similarity(ui_change_texts, pri_data)]
+        
+        # solution 2: use the fine-tuned BERT model to classify the data
+        # for t in snapshot_add_texts:
+        current_dir = os.path.dirname(os.path.abspath(__file__))
+        model_dir = os.path.join(current_dir, "model/fine_tuned_bert") 
+        model = AutoModelForSequenceClassification.from_pretrained(model_dir)
+        tokenizer = AutoTokenizer.from_pretrained(model_dir)
+        device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu") 
+        model.to(device)
 
-        # solution 2: use gpt-4o few shots learning to justify the data
+        encodings = tokenizer(snapshot_add_texts+snapshot_delete_texts, truncation=True, max_length=10, padding=True, return_tensors="pt") # map to IDs and tensors
+        encodings = {key: val.to(device) for key, val in encodings.items()} # map to device format tensors
 
-        # solution 3: use the pre-trained model to justify the data
+        model.eval() # use the model in evaluation mode (rather than training mode)
 
-        # 2. Given each data add/delete/change, consider data value
-        # e.g., phone number, email, address, etc. +1 800-xxx-xxxx is a phone number, but the model can not recognize it as a phone number
-        pass
+        # Perform inference
+        with torch.no_grad(): # no need to calculate gradients, make it faster
+            outputs = model(**encodings)
+            logits = outputs.logits  # raw scores
+        predictions = torch.argmax(logits, dim=-1) # convert raw scores to predicted class label
 
-        privacy_diff = [privacy_additions, privacy_deletions]
+        # Print the predictions
+        snapshot_privacy_add = []
+        snapshot_privacy_delete = []
+        for text, pred in zip(snapshot_add_texts+snapshot_delete_texts, predictions):
+            if pred.item() == 1:
+                label = "Privacy-related"
+                if text in snapshot_add_texts:
+                    snapshot_privacy_add.append(text)
+                else:
+                    snapshot_privacy_delete.append(text)
+            else:
+                label = "Non-privacy-related"
+            print(f"UI text changes: '{text}' => Prediction: {label}")
+
+        # test data -> need to be replaced by the real data
+        snapshot_privacy_add = ['Tracy\'s sleeping time is 10:00 PM', 'phone number is +1-123-456-7890']
+
+        # 3. Given each snapshot change, if there are privacy changes, get the privacy data
+        # e.g., phone number, email, address, time, etc. +1 800-xxx-xxxx is a phone number
+        # e.g., age, heart rate, blood pressure, etc. 25 is an age
+        value = self.GetValue(snapshot_privacy_add+snapshot_privacy_delete)
+        
         return privacy_diff
 
     def ParseSharedData(self, snapshot_old: str, snapshot_new: str):
