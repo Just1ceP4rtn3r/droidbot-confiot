@@ -200,7 +200,7 @@ class ConfiotOracle:
             "messages": [
                 {
                     "role": "system",
-                    "content": "You are an privacy assistant tasked with parsing texts that extracted from IoT companion mobile apps. For provided privacy related texts, please identify corresponding privacy data in given list of texts. You will be provided with several examples containing data types and related values. Then given some texts containing data types, please identify related values. If you find privacy data, then go to the second step. If not, just return 'No privacy violations'. "
+                    "content": "You are an privacy assistant tasked with parsing texts that extracted from IoT companion mobile apps. For provided privacy related texts, please identify corresponding privacy data in given list of texts. You will be provided with several examples containing data types and related values. Then given some texts containing data types, please identify related values. If you do not find any privacy data, do not contain the texts. "
                 },
                 {
                     "role": "user",
@@ -246,7 +246,7 @@ class ConfiotOracle:
         return result
 
     # Return Type: [Data List]
-    def ParsePrivacyData(self, snapshot_old, snapshot_new, criteria):
+    def ParsePrivacyData(self, snapshot_old, snapshot_new):
         """1. Parse the data (texts) from the snapshot UI add and delete
         2. compare with crateria table to get the similarities, get sensitive added and deleted data
         3. todo: consider the data ownership"""
@@ -323,7 +323,7 @@ class ConfiotOracle:
         # 4. Given the privacy data, find the belonging
         belongings = self.GetBelonging(privacy_data, snapshot_privacy_add+snapshot_privacy_delete, [], "Tracy")
         
-        return privacy_diff
+        return privacy_data, belongings
 
     def ParseSharedData(self, snapshot_old: str, snapshot_new: str):
         # elif data_type == "Shared Data":
@@ -365,7 +365,7 @@ class ConfiotOracle:
 
     # Report the Confiot Chaoses
     def IdnetifyConfiot(
-        self, droidbot_output, criteria_table, capablity_list, data_list
+        self, snapshot_old, snapshot_new
     ):
         # Rules for excessive capablities
         # pass
@@ -382,41 +382,47 @@ class ConfiotOracle:
 
         # 2. Parse the data (texts) from the snapshot UI add and delete
         # ui_add_texts, ui_delete_texts, todo: ui_change_texts
-        snapshot_old, snapshot_new = self.ParseDeviceSnapshots(droidbot_output)
-        snapshot_add, snapshot_delete = self.ParseSnapshotChanges(
-            snapshot_old, snapshot_new
-        )
+        # snapshot_old, snapshot_new = self.ParseDeviceSnapshots(droidbot_output) # todo
+        # snapshot_add, snapshot_delete = self.ParseSnapshotChanges(snapshot_old, snapshot_new)
+        privacy_data, belongings = self.ParsePrivacyData(snapshot_old, snapshot_new)
+        for items in criteria:
+            if "privacy" in items["Capabilities"]:
+                if "Should not view" in items["Capabilities"]:
+                    if privacy_data:
+                        print(f"Possible violation - guest can view privacy data:\n {privacy_data}! ")
+                    if belongings:
+                        print(f"Possible violation - guest can view privacy data:\n {belongings}! ")
+                else:
+                    pass
 
-        for conf_dir in data:
-            if len(data[conf_dir]) == 2:
-                [privacy_diff, shared_diff] = data[conf_dir]
-                if len(privacy_diff) == 3:
-                    [privacy_additions, privacy_deletions, privacy_changes] = (
-                        privacy_diff
-                    )
-                else:
-                    raise Exception("The data structure is not correct.")
-                if len(shared_diff) == 3:
-                    [shared_additions, shared_deletions, shared_changes] = shared_diff
-                else:
-                    raise Exception("The data structure is not correct.")
-                # violations
-                if shared_deletions:
-                    Warning(
-                        "Insecure configuration: should view shared data! ",
-                        conf_dir,
-                        shared_additions,
-                    )
-                if shared_additions:
-                    print(
-                        "Secure configuration: can view shared data. ",
-                        conf_dir,
-                        shared_additions,
-                    )
+        # for conf_dir in data:
+        #     if len(data[conf_dir]) == 2:
+        #         [privacy_diff, shared_diff] = data[conf_dir]
+        #         if len(privacy_diff) == 3:
+        #             [privacy_additions, privacy_deletions, privacy_changes] = (
+        #                 privacy_diff
+        #             )
+        #         else:
+        #             raise Exception("The data structure is not correct.")
+        #         if len(shared_diff) == 3:
+        #             [shared_additions, shared_deletions, shared_changes] = shared_diff
+        #         else:
+        #             raise Exception("The data structure is not correct.")
+        #         # violations
+        #         if shared_deletions:
+        #             Warning(
+        #                 "Insecure configuration: should view shared data! ",
+        #                 conf_dir,
+        #                 shared_additions,
+        #             )
+        #         if shared_additions:
+        #             print(
+        #                 "Secure configuration: can view shared data. ",
+        #                 conf_dir,
+        #                 shared_additions,
+        #             )
                 # if privacy_deletions: # consider ownership
                 #     Warning("Privacy sensitive data is deleted! ", conf_dir, privacy_deletions)
-            else:
-                raise Exception("The data structure is not correct.")
 
 
 class ConfigurationConfiotOracle(ConfiotOracle):
