@@ -1,6 +1,9 @@
+
+
+
 ### Current user Role: {{ROLE}}
 
-### Current user's UI Changes:
+
 {{UICHANGE}}
 
 
