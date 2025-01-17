@@ -11,18 +11,18 @@ from Confiot_main.ConfigurationParser.OperationExtraction import OperationExtrac
 from Confiot_main.utils.util import jaccard_similarity
 
 
-class ChangeType:
+class SpecificUIChange:
     DELETE = 0
     ADD = 1
 
     def __init__(self):
-        pass
+        self.__str__ = "SpecificUIChange"
 
 
-class OperationChangeType(ChangeType):
-    def __init__(self, change, operation):
-        self.change = change
-        self.opeartion = operation
+class OperationChange(SpecificUIChange):
+    def __init__(self, add_or_delete, operation):
+        self.add_or_delete = add_or_delete
+        self.operation = operation
 
 
 class UIChangeParser:
@@ -45,6 +45,7 @@ class UIChangeParser:
 
         self.load_operations()
 
+    # [TODO]: UI change应该能够处理新增的view，而不是仅仅在最初的operations中找
     def load_operations(self):
         page_operations_file = settings.Confiot_output + f"/Operations/{self.page}.json"
         if not os.path.exists(page_operations_file):
@@ -75,10 +76,12 @@ class UIChangeParser:
             exist_in_new = self.find_op(target_op, self.operations_new)
 
             if exist_in_old is None and exist_in_new is not None:
-                semantic_changes.append(OperationChangeType(ChangeType.ADD, target_op))
+                semantic_changes.append(
+                    OperationChange(SpecificUIChange.ADD, target_op)
+                )
             elif exist_in_old is not None and exist_in_new is None:
                 semantic_changes.append(
-                    OperationChangeType(ChangeType.DELETE, target_op)
+                    OperationChange(SpecificUIChange.DELETE, target_op)
                 )
         return semantic_changes
 

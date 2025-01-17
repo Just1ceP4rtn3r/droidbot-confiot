@@ -1,0 +1,13 @@
+### Current user Role: {{ROLE}}
+
+### Current user's UI Changes:
+{{UICHANGE}}
+
+
+### The security criteria are:
+'''
+{{CRITERIA}}
+'''
+
+
+

@@ -239,13 +239,15 @@ class ConfigurationParser:
         ChildPage_template = ""
 
         BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-        with open(BASE_DIR + "/../prompt/ContextPageQuery/LeafQuery.txt") as f:
+        with open(BASE_DIR + "/../prompt/ConfigParsing_PromptChain/LeafQuery.txt") as f:
             LeafQuery_template = f.read()
-        with open(BASE_DIR + "/../prompt/ContextPageQuery/FatherQuery.txt") as f:
+        with open(
+            BASE_DIR + "/../prompt/ConfigParsing_PromptChain/FatherQuery.txt"
+        ) as f:
             FatherQuery_template = f.read()
-        with open(BASE_DIR + "/../prompt/ContextPageQuery/PageInfo.txt") as f:
+        with open(BASE_DIR + "/../prompt/ConfigParsing_PromptChain/PageInfo.txt") as f:
             PageInfo_template = f.read()
-        with open(BASE_DIR + "/../prompt/ContextPageQuery/ChildPage.txt") as f:
+        with open(BASE_DIR + "/../prompt/ConfigParsing_PromptChain/ChildPage.txt") as f:
             ChildPage_template = f.read()
 
         page_worklist = {}

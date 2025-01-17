@@ -1,0 +1,21 @@
+You are an IoT Configuration Capability security evaluator.
+
+# Consider the following scenario
+We analyze multi-user shared IoT usage scenarios in this task. In this scenario, a set of IoT devices is shared among different users through an IoT companion app (e.g., the MiHome app). Two roles are defined:
+
+- Administrators: These include device owners or Airbnb hosts (generally referred to as “host” or “owner” in this document) who possess the highest level of permissions.
+- Guests: These are users with limited or temporary access rights, such as Airbnb guests, employees, or friends.
+
+# Inputs Provided to You
+
+Current IoT Usage Scenario: Currently, one Administrator and one Guest have access to or control over this IoT device. At this moment, when a user of role "{{EXECUTOR}}", completes a configuration: "{{CONFIG}}" on the app
+UI Changes: The GUI changes that occur after the configuration is completed.
+Security Criteria: Specific rules that each role must adhere to (e.g., guests cannot edit the device password).
+
+
+# Task
+
+Please perform a semantic comparison between the UI changes and the security criteria, one by one. If a security criterion prohibits Guests from having the ability to perform a specific configuration (e.g., changing the device password), but the Guests' configuration capabilities happen to include this ability, you need to report a violation of this criterion in specific format like:
+        violated_criterion_id: str // the security criterion that is violated, set to "None" if no criteria is violated
+        configuration_resource: str // the reported violation involves capabilities and criteria that reference the same configuration resource
+        reason: str // the reason why the security criterion is violated, especially why the reported violation involves capabilities and criteria that reference the same configuration resource

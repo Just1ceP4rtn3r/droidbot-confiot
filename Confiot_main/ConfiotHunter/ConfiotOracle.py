@@ -205,7 +205,7 @@ class ConfiotOracle:
             "messages": [
                 {
                     "role": "system",
-                    "content": "You are an privacy assistant tasked with parsing texts that extracted from IoT companion mobile apps. For provided privacy related texts, please identify corresponding privacy data in given list of texts. You will be provided with several examples containing data types and related values. Then given some texts containing data types, please identify related values. If you do not find any privacy data, do not contain the texts. "
+                    "content": "You are an privacy assistant tasked with parsing texts that extracted from IoT companion mobile apps. For provided privacy related texts, please identify corresponding privacy data in given list of texts. You will be provided with several examples containing data types and related values. Then given some texts containing data types, please identify related values. If you do not find any privacy data, do not contain the texts. ",
                 },
                 {
                     "role": "user",
@@ -226,55 +226,71 @@ class ConfiotOracle:
         print(result)
         return result
 
-    def GetBelonging(self, privacy_data, snapshot_change, related_pages, current_user_id):
+    def GetBelonging(
+        self, privacy_data, snapshot_change, related_pages, current_user_id
+    ):
         api_key = os.environ.get("OPENAI_API_KEY")
-        headers = {"Content-Type": "application/json", "Authorization": f"Bearer {api_key}"}
+        headers = {
+            "Content-Type": "application/json",
+            "Authorization": f"Bearer {api_key}",
+        }
 
         payload = {
             "model": "gpt-4o",
             "messages": [
                 {
                     "role": "system",
-                    "content": "You are an privacy assistant tasked with parsing texts that extracted from IoT companion mobile apps. For provided privacy related texts, please identify corresponding privacy data in given list of texts. You will be provided with several examples containing data types and related values. Then given some texts containing data types, please identify related values. If you do not find any privacy data, do not contain the texts. "
+                    "content": "You are an privacy assistant tasked with parsing texts that extracted from IoT companion mobile apps. For provided privacy related texts, please identify corresponding privacy data in given list of texts. You will be provided with several examples containing data types and related values. Then given some texts containing data types, please identify related values. If you do not find any privacy data, do not contain the texts. ",
                 },
                 {
                     "role": "user",
-                    "content": f"Here are some examples. The value to 'phone number' can be '+1-123-456-7890', '(555) 555-1234', '456-7890'. The value to 'email' can be 'john@businessname.com', 'abc@test.com'. The value to 'address' can be '1234 Main St, Springfield, IL 62701', '1234 Main St, Springfield, IL'. The value to 'time' can be '12:30 PM', '3:00 AM'."
+                    "content": f"Here are some examples. The value to 'phone number' can be '+1-123-456-7890', '(555) 555-1234', '456-7890'. The value to 'email' can be 'john@businessname.com', 'abc@test.com'. The value to 'address' can be '1234 Main St, Springfield, IL 62701', '1234 Main St, Springfield, IL'. The value to 'time' can be '12:30 PM', '3:00 AM'.",
                 },
                 {
                     "role": "user",
-                    "content": f"Evaluate the following texts: {snapshot_change}."
-                }],
-            "max_tokens": 500
+                    "content": f"Evaluate the following texts: {snapshot_change}.",
+                },
+            ],
+            "max_tokens": 500,
         }
-        response = requests.post("https://api.openai.com/v1/chat/completions", headers=headers, json=payload)
+        response = requests.post(
+            "https://api.openai.com/v1/chat/completions", headers=headers, json=payload
+        )
 
         result = response.json().get("choices")[0].get("message").get("content")
         print(result)
         return result
 
-    def GetBelonging(self, privacy_data, snapshot_change, related_pages, current_user_id):
+    def GetBelonging(
+        self, privacy_data, snapshot_change, related_pages, current_user_id
+    ):
         api_key = os.environ.get("OPENAI_API_KEY")
-        headers = {"Content-Type": "application/json", "Authorization": f"Bearer {api_key}"}
+        headers = {
+            "Content-Type": "application/json",
+            "Authorization": f"Bearer {api_key}",
+        }
 
         payload = {
             "model": "gpt-4o",
             "messages": [
                 {
                     "role": "system",
-                    "content": "You are an privacy assistant tasked with parsing texts that extracted from IoT companion mobile apps. For provided privacy data, please identify corresponding privacy data belongings. You will be provided with some texts examples that contains possible privacy data belonging patterns. If you do not find any belongings to the given privacy data, return 'Unknown'. "
+                    "content": "You are an privacy assistant tasked with parsing texts that extracted from IoT companion mobile apps. For provided privacy data, please identify corresponding privacy data belongings. You will be provided with some texts examples that contains possible privacy data belonging patterns. If you do not find any belongings to the given privacy data, return 'Unknown'. ",
                 },
                 {
                     "role": "user",
-                    "content": f"Here are some examples. 'UserA's phone number' means that 'phone number' belongs to 'userA'. "
+                    "content": f"Here are some examples. 'UserA's phone number' means that 'phone number' belongs to 'userA'. ",
                 },
                 {
                     "role": "user",
-                    "content": f"Please find the belongings to data: {privacy_data} in the following texts: {snapshot_change}. You may also find some clues in the current page or the previous page texts: {related_pages}. The current other user IDs are: {current_user_id}."
-                }],
-            "max_tokens": 500
+                    "content": f"Please find the belongings to data: {privacy_data} in the following texts: {snapshot_change}. You may also find some clues in the current page or the previous page texts: {related_pages}. The current other user IDs are: {current_user_id}.",
+                },
+            ],
+            "max_tokens": 500,
         }
-        response = requests.post("https://api.openai.com/v1/chat/completions", headers=headers, json=payload)
+        response = requests.post(
+            "https://api.openai.com/v1/chat/completions", headers=headers, json=payload
+        )
 
         result = response.json().get("choices")[0].get("message").get("content")
         print(result)
@@ -368,10 +384,12 @@ class ConfiotOracle:
         # 3. Given each snapshot change, if there are privacy changes, get the privacy data
         # e.g., phone number, email, address, time, etc. +1 800-xxx-xxxx is a phone number
         # e.g., age, heart rate, blood pressure, etc. 25 is an age
-        privacy_data = self.GetValue(snapshot_privacy_add+snapshot_privacy_delete)
+        privacy_data = self.GetValue(snapshot_privacy_add + snapshot_privacy_delete)
 
         # 4. Given the privacy data, find the belonging
-        belongings = self.GetBelonging(privacy_data, snapshot_privacy_add+snapshot_privacy_delete, [], "Tracy")
+        belongings = self.GetBelonging(
+            privacy_data, snapshot_privacy_add + snapshot_privacy_delete, [], "Tracy"
+        )
 
         return privacy_data, belongings
 
@@ -414,9 +432,7 @@ class ConfiotOracle:
         return data
 
     # Report the Confiot Chaoses
-    def IdnetifyConfiot(
-        self, snapshot_old, snapshot_new
-    ):
+    def IdnetifyConfiot(self, snapshot_old, snapshot_new):
         # Rules for excessive capablities
         # pass
 
@@ -439,9 +455,13 @@ class ConfiotOracle:
             if "privacy" in items["Capabilities"]:
                 if "Should not view" in items["Capabilities"]:
                     if privacy_data:
-                        print(f"Possible violation - guest can view privacy data:\n {privacy_data}! ")
+                        print(
+                            f"Possible violation - guest can view privacy data:\n {privacy_data}! "
+                        )
                     if belongings:
-                        print(f"Possible violation - guest can view privacy data:\n {belongings}! ")
+                        print(
+                            f"Possible violation - guest can view privacy data:\n {belongings}! "
+                        )
                 else:
                     pass
 
@@ -471,8 +491,8 @@ class ConfiotOracle:
         #                 conf_dir,
         #                 shared_additions,
         #             )
-                # if privacy_deletions: # consider ownership
-                #     Warning("Privacy sensitive data is deleted! ", conf_dir, privacy_deletions)
+        # if privacy_deletions: # consider ownership
+        #     Warning("Privacy sensitive data is deleted! ", conf_dir, privacy_deletions)
 
 
 class ConfigurationConfiotOracle(ConfiotOracle):
@@ -482,6 +502,7 @@ class ConfigurationConfiotOracle(ConfiotOracle):
 
         self.Agent = Agent
         self.CP = ConfigurationParser(self.Agent)
+        self.proceed_configuration = ""
 
     def LoadCriterias(
         self,
@@ -494,6 +515,7 @@ class ConfigurationConfiotOracle(ConfiotOracle):
         return criteria
 
     def LoadUIChanges(self, last_task, task):
+        self.proceed_configuration = task
         # 表示当前是after delegation的阶段
         if last_task is None or task == "000":
             return -1
@@ -526,6 +548,11 @@ class ConfigurationConfiotOracle(ConfiotOracle):
             UIChanges[page] = UIChangeParser(
                 page, xml_old, xml_new
             ).identify_change_type()
+
+        _tmp = UIChanges.copy()
+        for page in _tmp:
+            if UIChanges[page] == []:
+                UIChanges.pop(page)
         return UIChanges
 
     # [TODO]: 添加对于LLM configuration种Dependency的解析
@@ -584,7 +611,12 @@ class ConfigurationConfiotOracle(ConfiotOracle):
                         continue
         return configurations
 
-    def IdentifyConfiot(self, Criteria, Configurations, UIChanges, Role, outputdir):
+    # Criteria: JSON
+    # Configurations: {"Page-0": {"Task Content": [op_id, ...]}}
+    # UIChanges: {"Page-0": [ConfiotHunter.SpecificUIChange, ...]}
+    def IdentifyConfiot(
+        self, TestingPhase, Criteria, Configurations, UIChanges, Role, outputdir
+    ):
         # if not os.path.exists(outputdir):
         #     os.makedirs(outputdir)
         # else:
@@ -592,6 +624,9 @@ class ConfigurationConfiotOracle(ConfiotOracle):
 
         AfterDelegation_system_template = ""
         AfterDelegation_user_template = ""
+        DuringUsage_system_template = ""
+        DuringUsage_user_template = ""
+        PageUIChange_template = ""
         BASE_DIR = os.path.dirname(os.path.abspath(__file__))
         with open(
             BASE_DIR + "/../prompt/IdentifyCapabilityConfiot/AfterDelegation_system.txt"
@@ -602,10 +637,23 @@ class ConfigurationConfiotOracle(ConfiotOracle):
         ) as f:
             AfterDelegation_user_template = f.read()
 
+        with open(
+            BASE_DIR + "/../prompt/IdentifyCapabilityConfiot/DuringUsage_system.txt"
+        ) as f:
+            DuringUsage_system_template = f.read()
+        with open(
+            BASE_DIR + "/../prompt/IdentifyCapabilityConfiot/DuringUsage_user.txt"
+        ) as f:
+            DuringUsage_user_template = f.read()
+        with open(
+            BASE_DIR + "/../prompt/IdentifyCapabilityConfiot/PageUIChange.txt"
+        ) as f:
+            PageUIChange_template = f.read()
+
         system_prompt = ""
         user_prompt = ""
         # After Delegation
-        if UIChanges == -1:
+        if TestingPhase == Phase.AfterDelegation and UIChanges == -1:
             system_prompt = AfterDelegation_system_template
 
             config_strs = []
@@ -617,14 +665,76 @@ class ConfigurationConfiotOracle(ConfiotOracle):
                         cid += 1
 
             user_prompt = AfterDelegation_user_template.replace(
-                "{{CONFIG}}", "### Role: " + Role + "\n" + "\n".join(config_strs)
+                "{{CONFIG}}", "\n".join(config_strs)
             )
+            user_prompt = user_prompt.replace("{{ROLE}}", Role)
 
             user_prompt = user_prompt.replace("{{CRITERIA}}", str(Criteria))
-        else:
-            pass
+        elif TestingPhase == Phase.DuringUsage:
+            if len(UIChanges) == 0:
+                print("[DBG]: Skip because no UI changes")
+                return
+            system_prompt = DuringUsage_system_template
+            user_prompt = DuringUsage_user_template.replace("{{ROLE}}", Role)
+            user_prompt = user_prompt.replace("{{CRITERIA}}", str(Criteria))
+            page_ui_changes_str = []
 
-        prompt = system_prompt + "\n" + user_prompt
+            for changed_page in UIChanges:
+                _prompt = PageUIChange_template
+
+                if not os.path.exists(
+                    settings.LLMConfiguration_output + f"/{changed_page}"
+                ):
+                    continue
+                with open(
+                    settings.LLMConfiguration_output + f"/{changed_page}/PageInfo.txt",
+                    "r",
+                ) as f:
+                    page_info = f.read()
+
+                _prompt = _prompt.replace("{{PAGEINFO}}", page_info)
+
+                operation_changes = {
+                    "Add": [],
+                    "Delete": [],
+                    "Add_str": [],
+                    "Delete_str": [],
+                }
+
+                for uichange in UIChanges[changed_page]:
+                    if isinstance(uichange, OperationChange):
+                        if uichange.add_or_delete == SpecificUIChange.ADD:
+                            operation_changes["Add"].append(uichange.operation)
+                            operation_changes["Add_str"].append(
+                                uichange.operation["op_str"]
+                            )
+                        else:
+                            operation_changes["Delete"].append(uichange.operation)
+                            operation_changes["Delete_str"].append(
+                                uichange.operation["op_str"]
+                            )
+
+                _change_details_str = ""
+                if operation_changes["Add"]:
+                    _change_details_str += (
+                        "* Add Operations:\n"
+                        + "\n".join(operation_changes["Add_str"])
+                        + "\n"
+                    )
+                if operation_changes["Delete"]:
+                    _change_details_str += (
+                        "* Delete Operations:\n"
+                        + "\n".join(operation_changes["Delete_str"])
+                        + "\n"
+                    )
+
+                _prompt = _prompt.replace("{{PAGEUICHANGE}}", _change_details_str)
+                page_ui_changes_str.append(_prompt)
+
+            user_prompt = user_prompt.replace(
+                "{{UICHANGE}}", "\n".join(page_ui_changes_str)
+            )
+
         res = query_Confiot_identification(
             system_prompt=system_prompt, user_prompt=user_prompt
         )

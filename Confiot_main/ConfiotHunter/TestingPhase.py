@@ -2,5 +2,5 @@
 class Phase:
     Initilization = 0
     AfterDelegation = 1
-    PeformingConfiguration = 2
+    DuringUsage = 2
     AfterRevocation = 3

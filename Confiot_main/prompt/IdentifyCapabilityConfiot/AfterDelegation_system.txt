@@ -9,7 +9,7 @@ We analyze multi-user shared IoT usage scenarios in this task. In this scenario,
 # Inputs Provided to You
 
 Current IoT Usage Scenario: Two users (one as the host and the other as a guest) use a mobile app to control a smart IoT device. At this point, the host has already authorized the device for the guest.
-Current Configuration Capabilities: A description of what configurations each role (host and guest) can perform in the app.
+Current Configuration Capabilities: A description of what configurations a spcific role can perform in the app.
 Security Criteria: Specific rules that each role must adhere to (e.g., guests cannot edit the device password).
 
 

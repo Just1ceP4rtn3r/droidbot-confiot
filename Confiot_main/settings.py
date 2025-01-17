@@ -1,17 +1,18 @@
 class settings:
-    device_serial = "35e38c40"
+    device_serial = "192.168.2.176:5555"
 
     # app_path = "/root/documents/droidbot-new/a2dp/a2dp.Vol_169.apk"
     # droid_output = "/root/documents/droidbot-new/a2dp/"
-    app_path = "/Users/tracy/workspace/projects/ConfioT/automation/apps/com.xiaomi.smarthome"
+    app_path = "/root/documents/Output/mihome/mihome-smartscale-12-27/mihome.apk"
     # droid_output = r"/root/ConfiotOutput/Output/Tuya/host/result"  #"/root/documents/Output/mihome/mihome-smartscale-guest/result"
-    droid_output = r"/Users/tracy/workspace/projects/ConfioT/usenix-output/mihome/test"
+    droid_output = r"/root/documents/Output/mihome/mihome-smartscale-12-27/host/result"
 
     Confiot_output = f"{droid_output}/Confiot/"
     UI_output = Confiot_output + "/UI/"
     Pages = Confiot_output + "/Pages/"
 
     violation_output = Confiot_output + "/Violation/"
+    LLMConfiguration_output = Confiot_output + "/LLM_ConfigParsing"
     Static_comparation_output = Confiot_output + "/Comparation/"
     UIHierarchy_comparation_output = Static_comparation_output + "/UIHierarchy/"
     Feasibility_comparation_output = Static_comparation_output + "/Feasibility/"
@@ -78,6 +79,11 @@ class settings:
         settings.Confiot_output = settings.droid_output + "/Confiot/"
         settings.UI_output = settings.Confiot_output + "/UI/"
         settings.Pages = settings.Confiot_output + "/Pages/"
+
+        settings.violation_output = settings.Confiot_output + "/Violation/"
+        settings.LLMConfiguration_output = (
+            settings.Confiot_output + "/LLM_ConfigParsing"
+        )
         settings.Static_comparation_output = settings.Confiot_output + "/Comparation/"
         settings.UIHierarchy_comparation_output = (
             settings.Static_comparation_output + "/UIHierarchy/"

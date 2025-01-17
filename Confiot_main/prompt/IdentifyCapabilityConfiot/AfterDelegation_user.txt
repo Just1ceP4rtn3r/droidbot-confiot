@@ -2,7 +2,7 @@
 Two users (one as the Administrator and the other as the guest) use a mobile app to control a smart IoT device. At this point, the host has already authorized the device for the guest.
 
 
-### Configuration Capabilities
+### Configuration Capabilities of Role {{ROLE}}
 {{CONFIG}}
 
 

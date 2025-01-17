@@ -311,14 +311,15 @@ def test_Configuration_parser():
 
     # os.environ["https_proxy"] = "http://192.168.72.1:1083"
     CP.query_LLM_for_configuration_mapping_based_on_page_graph(
-        settings.Confiot_output + "/LLM_ContextPageQuery"
+        settings.LLMConfiguration_output
     )
-    # CP.save_configurations(settings.Confiot_output + "/LLM_ContextPageQuery")
+    CP.save_configurations(settings.LLMConfiguration_output)
 
 
 def test_ConfioT_Hunter():
     from Confiot_main.settings import settings
     from Confiot_main.ConfigurationParser.ConfigurationParser import ConfigurationParser
+    from Confiot_main.ConfiotHunter.TestingPhase import Phase
     from Confiot_main.ConfiotHunter.ConfiotOracle import (
         ConfiotOracle,
         ConfigurationConfiotOracle,
@@ -334,12 +335,17 @@ def test_ConfioT_Hunter():
 
     Criteria = oracle.LoadCriterias()
     Configurations = oracle.LoadConfigurations(
-        settings.Confiot_output + "/LLM_ContextPageQuery"
+        settings.Confiot_output + "/LLM_ConfigParsing"
     )
-    UIChanges = oracle.LoadUIChanges(None, "000")
+    UIChanges = oracle.LoadUIChanges("000", "Task-0")
 
     oracle.IdentifyConfiot(
-        Criteria, Configurations, UIChanges, "Guests", settings.violation_output
+        Phase.DuringUsage,
+        Criteria,
+        Configurations,
+        UIChanges,
+        "Guests",
+        settings.violation_output + "/" + oracle.proceed_configuration + "/",
     )
     return
 
