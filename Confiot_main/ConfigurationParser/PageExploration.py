@@ -277,29 +277,125 @@ class PageExplorer:
         UITree.draw(self.page_navigation_graph, settings.Confiot_output)
 
     # step-3: 遍历所有page，并获取snapshot
+    # 贪心
     def device_page_replay(self, outputdir):
-        replay_paths = {}
-        for page in self.pages:
-            steps = self.find_path_to_page(page)
+        self.Agent.device_stop_app()
+        self.Agent.device.start_app(self.Agent.app)
+        time.sleep(5)
 
-            if page == self.page_navigation_graph.start_node or not steps:
-                continue
+        home_page = list(
+            self.page_navigation_graph.edges_dict[
+                self.page_navigation_graph.start_node
+            ].keys()
+        )[0]
+        current_page = home_page
+        cannot_reach_pages = []
+        PAGES = list(self.pages.keys())
+        while PAGES:
+            worklist = {}
+            self.Agent.device_get_UIElement(store_path=outputdir, store_file="tmp.xml")
 
-            replay_paths[page] = steps
+            tmp_xml = outputdir + "/tmp.xml"
+            tmp_views = XMLParser(tmp_xml).views
+            _page = self.identify_current_page(tmp_views)
+            is_new_page = False
+            if _page:
+                if _page not in PAGES or not os.path.exists(
+                    outputdir + f"/{_page}.xml"
+                ):
+                    self.Agent.device_get_UIElement(
+                        store_path=outputdir, store_file=f"{_page}.xml"
+                    )
+                    if _page in PAGES:
+                        PAGES.remove(_page)
+                if _page != current_page:
+                    current_page = _page
 
-        replay_paths = dict(
-            sorted(replay_paths.items(), key=lambda item: len(item[1]), reverse=True)
-        )
+                # if last_event_str == "BACK":
+                #     last_pages = []
+                #     while page_reach_stack and page_reach_stack[-1] == current_page:
+                #         last_pages.append(page_reach_stack.pop())
 
-        complete_pages = []
-        for target_page in replay_paths:
-            print("[DBG]: Start go to page: " + target_page)
-            if target_page in complete_pages:
-                continue
-            self.to_page(
-                target_page, replay_paths[target_page], complete_pages, outputdir
-            )
+                #     # 可能到了一个不认识的page，重新来过
+                #     if not page_reach_stack:
+                #         current_page = home_page
+                #         page_reach_stack = []
+                #         last_event_str = ""
+                #         self.Agent.device_stop_app()
+                #         self.Agent.device.start_app(self.Agent.app)
+                #         time.sleep(5)
+                #         continue
+                #     else:
+                #         for p in last_pages:
+                #             PAGES.append(p)
+                # else:
+                #     page_reach_stack.append(current_page)
 
+            else:
+                # [TODO]: 如果是一个新的page
+                print("[ERR]: NEW Page !")
+                # input()
+                is_new_page = True
+                if PAGES:
+                    worklist["Back2LastPage"] = "BACK"
+
+            if not is_new_page:
+                if current_page in self.page_navigation_graph.edges_dict:
+                    child_pages = list(
+                        self.page_navigation_graph.edges_dict[current_page].keys()
+                    )
+                    # 过滤已经遍历过
+                    for page in PAGES:
+                        if page in child_pages and page != current_page:
+                            worklist[page] = self.page_navigation_graph.edges_dict[
+                                current_page
+                            ][page]
+
+                # 如果back到start_node, 并且所有child page都遍历完了，那么剩余的page大概率没有路径到达
+                if current_page == home_page and len(worklist) == 0:
+                    cannot_reach_pages = PAGES
+                    print(cannot_reach_pages)
+                    break
+
+                worklist["Back2LastPage"] = "BACK"
+
+            print(f"[DBG]: worklist in current page {current_page}: ", worklist.keys())
+            target = list(worklist.keys())[0]
+            edges = worklist[target]
+
+            view = None
+            event = None
+            event_str = ""
+            if edges == "BACK":
+                event = KeyEvent(name="BACK")
+                event_str = "BACK"
+            else:
+                view = edges[0].view
+                event_str = edges[0].event_str
+                if "TouchEvent" in event_str:
+                    # 某些view位置变化
+                    real_view = self.find_view_in_page(view)
+                    if real_view:
+                        view = real_view
+                        self.Agent.events[event_str]["view"] = view
+
+                event_dict = self.Agent.events[event_str]
+                event = InputEvent.from_dict(event_dict)
+
+            wait_time = 2
+            self.device_send_event(event, event_str, wait_time)
+            if edges != "BACK":
+                current_page = target
+
+        for page in cannot_reach_pages:
+            self.test_device_page_replay(outpudir, page)
+
+    def device_send_event(self, event, event_str, sleep_time):
+        print("[DBG]: Action: " + event_str)
+        event.send(self.Agent.device)
+        time.sleep(sleep_time)
+
+    @deprecated
     def test_device_page_replay(self, outputdir, test_page):
         replay_paths = {}
         for page in self.pages:
@@ -318,6 +414,7 @@ class PageExplorer:
         print("[DBG]: Start go to page: " + test_page)
         self.to_page(test_page, replay_paths[test_page], complete_pages, outputdir)
 
+    @deprecated
     def to_page(self, target_page, steps, complete_pages, outputdir):
 
         self.Agent.device_stop_app()

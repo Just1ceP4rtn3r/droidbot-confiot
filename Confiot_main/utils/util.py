@@ -226,14 +226,17 @@ class UITree(DirectedGraph):
     def __init__(self):
         # config-tempid
         self.nodes = []
-
+        # {"name": Node}
         self.nodes_dict = {}
 
         # event (represent the current value of the configuration)
         self.edges = []
         # {"src_node": {"dst_node": [e,]}}
         self.edges_dict = {}
+        # name of the start node
         self.start_node = None
+
+        # 有向图
 
     def add_edge(self, edge: Edge):
         self.edges.append(edge)
@@ -249,6 +252,8 @@ class UITree(DirectedGraph):
             self.edges_dict[edge.start_node.name][edge.end_node.name].append(
                 edge.description
             )
+
+    #
 
 
 def get_longest_task(tasks):
@@ -667,6 +672,7 @@ def progress(percent, width=50):
 
 
 if __name__ == "__main__":
+
     # 创建有向图
     graph = DirectedGraph()
 
