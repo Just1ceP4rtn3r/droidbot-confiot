@@ -9,7 +9,7 @@ from zss import simple_distance
 from zss import Node as zss_node
 
 
-class PageExplorer():
+class PageExplorer:
 
     def __init__(self, Agent: Confiot) -> None:
         # {
@@ -29,20 +29,20 @@ class PageExplorer():
         root_node = None
         size = 0
         for view in views:
-            if (not view["visible"]):
+            if not view["visible"]:
                 continue
             nodes[view["temp_id"]] = zss_node(view["resource_id"])
-            if (view["parent"] == -1):
+            if view["parent"] == -1:
                 root_node = nodes[view["temp_id"]]
             size += 1
 
         for view in views:
-            if (not view["visible"]):
+            if not view["visible"]:
                 continue
             temp_id = view["temp_id"]
             children = view["children"]
             for child in children:
-                if (child in nodes):
+                if child in nodes:
                     nodes[temp_id].addkid(nodes[child])
         return root_node, size
 
@@ -59,11 +59,13 @@ class PageExplorer():
     def get_state_signature(self, state_views):
         state1_signature = {"resourceid": [], "bound": [], "text": []}
         for view in state_views:
-            if (not view["visible"]):
+            if not view["visible"]:
                 continue
-            state1_signature["resourceid"].append(f"[class]{view['class']}[resource_id]{view['resource_id']}")
+            state1_signature["resourceid"].append(
+                f"[class]{view['class']}[resource_id]{view['resource_id']}"
+            )
             state1_signature["bound"].append(f"[bounds]{view['bounds']}")
-            if (view["text"]):
+            if view["text"]:
                 state1_signature["text"].append(f"[text]{view['text']}")
         return state1_signature
 
@@ -75,25 +77,37 @@ class PageExplorer():
         state1_info = {"resourceid": [], "bound": [], "text": []}
         state2_info = {"resourceid": [], "bound": [], "text": []}
         for view in self.Agent.state_contents[state1]:
-            if (not view["visible"]):
+            if not view["visible"]:
                 continue
-            state1_info["resourceid"].append(f"[class]{view['class']}[resource_id]{view['resource_id']}")
+            state1_info["resourceid"].append(
+                f"[class]{view['class']}[resource_id]{view['resource_id']}"
+            )
             state1_info["bound"].append(f"[bounds]{view['bounds']}")
-            if (view["text"]):
+            if view["text"]:
                 state1_info["text"].append(f"[text]{view['text']}")
         for view in self.Agent.state_contents[state2]:
-            if (not view["visible"]):
+            if not view["visible"]:
                 continue
-            state2_info["resourceid"].append(f"[class]{view['class']}[resource_id]{view['resource_id']}")
+            state2_info["resourceid"].append(
+                f"[class]{view['class']}[resource_id]{view['resource_id']}"
+            )
             state2_info["bound"].append(f"[bounds]{view['bounds']}")
-            if (view["text"]):
+            if view["text"]:
                 state2_info["text"].append(f"[text]{view['text']}")
 
-        resourceid_similarity = self.jaccard_similarity(state1_info["resourceid"], state2_info["resourceid"])
-        bound_similarity = self.jaccard_similarity(state1_info["bound"], state2_info["bound"])
-        text_similarity = self.jaccard_similarity(state1_info["text"], state2_info["text"])
+        resourceid_similarity = self.jaccard_similarity(
+            state1_info["resourceid"], state2_info["resourceid"]
+        )
+        bound_similarity = self.jaccard_similarity(
+            state1_info["bound"], state2_info["bound"]
+        )
+        text_similarity = self.jaccard_similarity(
+            state1_info["text"], state2_info["text"]
+        )
 
-        return resourceid_similarity * 0.7 + bound_similarity * 0.2 + text_similarity * 0.1
+        return (
+            resourceid_similarity * 0.7 + bound_similarity * 0.2 + text_similarity * 0.1
+        )
 
     def calc_state_zss_similarity(self, state1, state2):
 
@@ -103,22 +117,33 @@ class PageExplorer():
         return self.zss_similarity(tree1, tree1_size, tree2, tree2_size)
 
     # 计算一个UTG state content_free_signature，与一个page中所有state signature的最大相似度
-    def calc_state_similarity_with_page(self, state_content_free_signature, state_layout, page_info):
+    def calc_state_similarity_with_page(
+        self, state_content_free_signature, state_layout, page_info
+    ):
 
         cursory_similarity = 0
         similarities = []
         for state in page_info:
             page_signature = page_info[state]
 
-            resourceid_similarity = self.jaccard_similarity(state_content_free_signature["resourceid"],
-                                                            page_signature["resourceid"])
-            bound_similarity = self.jaccard_similarity(state_content_free_signature["bound"], page_signature["bound"])
-            text_similarity = self.jaccard_similarity(state_content_free_signature["text"], page_signature["text"])
+            resourceid_similarity = self.jaccard_similarity(
+                state_content_free_signature["resourceid"], page_signature["resourceid"]
+            )
+            bound_similarity = self.jaccard_similarity(
+                state_content_free_signature["bound"], page_signature["bound"]
+            )
+            text_similarity = self.jaccard_similarity(
+                state_content_free_signature["text"], page_signature["text"]
+            )
 
-            sim = resourceid_similarity * 0.7 + bound_similarity * 0.2 + text_similarity * 0.1
+            sim = (
+                resourceid_similarity * 0.7
+                + bound_similarity * 0.2
+                + text_similarity * 0.1
+            )
             similarities.append(sim)
 
-        if (similarities):
+        if similarities:
             cursory_similarity = max(similarities)
             return cursory_similarity
         else:
@@ -144,7 +169,9 @@ class PageExplorer():
     def parse_struture_unique_pages(self):
         for state in self.Agent.state_contents:
             # signature用于预先粗略比较，两个state是否相似
-            state_content_free_signature = self.get_state_signature(self.Agent.state_contents[state])
+            state_content_free_signature = self.get_state_signature(
+                self.Agent.state_contents[state]
+            )
             # for view in self.Agent.state_contents[state]:
             #     if (not view["visible"]):
             #         continue
@@ -162,16 +189,17 @@ class PageExplorer():
             page_similarities = {}
             max_similar_page = ""
             for page in self.pages:
-                page_similarities[page] = self.calc_state_similarity_with_page(state_content_free_signature, state_layout,
-                                                                               self.pages[page])
+                page_similarities[page] = self.calc_state_similarity_with_page(
+                    state_content_free_signature, state_layout, self.pages[page]
+                )
 
-            if (page_similarities):
+            if page_similarities:
                 max_similar_page = max(page_similarities, key=page_similarities.get)
 
                 # if (page_similarities[max_similar_page] > 0.8 and page_similarities[max_similar_page] < 0.9):
                 #     print(state, self.pages[max_similar_page])
 
-            if (not max_similar_page or page_similarities[max_similar_page] < 0.8):
+            if not max_similar_page or page_similarities[max_similar_page] < 0.8:
                 # 创建一个新page
                 page_name = f"Page-{len(self.pages)}"
                 self.pages[page_name] = {}
@@ -179,8 +207,9 @@ class PageExplorer():
                 self.state_in_which_page[state] = page_name
 
                 screenshot = self.Agent.utg_graph.nodes_dict[state].screenshot
-                if (screenshot and os.path.exists(screenshot)):
+                if screenshot and os.path.exists(screenshot):
                     import shutil
+
                     shutil.copy(screenshot, settings.Pages + f"/{page_name}.jpg")
 
             else:
@@ -191,49 +220,56 @@ class PageExplorer():
     # step-2: 解析pages的navigation关系，生成page_navigation_graph
     def extract_navigations(self):
 
-        if (self.Agent.utg_graph is None):
+        if self.Agent.utg_graph is None:
             return
 
         for page in self.pages:
             desc = [s for s in self.pages[page]]
-            n = Node(page, description='\n'.join(desc), state=None)
+            n = Node(page, description="\n".join(desc), state=None)
             self.page_navigation_graph.nodes_dict[page] = n
             self.page_navigation_graph.add_node(n)
 
         for src_state in self.Agent.utg_graph.edges_dict:
             for target_state in self.Agent.utg_graph.edges_dict[src_state]:
-                for event_str in self.Agent.utg_graph.edges_dict[src_state][target_state]:
-                    if (event_str not in self.Agent.events):
+                for event_str in self.Agent.utg_graph.edges_dict[src_state][
+                    target_state
+                ]:
+                    if event_str not in self.Agent.events:
                         continue
                     e = self.Agent.events[event_str]
 
                     # 不包括返回的边
-                    if ("name=BACK" in event_str):
+                    if "name=BACK" in event_str:
                         continue
 
                     src_page = self.state_in_which_page[src_state]
                     target_page = self.state_in_which_page[target_state]
 
-                    if ('view' in e):
-                        config_id = str(e['view']['temp_id'])
-                        parent = str(e['view']['parent'])
-                        view_str = e['view']["view_str"]
-                        bounds = e['view']["bounds"]
+                    if "view" in e:
+                        config_id = str(e["view"]["temp_id"])
+                        parent = str(e["view"]["parent"])
+                        view_str = e["view"]["view_str"]
+                        bounds = e["view"]["bounds"]
 
-                        edge = Edge(self.page_navigation_graph.nodes_dict[src_page],
-                                    self.page_navigation_graph.nodes_dict[target_page],
-                                    event_str,
-                                    view=e['view'])
+                        edge = Edge(
+                            self.page_navigation_graph.nodes_dict[src_page],
+                            self.page_navigation_graph.nodes_dict[target_page],
+                            event_str,
+                            view=e["view"],
+                        )
                         self.page_navigation_graph.add_edge(edge)
 
-                    elif ('intent' in e and 'am start' in e['intent']):
+                    elif "intent" in e and "am start" in e["intent"]:
                         start_page = "000"
                         n = Node(start_page, description=start_page, state=None)
                         self.page_navigation_graph.nodes_dict[start_page] = n
                         self.page_navigation_graph.add_node(n)
 
-                        edge = Edge(self.page_navigation_graph.nodes_dict[start_page],
-                                    self.page_navigation_graph.nodes_dict[target_page], event_str)
+                        edge = Edge(
+                            self.page_navigation_graph.nodes_dict[start_page],
+                            self.page_navigation_graph.nodes_dict[target_page],
+                            event_str,
+                        )
                         self.page_navigation_graph.add_edge(edge)
                         self.page_navigation_graph.start_node = start_page
 
@@ -246,31 +282,37 @@ class PageExplorer():
         for page in self.pages:
             steps = self.find_path_to_page(page)
 
-            if (page == self.page_navigation_graph.start_node or not steps):
+            if page == self.page_navigation_graph.start_node or not steps:
                 continue
 
             replay_paths[page] = steps
 
-        replay_paths = dict(sorted(replay_paths.items(), key=lambda item: len(item[1]), reverse=True))
+        replay_paths = dict(
+            sorted(replay_paths.items(), key=lambda item: len(item[1]), reverse=True)
+        )
 
         complete_pages = []
         for target_page in replay_paths:
             print("[DBG]: Start go to page: " + target_page)
-            if (target_page in complete_pages):
+            if target_page in complete_pages:
                 continue
-            self.to_page(target_page, replay_paths[target_page], complete_pages, outputdir)
+            self.to_page(
+                target_page, replay_paths[target_page], complete_pages, outputdir
+            )
 
     def test_device_page_replay(self, outputdir, test_page):
         replay_paths = {}
         for page in self.pages:
             steps = self.find_path_to_page(page)
 
-            if (page == self.page_navigation_graph.start_node or not steps):
+            if page == self.page_navigation_graph.start_node or not steps:
                 continue
 
             replay_paths[page] = steps
 
-        replay_paths = dict(sorted(replay_paths.items(), key=lambda item: len(item[1]), reverse=True))
+        replay_paths = dict(
+            sorted(replay_paths.items(), key=lambda item: len(item[1]), reverse=True)
+        )
 
         complete_pages = []
         print("[DBG]: Start go to page: " + test_page)
@@ -280,18 +322,22 @@ class PageExplorer():
 
         self.Agent.device_stop_app()
         # self.Agent.device.start_app(self.Agent.app)
-        time.sleep(1)
+        time.sleep(2)
 
         # 在当前page，需要做的操作
         for page in steps:
-            if (page != self.page_navigation_graph.start_node):
-                self.Agent.device_get_UIElement(store_path=outputdir, store_file="tmp.xml")
+            if page != self.page_navigation_graph.start_node:
+                self.Agent.device_get_UIElement(
+                    store_path=outputdir, store_file="tmp.xml"
+                )
 
                 tmp_xml = outputdir + "/tmp.xml"
                 tmp_views = XMLParser(tmp_xml).views
                 current_page = self.identify_current_page(tmp_views)
-                if (current_page and current_page == page):
-                    self.Agent.device_get_UIElement(store_path=outputdir, store_file=f"{page}.xml")
+                if current_page and current_page == page:
+                    self.Agent.device_get_UIElement(
+                        store_path=outputdir, store_file=f"{page}.xml"
+                    )
                     complete_pages.append(page)
                 else:
                     # [TODO]: 如果是一个新的page，或跳转到别的page了（page navigation存在问题）
@@ -304,12 +350,12 @@ class PageExplorer():
             view = chosen_operation[0]
             event_str = chosen_operation[1]
 
-            if ("TouchEvent" in event_str):
+            if "TouchEvent" in event_str:
                 # 某些view位置变化
                 real_view = self.find_view_in_page(view)
-                if (real_view):
+                if real_view:
                     view = real_view
-                    self.Agent.events[event_str]['view'] = view
+                    self.Agent.events[event_str]["view"] = view
 
             event_dict = self.Agent.events[event_str]
             event = InputEvent.from_dict(event_dict)
@@ -317,14 +363,16 @@ class PageExplorer():
             event.send(self.Agent.device)
             time.sleep(4)
 
-        if (target_page != self.page_navigation_graph.start_node):
+        if target_page != self.page_navigation_graph.start_node:
             self.Agent.device_get_UIElement(store_path=outputdir, store_file="tmp.xml")
 
             tmp_xml = outputdir + "/tmp.xml"
             tmp_views = XMLParser(tmp_xml).views
             current_page = self.identify_current_page(tmp_views)
-            if (current_page and current_page == target_page):
-                self.Agent.device_get_UIElement(store_path=outputdir, store_file=f"{target_page}.xml")
+            if current_page and current_page == target_page:
+                self.Agent.device_get_UIElement(
+                    store_path=outputdir, store_file=f"{target_page}.xml"
+                )
                 complete_pages.append(target_page)
             else:
                 # [TODO]: 如果是一个新的page，或跳转到别的page了（page navigation存在问题）
@@ -338,12 +386,16 @@ class PageExplorer():
     # 分析到某一个page的路径
     def find_path_to_page(self, page):
         steps = {}
-        pages_in_path = self.page_navigation_graph.find_shortest_path(self.page_navigation_graph.start_node, page)
+        pages_in_path = self.page_navigation_graph.find_shortest_path(
+            self.page_navigation_graph.start_node, page
+        )
 
-        if (pages_in_path):
+        if pages_in_path:
             current_node = pages_in_path[0]
             for node in pages_in_path[1:]:
-                edges = self.page_navigation_graph.edges_dict[current_node.name][node.name]
+                edges = self.page_navigation_graph.edges_dict[current_node.name][
+                    node.name
+                ]
                 steps[current_node.name] = [(e.view, e.event_str) for e in edges]
                 current_node = node
 
@@ -358,12 +410,14 @@ class PageExplorer():
         page_similarities = {}
         max_similar_page = ""
         for page in self.pages:
-            page_similarities[page] = self.calc_state_similarity_with_page(state_sig, state_layout, self.pages[page])
+            page_similarities[page] = self.calc_state_similarity_with_page(
+                state_sig, state_layout, self.pages[page]
+            )
 
-        if (page_similarities):
+        if page_similarities:
             max_similar_page = max(page_similarities, key=page_similarities.get)
 
-        if (not max_similar_page or page_similarities[max_similar_page] < 0.8):
+        if not max_similar_page or page_similarities[max_similar_page] < 0.8:
             # 创建一个新page
             print("[DBG]: Found a new page!")
             return None
@@ -375,7 +429,7 @@ class PageExplorer():
     def find_view_in_page(self, view):
         found_view = None
 
-        if (not view):
+        if not view:
             return None
 
         current_state = self.Agent.device.get_current_state()
@@ -383,35 +437,53 @@ class PageExplorer():
             return None
 
         views_in_state = current_state.views
-        if (view["temp_id"] < len(views_in_state)):
+        if view["temp_id"] < len(views_in_state):
             v = views_in_state[view["temp_id"]]
-            if (v["resource_id"] == view["resource_id"] and v["class"] == view["class"] and
-                    v["content_description"] == view["content_description"] and v["text"] == view["text"] and
-                    v["size"] == view["size"] and v["bounds"] == view["bounds"]):
+            if (
+                v["resource_id"] == view["resource_id"]
+                and v["class"] == view["class"]
+                and v["content_description"] == view["content_description"]
+                and v["text"] == view["text"]
+                and v["size"] == view["size"]
+                and v["bounds"] == view["bounds"]
+            ):
                 found_view = v
                 return found_view
 
         candidates = []
         for v in views_in_state:
-            if (v["resource_id"] == view["resource_id"] and v["class"] == view["class"] and
-                    v["content_description"] == view["content_description"] and v["text"] == view["text"] and
-                    v["size"] == view["size"]):
+            if (
+                v["resource_id"] == view["resource_id"]
+                and v["class"] == view["class"]
+                and v["content_description"] == view["content_description"]
+                and v["text"] == view["text"]
+                and v["size"] == view["size"]
+            ):
                 candidates.append(v)
-                if (v["bounds"] == view["bounds"]):
+                if v["bounds"] == view["bounds"]:
                     found_view = v
                     return found_view
 
         # 按照直线距离排序
-        view_center = [(view['bounds'][1][0] - view['bounds'][0][0]) / 2, (view['bounds'][1][1] - view['bounds'][0][1]) / 2]
+        view_center = [
+            (view["bounds"][1][0] - view["bounds"][0][0]) / 2,
+            (view["bounds"][1][1] - view["bounds"][0][1]) / 2,
+        ]
         min_dist = 9999999
         for v in candidates:
-            v_center = [(v['bounds'][1][0] - v['bounds'][0][0]) / 2, (v['bounds'][1][1] - v['bounds'][0][1]) / 2]
-            dist = math.sqrt((view_center[0] - v_center[0])**2 + (view_center[1] - v_center[1])**2)
+            v_center = [
+                (v["bounds"][1][0] - v["bounds"][0][0]) / 2,
+                (v["bounds"][1][1] - v["bounds"][0][1]) / 2,
+            ]
+            dist = math.sqrt(
+                (view_center[0] - v_center[0]) ** 2
+                + (view_center[1] - v_center[1]) ** 2
+            )
 
-            if (dist < min_dist):
+            if dist < min_dist:
                 min_dist = dist
                 found_view = v
 
-        if (found_view["bounds"] != view["bounds"]):
+        if found_view["bounds"] != view["bounds"]:
             print("[DBG]: The position of the view changed!")
         return found_view

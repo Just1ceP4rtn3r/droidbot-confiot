@@ -319,22 +319,33 @@ def test_Configuration_parser():
 def test_ConfioT_Hunter():
     from Confiot_main.settings import settings
     from Confiot_main.ConfigurationParser.ConfigurationParser import ConfigurationParser
-    from Confiot_main.ConfiotHunter.ConfiotOracle import ConfiotOracle
+    from Confiot_main.ConfiotHunter.ConfiotOracle import (
+        ConfiotOracle,
+        ConfigurationConfiotOracle,
+    )
 
     Agent = Confiot()
-    CP = ConfigurationParser(Agent)
 
-    Agent.device_connect()
-    ConfigurationParser(Agent).app_pages_exploration("000")
+    # 执行Task-0, ...
+    # Agent.device_connect()
+    ConfigurationParser(Agent).app_pages_exploration("Task-0")
 
-    # oracle = ConfiotOracle()
-    # oracle.ParseUIChagnes(
-    #     None, settings.UIHierarchy_comparation_output + "000/Page-0.xml"
-    # )
+    oracle = ConfigurationConfiotOracle(Agent)
+
+    Criteria = oracle.LoadCriterias()
+    Configurations = oracle.LoadConfigurations(
+        settings.Confiot_output + "/LLM_ContextPageQuery"
+    )
+    UIChanges = oracle.LoadUIChanges(None, "000")
+
+    oracle.IdentifyConfiot(
+        Criteria, Configurations, UIChanges, "Guests", settings.violation_output
+    )
+    return
 
 
 if __name__ == "__main__":
     # test_device_guest_config_walker()
     # test_STEP0()
     # test_Enumerate_pages()
-    test_Configuration_parser()
+    test_ConfioT_Hunter()

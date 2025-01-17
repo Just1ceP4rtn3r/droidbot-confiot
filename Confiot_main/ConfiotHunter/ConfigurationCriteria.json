@@ -1,0 +1,19 @@
+{
+    "Criteria": [
+        {
+            "Id": "0",
+            "Role": "Any",
+            "Capablities": "should be able to see other users who can control the current device on the app"
+        },
+        {
+            "Id": "1",
+            "Role": "Guests",
+            "Capablities": "must not be able to edit the any password related to the device"
+        },
+        {
+            "Id": "2",
+            "Role": "Guests",
+            "Capablities": "must not have access to the device's remote control (or out of home control) feature"
+        }
+    ]
+}
