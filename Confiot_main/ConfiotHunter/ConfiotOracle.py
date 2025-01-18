@@ -20,6 +20,7 @@ from Confiot_main.utils.util import query_Confiot_identification
 
 from transformers import AutoTokenizer, AutoModelForSequenceClassification
 import requests
+from transformers import pipeline
 
 
 class ConfiotOracle:
@@ -192,8 +193,8 @@ class ConfiotOracle:
                     text = re.findall(r"<text>(.*?)</text>", element)[0]
                     texts.append(self.get_clean_text(text))
         return texts
-
-    def GetValue(self, snapshot_change):
+    
+    def GetValueGPT(self, snapshot_change):
         api_key = os.environ.get("OPENAI_API_KEY")
         headers = {
             "Content-Type": "application/json",
@@ -260,10 +261,8 @@ class ConfiotOracle:
         result = response.json().get("choices")[0].get("message").get("content")
         print(result)
         return result
-
-    def GetBelonging(
-        self, privacy_data, snapshot_change, related_pages, current_user_id
-    ):
+    
+    def GetBelonging(self, privacy_data, snapshot_change, related_pages, current_user_id):
         api_key = os.environ.get("OPENAI_API_KEY")
         headers = {
             "Content-Type": "application/json",
@@ -384,13 +383,11 @@ class ConfiotOracle:
         # 3. Given each snapshot change, if there are privacy changes, get the privacy data
         # e.g., phone number, email, address, time, etc. +1 800-xxx-xxxx is a phone number
         # e.g., age, heart rate, blood pressure, etc. 25 is an age
-        privacy_data = self.GetValue(snapshot_privacy_add + snapshot_privacy_delete)
+        privacy_data = self.GetValue(snapshot_privacy_add+snapshot_privacy_delete)
 
         # 4. Given the privacy data, find the belonging
-        belongings = self.GetBelonging(
-            privacy_data, snapshot_privacy_add + snapshot_privacy_delete, [], "Tracy"
-        )
-
+        belongings = self.GetBelonging(privacy_data, snapshot_privacy_add+snapshot_privacy_delete, [], "Tracy")
+        
         return privacy_data, belongings
 
     def ParseSharedData(self, snapshot_old: str, snapshot_new: str):
