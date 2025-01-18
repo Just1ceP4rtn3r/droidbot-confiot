@@ -412,7 +412,10 @@ class PageExplorer:
 
         complete_pages = []
         print("[DBG]: Start go to page: " + test_page)
-        self.to_page(test_page, replay_paths[test_page], complete_pages, outputdir)
+        if test_page not in replay_paths:
+            print("[ERR]: No path to page ", test_page)
+        else:   
+            self.to_page(test_page, replay_paths[test_page], complete_pages, outputdir)
 
     @deprecated
     def to_page(self, target_page, steps, complete_pages, outputdir):
