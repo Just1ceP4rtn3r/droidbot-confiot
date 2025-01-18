@@ -388,7 +388,7 @@ class PageExplorer:
                 current_page = target
 
         for page in cannot_reach_pages:
-            self.test_device_page_replay(outpudir, page)
+            self.test_device_page_replay(outputdir, page)
 
     def device_send_event(self, event, event_str, sleep_time):
         print("[DBG]: Action: " + event_str)
