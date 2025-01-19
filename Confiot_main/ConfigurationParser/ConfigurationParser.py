@@ -199,6 +199,8 @@ class ConfigurationParser:
                 op_id += 1
 
             context_operation = ""
+            if page not in self.page_context:
+                continue
             for context in self.page_context[page]:
                 context_view, context_text = context
                 if context_text == "" or not context_text:

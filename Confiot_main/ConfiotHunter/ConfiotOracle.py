@@ -427,9 +427,17 @@ class ConfiotOracle:
             )
 
         return data
+    
+    def GetSnapshotPair(self, confiot_output):
+        snapshot_dir = os.path.join(confiot_output, "Comparation/UIHierarchy")
+        dirs = sorted([d for d in os.listdir(snapshot_dir) if os.path.isdir(os.path.join(snapshot_dir, d))])
+        pairs = [(dirs[i], dirs[i+1]) for i in range(len(dirs) - 1)]
+
+        return pairs
+            
 
     # Report the Confiot Chaoses
-    def IdnetifyConfiot(self, snapshot_old, snapshot_new):
+    def IdnetifyConfiot(self, snapshot_old, snapshot_new, confiot_output):
         # Rules for excessive capablities
         # pass
 
@@ -442,6 +450,8 @@ class ConfiotOracle:
         # 1. Load the criteria table
         path = os.path.dirname(os.path.abspath(__file__)) + "/criterias.json"
         criteria = self.LoadCriterias(path)
+
+        snapshot_pair = 
 
         # 2. Parse the data (texts) from the snapshot UI add and delete
         # ui_add_texts, ui_delete_texts, todo: ui_change_texts
