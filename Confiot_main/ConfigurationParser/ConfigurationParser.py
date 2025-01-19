@@ -110,7 +110,10 @@ class ConfigurationParser:
                 if last_page == "000" and view is None:
                     text = "Start Application"
                 else:
-                    operations, hashable_views = self.operations[last_page]
+                    if last_page not in self.operations:
+                        operations, hashable_views = [], []
+                    else:
+                        operations, hashable_views = self.operations[last_page]
                     for hash in hashable_views:
                         exist_view = hashable_views[hash]
                         if (

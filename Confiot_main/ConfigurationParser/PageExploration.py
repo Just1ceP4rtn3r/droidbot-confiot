@@ -283,6 +283,16 @@ class PageExplorer:
         self.Agent.device.start_app(self.Agent.app)
         time.sleep(5)
 
+        reachable_pages = list(self.page_navigation_graph.edges_dict.keys())
+        unreachable_pages = []
+        for page in self.pages:
+            for from_node in self.page_navigation_graph.edges_dict.keys():
+                if page in self.page_navigation_graph.edges_dict[from_node]:
+                    if page not in reachable_pages:
+                        reachable_pages.append(page)
+        
+        unreachable_pages = list(set(self.pages.keys()) - set(reachable_pages))
+
         home_page = list(
             self.page_navigation_graph.edges_dict[
                 self.page_navigation_graph.start_node
@@ -294,13 +304,21 @@ class PageExplorer:
         failed_navigate_page = {}
         last_event_str = ""
         PAGES = list(self.pages.keys())
+        is_new_page = False
         while PAGES:
             worklist = {}
             self.Agent.device_get_UIElement(store_path=outputdir, store_file="tmp.xml")
 
+            if is_new_page:
+                current_page = _page
+
             tmp_xml = outputdir + "/tmp.xml"
             tmp_views = XMLParser(tmp_xml).views
             _page = self.identify_current_page(tmp_views)
+
+            if _page in unreachable_pages:
+                break
+            
             is_new_page = False
             if _page:
                 if _page not in PAGES or not os.path.exists(
@@ -354,8 +372,8 @@ class PageExplorer:
                         self.page_navigation_graph.edges_dict[current_page].keys()
                     )
                     # 过滤已经遍历过
-                    for page in PAGES:
-                        if page in child_pages and page != current_page:
+                    for page in child_pages:
+                        if page in PAGES and page != current_page:
                             worklist[page] = self.page_navigation_graph.edges_dict[
                                 current_page
                             ][page]
@@ -535,7 +553,7 @@ class PageExplorer:
         if page_similarities:
             max_similar_page = max(page_similarities, key=page_similarities.get)
 
-        if not max_similar_page or page_similarities[max_similar_page] < 0.8:
+        if not max_similar_page or page_similarities[max_similar_page] < 0.6:
             # 创建一个新page
             print("[DBG]: Found a new page!")
             return None
