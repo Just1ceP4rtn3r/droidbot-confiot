@@ -40,17 +40,17 @@ class ConfigurationParser:
         #     }
         #   )
         # }
-        if not os.path.exists(settings.Confiot_output + "/Operations/"):
-            self.operations = {}
-            self.plain_labels = {}
-            self.operations_extraction()
+        # if not os.path.exists(settings.Confiot_output + "/Operations/"):
+        self.operations = {}
+        self.plain_labels = {}
+        self.operations_extraction()
 
-            # Page Contexts
-            # {"page-1": [(view, text),]}
-            self.page_context = {}
-            self.pagecontext_extraction()
+        # Page Contexts
+        # {"page-1": [(view, text),]}
+        self.page_context = {}
+        self.pagecontext_extraction()
 
-            self.save_operations_to_file(settings.Confiot_output)
+        self.save_operations_to_file(settings.Confiot_output)
 
         # LLM configuration mapping
         # {"page-1": {"configuration": [viewhash,...]}}

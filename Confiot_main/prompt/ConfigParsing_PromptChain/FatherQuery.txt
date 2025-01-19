@@ -13,7 +13,7 @@ Your task is to:
 (3) Generate a detailed configuration task list for both the current page and the child pages (e.g., adding a user with the name "testname").
 (4) If a particular configuration task depends on other configuration tasks (in current page or child pages), please indicate this in the 'dependencies' field of your response. For example, If 'Task-2' must be completed before 'Task-1' can be executed, or 'Task-2' is a crucial step for completing 'Task-1', you should include "Task-2" in the 'dependencies' field of "Task-1".
 
-**Important**: If, by combining the information from the current page, you find that the configuration tasks in my input child pages are incorrect, please reanalyze the configuration tasks for both the current page and the child pages and provide the results in your response.
+**Important**: If, by combining the information from the current page, you find that the configuration tasks in my input child pages are incorrect and can not be completed, please reanalyze the configuration tasks for both the current page and the child pages and provide the results in your response. However, if the configuration tasks in my input child pages are correct, kindly retain them as they are in my input for your output.
 
 **Important: Response content**:
     task_id: str // start from "Task-1"

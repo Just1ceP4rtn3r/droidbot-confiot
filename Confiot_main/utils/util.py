@@ -593,6 +593,7 @@ def filter_configurations(Configurations):
     access = ["view", "access", "retrieve", "open", "obtain", "read", "inspect"]
     adds = [
         "add ",
+        "adding",
         "include",
         "append",
         "insert",
@@ -603,6 +604,8 @@ def filter_configurations(Configurations):
         "expand",
         "combine",
         "select",
+        "choose",
+        "rename",
     ]
     removes = [
         "initiate",
@@ -624,15 +627,26 @@ def filter_configurations(Configurations):
     remove_tasks = []
     for config in Configurations:
         task = config["Tasks"].lower()
+        filtered = False
         for v_1 in access:
             if v_1 in task:
                 access_tasks.append(config)
+                filtered = True
+                break
+        if filtered:
+            continue
         for v_2 in adds:
             if v_2 in task:
                 add_tasks.append(config)
+                filtered = True
+                break
+        if filtered:
+            continue
         for v_3 in removes:
             if v_3 in task:
                 remove_tasks.append(config)
+                filtered = True
+                break
 
     cid = 0
     for config in add_tasks + remove_tasks:
