@@ -262,7 +262,7 @@ class ConfiotOracle:
         print(result)
         return result
     
-    def GetBelonging(self, privacy_data, snapshot_change, related_pages, current_user_id):
+    def GetBelongingGPT(self, privacy_data, snapshot_change, related_pages, current_user_id):
         api_key = os.environ.get("OPENAI_API_KEY")
         headers = {
             "Content-Type": "application/json",
@@ -296,7 +296,7 @@ class ConfiotOracle:
         return result
 
     # Return Type: [Data List]
-    def ParsePrivacyData(self, snapshot_old, snapshot_new):
+    def ParsePrivacyData(self, snapshot_old, snapshot_new, id):
         """1. Parse the data (texts) from the snapshot UI add and delete
         2. compare with crateria table to get the similarities, get sensitive added and deleted data
         3. todo: consider the data ownership"""
@@ -375,18 +375,18 @@ class ConfiotOracle:
             print(f"UI text changes: '{text}' => Prediction: {label}")
 
         # test data -> need to be replaced by the real data
-        snapshot_privacy_add = [
-            "Tracy's sleeping time is 10:00 PM",
-            "phone number is +1-123-456-7890",
-        ]
+        # snapshot_privacy_add = [
+        #     "Tracy's sleeping time is 10:00 PM",
+        #     "phone number is +1-123-456-7890",
+        # ]
 
         # 3. Given each snapshot change, if there are privacy changes, get the privacy data
         # e.g., phone number, email, address, time, etc. +1 800-xxx-xxxx is a phone number
         # e.g., age, heart rate, blood pressure, etc. 25 is an age
-        privacy_data = self.GetValue(snapshot_privacy_add+snapshot_privacy_delete)
+        privacy_data = self.GetValueGPT(snapshot_privacy_add+snapshot_privacy_delete)
 
         # 4. Given the privacy data, find the belonging
-        belongings = self.GetBelonging(privacy_data, snapshot_privacy_add+snapshot_privacy_delete, [], "Tracy")
+        belongings = self.GetBelongingGPT(privacy_data, snapshot_privacy_add+snapshot_privacy_delete, [], id)
         
         return privacy_data, belongings
 
@@ -437,7 +437,7 @@ class ConfiotOracle:
             
 
     # Report the Confiot Chaoses
-    def IdnetifyConfiot(self, snapshot_old, snapshot_new, confiot_output):
+    def IdnetifyConfiot(self, confiot_output, id):
         # Rules for excessive capablities
         # pass
 
@@ -451,26 +451,34 @@ class ConfiotOracle:
         path = os.path.dirname(os.path.abspath(__file__)) + "/criterias.json"
         criteria = self.LoadCriterias(path)
 
-        snapshot_pair = 
+        confiot_pairs = self.GetSnapshotPair(confiot_output)
 
-        # 2. Parse the data (texts) from the snapshot UI add and delete
-        # ui_add_texts, ui_delete_texts, todo: ui_change_texts
-        # snapshot_old, snapshot_new = self.ParseDeviceSnapshots(droidbot_output) # todo
-        # snapshot_add, snapshot_delete = self.ParseSnapshotChanges(snapshot_old, snapshot_new)
-        privacy_data, belongings = self.ParsePrivacyData(snapshot_old, snapshot_new)
-        for items in criteria:
-            if "privacy" in items["Capabilities"]:
-                if "Should not view" in items["Capabilities"]:
-                    if privacy_data:
-                        print(
-                            f"Possible violation - guest can view privacy data:\n {privacy_data}! "
-                        )
-                    if belongings:
-                        print(
-                            f"Possible violation - guest can view privacy data:\n {belongings}! "
-                        )
-                else:
-                    pass
+        for (old, new) in confiot_pairs:
+            snapshot_old = os.path.join(confiot_output, "Comparation/UIHierarchy", old)
+            snapshot_new = os.path.join(confiot_output, "Comparation/UIHierarchy", new)
+
+            # 2. Parse the data (texts) from the snapshot UI add and delete
+            # ui_add_texts, ui_delete_texts, todo: ui_change_texts
+            # snapshot_old, snapshot_new = self.ParseDeviceSnapshots(droidbot_output) # todo
+            # snapshot_add, snapshot_delete = self.ParseSnapshotChanges(snapshot_old, snapshot_new)
+            privacy_data, belongings = self.ParsePrivacyData(snapshot_old, snapshot_new, id)
+            privacy_warning = []
+            
+            for items in criteria:
+                if "privacy" in items["Capabilities"]:
+                    if "Should not view" in items["Capabilities"]:
+                        if privacy_data:
+                            privacy_warning.append(f"Possible violation - guest can view privacy data:\n {privacy_data}! ")
+                            print(f"Possible violation - guest can view privacy data:\n {privacy_data}! ")
+                        if belongings:
+                            privacy_warning.append(f"Possible violation - guest can view privacy data:\n {belongings}! ")
+                            print(f"Possible violation - guest can view privacy data:\n {belongings}! ")
+                    else:
+                        pass
+            if not os.path.isdir(os.path.join(confiot_output, "privacy_violation")):
+                os.makedirs(os.path.join(confiot_output, "privacy_violation"))
+            with open (os.path.join(confiot_output, "privacy_violation", f"privacy_violation_{old}_to_{new}.txt"), "w") as f:
+                f.write(privacy_warning)
 
         # for conf_dir in data:
         #     if len(data[conf_dir]) == 2:
