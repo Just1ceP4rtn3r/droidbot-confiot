@@ -290,6 +290,9 @@ class PageExplorer:
         )[0]
         current_page = home_page
         cannot_reach_pages = []
+        # 如果按照路径，3次都没有到达指定page，则认为无法到达
+        failed_navigate_page = {}
+        last_event_str = ""
         PAGES = list(self.pages.keys())
         while PAGES:
             worklist = {}
@@ -309,6 +312,12 @@ class PageExplorer:
                     if _page in PAGES:
                         PAGES.remove(_page)
                 if _page != current_page:
+                    if last_event_str != "BACK":
+                        if current_page not in failed_navigate_page:
+                            failed_navigate_page[current_page] = 0
+                        failed_navigate_page[current_page] += 1
+                        if failed_navigate_page[current_page] >= 3:
+                            PAGES.remove(current_page)
                     current_page = _page
 
                 # if last_event_str == "BACK":
@@ -382,6 +391,7 @@ class PageExplorer:
                 event_dict = self.Agent.events[event_str]
                 event = InputEvent.from_dict(event_dict)
 
+            last_event_str = event_str
             wait_time = 2
             self.device_send_event(event, event_str, wait_time)
             if edges != "BACK":
@@ -414,7 +424,7 @@ class PageExplorer:
         print("[DBG]: Start go to page: " + test_page)
         if test_page not in replay_paths:
             print("[ERR]: No path to page ", test_page)
-        else:   
+        else:
             self.to_page(test_page, replay_paths[test_page], complete_pages, outputdir)
 
     @deprecated
@@ -461,7 +471,7 @@ class PageExplorer:
             event = InputEvent.from_dict(event_dict)
             print("[DBG]: Action: " + event_str)
             event.send(self.Agent.device)
-            time.sleep(4)
+            time.sleep(2)
 
         if target_page != self.page_navigation_graph.start_node:
             self.Agent.device_get_UIElement(store_path=outputdir, store_file="tmp.xml")

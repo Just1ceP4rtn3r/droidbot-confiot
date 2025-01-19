@@ -1,11 +1,11 @@
 class settings:
-    device_serial = "192.168.2.176:5555"
+    device_serial = "172.20.10.9:5555"
 
     # app_path = "/root/documents/droidbot-new/a2dp/a2dp.Vol_169.apk"
     # droid_output = "/root/documents/droidbot-new/a2dp/"
     app_path = "/root/documents/Output/mihome/mihome-smartscale-12-27/mihome.apk"
     # droid_output = r"/root/ConfiotOutput/Output/Tuya/host/result"  #"/root/documents/Output/mihome/mihome-smartscale-guest/result"
-    droid_output = r"/root/documents/Output/mihome/mihome-smartscale-12-27/host/result"
+    droid_output = r"/root/documents/Output/mihome/mihome-smartscale-12-27/guest/result"
 
     Confiot_output = f"{droid_output}/Confiot/"
     UI_output = Confiot_output + "/UI/"
@@ -36,7 +36,6 @@ class settings:
     # 仅仅只允许同一个center point的view被点击{bounds_limit}次
     bounds_limit = 50
     back_limit = 5
-
 
     new_states = []
     ##### BackButton ######

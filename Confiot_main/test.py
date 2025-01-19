@@ -315,6 +315,8 @@ def test_Configuration_parser():
     )
     CP.save_configurations(settings.LLMConfiguration_output)
 
+    exit()
+
 
 def test_ConfioT_Hunter():
     from Confiot_main.settings import settings
