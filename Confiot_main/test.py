@@ -352,10 +352,14 @@ def test_ConfioT_Hunter():
     return
 
 
-def test_autodroid(task_id, page, task):
+def test_autodroid(task_id, page=None, task=None):
     from Confiot_main.settings import settings
     from Confiot_main.globalvars import GlobalVars
     from Confiot_main.ConfigurationParser.PageExploration import PageExplorer
+
+    from AutoDroid.droidbot import input_manager
+    from AutoDroid.droidbot import env_manager
+    from AutoDroid.droidbot.droidbot import DroidBot as AutoDroid
 
     s = settings(
         "172.20.10.10:5555",
@@ -363,12 +367,17 @@ def test_autodroid(task_id, page, task):
         r"/root/documents/Output/mihome/mihome-smartscale-12-27/host/result",
     )
 
-    from AutoDroid.droidbot import input_manager
-    from AutoDroid.droidbot import input_policy
-    from AutoDroid.droidbot import env_manager
-    from AutoDroid.droidbot.droidbot import DroidBot as AutoDroid
-    from AutoDroid.droidbot.droidmaster import DroidMaster
-    from Confiot_main.settings import settings
+    if not page or not task:
+        Tasks = {}
+        with open(
+            settings.LLMConfiguration_output + "/ConfigurationsSummary.json", "r"
+        ) as f:
+            Tasks = json.load(f)
+        for t in Tasks:
+            if t["Id"] == task_id:
+                page = t["Page ID"]
+                task = t["Tasks"]
+                break
 
     droidbot = AutoDroid(
         app_path=settings.app_path,

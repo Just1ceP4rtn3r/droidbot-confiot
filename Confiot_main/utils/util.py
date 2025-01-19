@@ -685,6 +685,16 @@ def progress(percent, width=50):
     print("\r%s %d%%" % (show_str, percent), end="")
 
 
+def get_task_replay_steps(task_id, replay_step_records_dir):
+    event_dict_steps = []
+    with open(replay_step_records_dir + f"/Task-{str(task_id)}.json", "r") as f:
+        records = json.load(f)
+        for record in records:
+            event_dict_steps.append(record)
+
+    return event_dict_steps
+
+
 if __name__ == "__main__":
 
     # 创建有向图
