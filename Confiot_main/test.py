@@ -362,11 +362,10 @@ def test_autodroid(task_id, page=None, task=None):
     from AutoDroid.droidbot.droidbot import DroidBot as AutoDroid
 
     s = settings(
-        "172.20.10.10:5555",
+        "192.168.137.73:5555",
         "/root/documents/Output/mihome/mihome-smartscale-12-27/mihome.apk",
         r"/root/documents/Output/mihome/mihome-smartscale-12-27/host/result",
     )
-
     if not page or not task:
         Tasks = {}
         with open(
@@ -423,29 +422,35 @@ def test_autodroid(task_id, page=None, task=None):
 def test_replay_task_based_on_file(task_id):
     from Confiot_main.utils.util import get_task_replay_steps
     from Confiot_main.settings import settings
+    from AutoDroid.droidbot.input_event import IntentEvent as autoIntentEvent
 
     s = settings(
-        "172.20.10.10:5555",
+        "192.168.137.73:5555",
         "/root/documents/Output/mihome/mihome-smartscale-12-27/mihome.apk",
         r"/root/documents/Output/mihome/mihome-smartscale-12-27/host/result",
     )
 
-    steps = get_task_replay_steps(task_id)
+    steps = get_task_replay_steps(task_id, settings.autodroid_output)
 
     Agent = Confiot()
     Agent.device_connect()
 
+    Agent.device_stop_app()
+
     for event_dict in steps:
         event = InputEvent.from_dict(event_dict)
-        print("[DBG]: Action: " + event)
+        if not event:
+            event = autoIntentEvent.from_dict(event_dict)
+        print("[DBG]: Action: ", str(event_dict))
         event.send(Agent.device)
-        time.sleep(3)
+        time.sleep(4)
+
+    Agent.device.disconnect()
 
 
 if __name__ == "__main__":
     # test_device_guest_config_walker()
     # test_STEP0()
     # test_Enumerate_pages()
-    test_autodroid(
-        task_id=1, page="Page-10", task="Rename the device 'Body fat scale'."
-    )
+    # test_autodroid(task_id=1)
+    test_replay_task_based_on_file(task_id=0)
