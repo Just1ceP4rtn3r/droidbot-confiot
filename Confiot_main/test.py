@@ -329,10 +329,6 @@ def test_ConfioT_Hunter():
 
     Agent = Confiot()
 
-    # 执行Task-0, ...
-    Agent.device_connect()
-    ConfigurationParser(Agent).app_pages_exploration("Task-1")
-
     oracle = ConfigurationConfiotOracle(Agent)
 
     Criteria = oracle.LoadCriterias()
