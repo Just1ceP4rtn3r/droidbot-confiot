@@ -305,7 +305,7 @@ def test_Configuration_parser():
     )
 
     Agent = Confiot()
-    # Agent.device_connect()
+    Agent.device_connect()
 
     CP = ConfigurationParser(Agent)
 
