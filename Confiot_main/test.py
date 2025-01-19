@@ -331,23 +331,23 @@ def test_ConfioT_Hunter():
     Agent.device_connect()
     ConfigurationParser(Agent).app_pages_exploration("Task-1")
 
-    # oracle = ConfigurationConfiotOracle(Agent)
+    oracle = ConfigurationConfiotOracle(Agent)
 
-    # Criteria = oracle.LoadCriterias()
-    # Configurations = oracle.LoadConfigurations(
-    #     settings.Confiot_output + "/LLM_ConfigParsing"
-    # )
-    # UIChanges = oracle.LoadUIChanges("000", "Task-0")
+    Criteria = oracle.LoadCriterias()
+    Configurations = oracle.LoadConfigurations(
+        settings.Confiot_output + "/LLM_ConfigParsing"
+    )
+    UIChanges = oracle.LoadUIChanges("000", "Task-0")
 
-    # oracle.IdentifyConfiot(
-    #     Phase.DuringUsage,
-    #     Criteria,
-    #     Configurations,
-    #     UIChanges,
-    #     "Guests",
-    #     settings.violation_output + "/" + oracle.proceed_configuration + "/",
-    # )
-    # return
+    oracle.IdentifyConfiot(
+        Phase.DuringUsage,
+        Criteria,
+        Configurations,
+        UIChanges,
+        "Guests",
+        settings.violation_output + "/" + oracle.proceed_configuration + "/",
+    )
+    return
 
 
 if __name__ == "__main__":

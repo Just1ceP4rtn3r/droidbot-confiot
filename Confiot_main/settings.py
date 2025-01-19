@@ -37,6 +37,8 @@ class settings:
     bounds_limit = 50
     back_limit = 5
 
+
+    new_states = []
     ##### BackButton ######
     # backs: 匹配中心点举例backs坐标50 pixel距离的views
     # precise_backs: 精准匹配某些views
