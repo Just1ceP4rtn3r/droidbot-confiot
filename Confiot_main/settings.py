@@ -13,6 +13,7 @@ class settings:
 
     violation_output = Confiot_output + "/Violation/"
     LLMConfiguration_output = Confiot_output + "/LLM_ConfigParsing"
+    autodroid_output = Confiot_output + "/LLM_task_replay"
     Static_comparation_output = Confiot_output + "/Comparation/"
     UIHierarchy_comparation_output = Static_comparation_output + "/UIHierarchy/"
     Feasibility_comparation_output = Static_comparation_output + "/Feasibility/"
@@ -85,6 +86,7 @@ class settings:
         settings.LLMConfiguration_output = (
             settings.Confiot_output + "/LLM_ConfigParsing"
         )
+        settings.autodroid_output = settings.Confiot_output + "/LLM_task_replay"
         settings.Static_comparation_output = settings.Confiot_output + "/Comparation/"
         settings.UIHierarchy_comparation_output = (
             settings.Static_comparation_output + "/UIHierarchy/"

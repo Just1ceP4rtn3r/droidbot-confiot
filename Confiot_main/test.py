@@ -352,8 +352,69 @@ def test_ConfioT_Hunter():
     return
 
 
+def test_autodroid(task_id, page, task):
+    from Confiot_main.settings import settings
+    from Confiot_main.globalvars import GlobalVars
+    from Confiot_main.ConfigurationParser.PageExploration import PageExplorer
+
+    s = settings(
+        "172.20.10.10:5555",
+        "/root/documents/Output/mihome/mihome-smartscale-12-27/mihome.apk",
+        r"/root/documents/Output/mihome/mihome-smartscale-12-27/host/result",
+    )
+
+    from AutoDroid.droidbot import input_manager
+    from AutoDroid.droidbot import input_policy
+    from AutoDroid.droidbot import env_manager
+    from AutoDroid.droidbot.droidbot import DroidBot as AutoDroid
+    from AutoDroid.droidbot.droidmaster import DroidMaster
+    from Confiot_main.settings import settings
+
+    droidbot = AutoDroid(
+        app_path=settings.app_path,
+        device_serial=settings.device_serial,
+        task=task,
+        is_emulator=True,
+        output_dir=settings.droid_output + "/Autodroid/",
+        env_policy=env_manager.POLICY_NONE,
+        policy_name=input_manager.POLICY_TASK,
+        script_path=None,
+        event_interval=2,
+        timeout=input_manager.DEFAULT_TIMEOUT,
+        event_count=input_manager.DEFAULT_EVENT_COUNT,
+        debug_mode=False,
+        keep_app=True,
+        keep_env=True,
+        grant_perm=True,
+        enable_accessibility_hard=True,
+        ignore_ad=True,
+    )
+
+    Agent = Confiot()
+    Agent.device = droidbot.device
+    Agent.app = droidbot.app
+    Agent.device.connect()
+
+    PE = PageExplorer(Agent)
+
+    PE.parse_struture_unique_pages()
+    PE.extract_navigations()
+
+    GlobalVars.event_dict_steps = PE.test_device_page_replay(
+        settings.UIHierarchy_comparation_output + "/tmp/", page, autodroid=True
+    )
+
+    GlobalVars.step_outputfile = (
+        settings.autodroid_output + f"/Task-{str(task_id)}.json"
+    )
+
+    droidbot.start()
+
+
 if __name__ == "__main__":
     # test_device_guest_config_walker()
     # test_STEP0()
     # test_Enumerate_pages()
-    test_Configuration_parser()
+    test_autodroid(
+        task_id=1, page="Page-10", task="Rename the device 'Body fat scale'."
+    )

@@ -19,49 +19,58 @@ class DroidBot(object):
     """
     The main class of droidbot
     """
+
     # this is a single instance class
     instance = None
 
-    def __init__(self,
-                 app_path=None,
-                 device_serial=None,
-                 task=None,
-                 is_emulator=False,
-                 output_dir=None,
-                 env_policy=None,
-                 policy_name=None,
-                 random_input=False,
-                 script_path=None,
-                 event_count=None,
-                 event_interval=None,
-                 timeout=None,
-                 keep_app=None,
-                 keep_env=False,
-                 cv_mode=False,
-                 debug_mode=False,
-                 profiling_method=None,
-                 grant_perm=False,
-                 enable_accessibility_hard=False,
-                 master=None,
-                 humanoid=None,
-                 ignore_ad=False,
-                 replay_output=None,
-                 state=None):
+    def __init__(
+        self,
+        app_path=None,
+        device_serial=None,
+        task=None,
+        is_emulator=False,
+        output_dir=None,
+        env_policy=None,
+        policy_name=None,
+        random_input=False,
+        script_path=None,
+        event_count=None,
+        event_interval=None,
+        timeout=None,
+        keep_app=None,
+        keep_env=False,
+        cv_mode=False,
+        debug_mode=False,
+        profiling_method=None,
+        grant_perm=False,
+        enable_accessibility_hard=False,
+        master=None,
+        humanoid=None,
+        ignore_ad=False,
+        replay_output=None,
+        state=None,
+        device=None,
+        app=None,
+    ):
         """
         initiate droidbot with configurations
         :return:
         """
         logging.basicConfig(level=logging.DEBUG if debug_mode else logging.INFO)
 
-        self.logger = logging.getLogger('DroidBot')
+        self.logger = logging.getLogger("DroidBot")
         DroidBot.instance = self
 
         self.output_dir = output_dir
         if output_dir is not None:
             if not os.path.isdir(output_dir):
                 os.makedirs(output_dir)
-            html_index_path = pkg_resources.resource_filename("droidbot", "resources/index.html")
-            stylesheets_path = pkg_resources.resource_filename("droidbot", "resources/stylesheets")
+            html_index_path = pkg_resources.resource_filename(
+                "droidbot", "resources/index.html"
+            )
+            stylesheets_path = pkg_resources.resource_filename(
+                "droidbot", "resources/stylesheets"
+            )
             target_stylesheets_dir = os.path.join(output_dir, "stylesheets")
             if os.path.exists(target_stylesheets_dir):
                 shutil.rmtree(target_stylesheets_dir)
@@ -88,31 +97,44 @@ class DroidBot(object):
         self.enabled = True
 
         try:
-            self.device = Device(device_serial=device_serial,
-                                 is_emulator=is_emulator,
-                                 output_dir=self.output_dir,
-                                 cv_mode=cv_mode,
-                                 grant_perm=grant_perm,
-                                 enable_accessibility_hard=self.enable_accessibility_hard,
-                                 humanoid=self.humanoid,
-                                 ignore_ad=ignore_ad)
-            self.app = App(app_path, output_dir=self.output_dir)
+            if device:
+                self.device = device
+            else:
+                self.device = Device(
+                    device_serial=device_serial,
+                    is_emulator=is_emulator,
+                    output_dir=self.output_dir,
+                    cv_mode=cv_mode,
+                    grant_perm=grant_perm,
+                    enable_accessibility_hard=self.enable_accessibility_hard,
+                    humanoid=self.humanoid,
+                    ignore_ad=ignore_ad,
+                )
+            if app:
+                self.app = app
+            else:
+                self.app = App(app_path, output_dir=self.output_dir)
 
-            self.env_manager = AppEnvManager(device=self.device, app=self.app, env_policy=env_policy)
-            self.input_manager = InputManager(device=self.device,
-                                              app=self.app,
-                                              task=self.task,
-                                              policy_name=policy_name,
-                                              random_input=random_input,
-                                              event_count=event_count,
-                                              event_interval=event_interval,
-                                              script_path=script_path,
-                                              profiling_method=profiling_method,
-                                              master=master,
-                                              replay_output=replay_output,
-                                              state=state)
+            self.env_manager = AppEnvManager(
+                device=self.device, app=self.app, env_policy=env_policy
+            )
+            self.input_manager = InputManager(
+                device=self.device,
+                app=self.app,
+                task=self.task,
+                policy_name=policy_name,
+                random_input=random_input,
+                event_count=event_count,
+                event_interval=event_interval,
+                script_path=script_path,
+                profiling_method=profiling_method,
+                master=master,
+                replay_output=replay_output,
+                state=state,
+            )
         except Exception:
             import traceback
+
             traceback.print_exc()
             self.stop()
             sys.exit(-1)
@@ -141,7 +163,9 @@ class DroidBot(object):
 
             if not self.enabled:
                 return
-            self.device.connect()
+
+            if not self.device.connected:
+                self.device.connect()
 
             if not self.enabled:
                 return
@@ -166,6 +190,7 @@ class DroidBot(object):
             pass
         except Exception:
             import traceback
+
             traceback.print_exc()
             self.stop()
             sys.exit(-1)

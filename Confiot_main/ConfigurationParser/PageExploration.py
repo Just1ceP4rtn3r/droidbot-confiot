@@ -406,8 +406,9 @@ class PageExplorer:
         time.sleep(sleep_time)
 
     @deprecated
-    def test_device_page_replay(self, outputdir, test_page):
+    def test_device_page_replay(self, outputdir, test_page, autodroid=False):
         replay_paths = {}
+        event_steps = None
         for page in self.pages:
             steps = self.find_path_to_page(page)
 
@@ -425,12 +426,18 @@ class PageExplorer:
         if test_page not in replay_paths:
             print("[ERR]: No path to page ", test_page)
         else:
-            self.to_page(test_page, replay_paths[test_page], complete_pages, outputdir)
+            event_steps = self.to_page(
+                test_page, replay_paths[test_page], complete_pages, outputdir, autodroid
+            )
+
+        return event_steps
 
     @deprecated
-    def to_page(self, target_page, steps, complete_pages, outputdir):
-
-        self.Agent.device_stop_app()
+    def to_page(
+        self, target_page, steps, complete_pages, outputdir=None, autodroid=False
+    ):
+        event_steps = []
+        self.Agent.device_stop_app(autodroid=autodroid)
         # self.Agent.device.start_app(self.Agent.app)
         time.sleep(2)
 
@@ -452,7 +459,7 @@ class PageExplorer:
                 else:
                     # [TODO]: 如果是一个新的page，或跳转到别的page了（page navigation存在问题）
                     print("[ERR]: Failed to navigate to page ", page)
-                    return False
+                    return None
 
             candidate_operations = steps[page]
             chosen_operation = candidate_operations[0]
@@ -470,8 +477,9 @@ class PageExplorer:
             event_dict = self.Agent.events[event_str]
             event = InputEvent.from_dict(event_dict)
             print("[DBG]: Action: " + event_str)
+            event_steps.append(event_dict)
             event.send(self.Agent.device)
-            time.sleep(2)
+            time.sleep(3)
 
         if target_page != self.page_navigation_graph.start_node:
             self.Agent.device_get_UIElement(store_path=outputdir, store_file="tmp.xml")
@@ -488,10 +496,10 @@ class PageExplorer:
                 # [TODO]: 如果是一个新的page，或跳转到别的page了（page navigation存在问题）
                 print("[ERR]: Failed: ", target_page)
                 # input()
-                return False
+                return None
 
         print("[DBG]: Finished: ", target_page)
-        return True
+        return event_steps
 
     # 分析到某一个page的路径
     def find_path_to_page(self, page):
@@ -594,6 +602,8 @@ class PageExplorer:
                 min_dist = dist
                 found_view = v
 
+        if not found_view:
+            return None
         if found_view["bounds"] != view["bounds"]:
             print("[DBG]: The position of the view changed!")
         return found_view

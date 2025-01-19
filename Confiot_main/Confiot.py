@@ -91,6 +91,9 @@ class Confiot:
         if not os.path.exists(settings.violation_output):
             os.makedirs(settings.violation_output)
 
+        if not os.path.exists(settings.autodroid_output):
+            os.makedirs(settings.autodroid_output)
+
         if not os.path.exists(settings.Feasibility_comparation_output):
             os.makedirs(settings.Feasibility_comparation_output)
 
