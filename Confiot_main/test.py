@@ -420,6 +420,28 @@ def test_autodroid(task_id, page=None, task=None):
     droidbot.start()
 
 
+def test_replay_task_based_on_file(task_id):
+    from Confiot_main.utils.util import get_task_replay_steps
+    from Confiot_main.settings import settings
+
+    s = settings(
+        "172.20.10.10:5555",
+        "/root/documents/Output/mihome/mihome-smartscale-12-27/mihome.apk",
+        r"/root/documents/Output/mihome/mihome-smartscale-12-27/host/result",
+    )
+
+    steps = get_task_replay_steps(task_id)
+
+    Agent = Confiot()
+    Agent.device_connect()
+
+    for event_dict in steps:
+        event = InputEvent.from_dict(event_dict)
+        print("[DBG]: Action: " + event)
+        event.send(Agent.device)
+        time.sleep(3)
+
+
 if __name__ == "__main__":
     # test_device_guest_config_walker()
     # test_STEP0()
