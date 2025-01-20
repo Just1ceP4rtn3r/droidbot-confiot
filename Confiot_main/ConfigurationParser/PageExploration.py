@@ -53,6 +53,8 @@ class PageExplorer:
         set1, set2 = set(list1), set(list2)
         intersection = len(set1.intersection(set2))
         union = len(set1.union(set2))
+        if union == 0:
+            return 1
         # print(intersection / union)
         return intersection / union
 
@@ -290,7 +292,7 @@ class PageExplorer:
                 if page in self.page_navigation_graph.edges_dict[from_node]:
                     if page not in reachable_pages:
                         reachable_pages.append(page)
-        
+
         unreachable_pages = list(set(self.pages.keys()) - set(reachable_pages))
 
         home_page = list(
@@ -309,16 +311,13 @@ class PageExplorer:
             worklist = {}
             self.Agent.device_get_UIElement(store_path=outputdir, store_file="tmp.xml")
 
-            if is_new_page:
-                current_page = _page
-
             tmp_xml = outputdir + "/tmp.xml"
             tmp_views = XMLParser(tmp_xml).views
             _page = self.identify_current_page(tmp_views)
 
             if _page in unreachable_pages:
                 break
-            
+
             is_new_page = False
             if _page:
                 if _page not in PAGES or not os.path.exists(
@@ -329,6 +328,31 @@ class PageExplorer:
                     )
                     if _page in PAGES:
                         PAGES.remove(_page)
+
+                # back无法跳转出此页面
+                if last_event_str == "BACK" and _page == current_page:
+                    self.Agent.device_stop_app()
+                    self.Agent.device.start_app(self.Agent.app)
+                    time.sleep(5)
+                    # if current_page in self.page_navigation_graph.edges_dict:
+                    #     child_pages = list(
+                    #         self.page_navigation_graph.edges_dict[current_page].keys()
+                    #     )
+                    #     if not child_pages:
+                    #         cannot_reach_pages = PAGES
+                    #         print(cannot_reach_pages)
+                    #         break
+                    #     # Random choose a child page
+                    #     import random
+
+                    #     random.shuffle(child_pages)
+
+                    #     worklist[child_pages[0]] = (
+                    #         self.page_navigation_graph.edges_dict[current_page][
+                    #             child_pages[0]
+                    #         ]
+                    #     )
+
                 if _page != current_page:
                     if last_event_str != "BACK":
                         if current_page not in failed_navigate_page:

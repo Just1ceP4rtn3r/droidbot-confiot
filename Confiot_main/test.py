@@ -242,7 +242,7 @@ def test_Enumerate_pages():
 
     Agent.device_connect()
     PE.test_device_page_replay(
-        settings.UIHierarchy_comparation_output + "/000/", "Page-11"
+        settings.UIHierarchy_comparation_output + "/000/", "Page-4"
     )
     # print(PE.pages)
 
@@ -304,6 +304,12 @@ def test_Configuration_parser():
         get_ConfigResourceMapper_from_file,
     )
 
+    s = settings(
+        "192.168.2.207:5555",
+        "/root/documents/Output/Huawei_AI_Life_usenix25/Huawei.apk",
+        r"/root/documents/Output/Huawei_AI_Life_usenix25/guest/result",
+    )
+
     Agent = Confiot()
     Agent.device_connect()
 
@@ -315,7 +321,7 @@ def test_Configuration_parser():
     )
     CP.save_configurations(settings.LLMConfiguration_output)
 
-    exit()
+    Agent.device.disconnect()
 
 
 def test_ConfioT_Hunter():
@@ -358,9 +364,9 @@ def test_autodroid(task_id, page=None, task=None):
     from AutoDroid.droidbot.droidbot import DroidBot as AutoDroid
 
     s = settings(
-        "192.168.137.249:5555",
-        "/root/documents/Output/mihome/mihome-smartscale-12-27/mihome.apk",
-        r"/root/documents/Output/mihome/mihome-smartscale-12-27/host/result",
+        "172.20.10.10:5555",
+        "/root/documents/Output/mihome/mihome-aqarahub-usenix25/mihome.apk",
+        r"/root/documents/Output/mihome/mihome-aqarahub-usenix25/host/result",
     )
     if not page or not task:
         Tasks = {}
@@ -421,9 +427,9 @@ def replay_task_based_on_file(task_id):
     from AutoDroid.droidbot.input_event import IntentEvent as autoIntentEvent
 
     s = settings(
-        "192.168.137.249:5555",
-        "/root/documents/Output/mihome/mihome-smartscale-12-27/mihome.apk",
-        r"/root/documents/Output/mihome/mihome-smartscale-12-27/host/result",
+        "172.20.10.10:5555",
+        "/root/documents/Output/mihome/mihome-aqarahub-usenix25/mihome.apk",
+        r"/root/documents/Output/mihome/mihome-aqarahub-usenix25/host/result",
     )
     steps = get_task_replay_steps(task_id, settings.autodroid_output)
 
@@ -453,9 +459,9 @@ def page_exploration(task_id):
     )
 
     s = settings(
-        "192.168.137.152:5555",
-        "/root/documents/Output/mihome/mihome-smartscale-12-27/mihome.apk",
-        r"/root/documents/Output/mihome/mihome-smartscale-12-27/guest/result",
+        "172.20.10.9:5555",
+        "/root/documents/Output/mihome/mihome-aqarahub-usenix25/mihome.apk",
+        r"/root/documents/Output/mihome/mihome-aqarahub-usenix25/guest/result",
     )
 
     Agent = Confiot()
@@ -471,25 +477,28 @@ if __name__ == "__main__":
     # test_device_guest_config_walker()
     # test_STEP0()
     # test_Enumerate_pages()
-    # test_autodroid(task_id=1)
+
+    test_Configuration_parser()
+
+    # test_autodroid(task_id=0)
 
     # 获取目录下所有task_id, mihome/mihome-smartscale-12-27/host/result/Confiot/LLM_task_replay/Task-0.json
-    from Confiot_main.settings import settings
+    # from Confiot_main.settings import settings
 
-    s = settings(
-        "192.168.137.249:5555",
-        "/root/documents/Output/mihome/mihome-smartscale-12-27/mihome.apk",
-        r"/root/documents/Output/mihome/mihome-smartscale-12-27/host/result",
-    )
+    # s = settings(
+    #     "172.20.10.10:5555",
+    #     "/root/documents/Output/mihome/mihome-aqarahub-usenix25/mihome.apk",
+    #     r"/root/documents/Output/mihome/mihome-aqarahub-usenix25/host/result",
+    # )
 
-    task_replay_steps_file = os.listdir(settings.autodroid_output)
-    task_ids = [
-        int(file.replace(".json", "")[5:])
-        for file in task_replay_steps_file
-        if file.endswith((".json"))
-    ]
-    task_ids.sort()
-    if task_ids:
-        for task_id in task_ids:
-            replay_task_based_on_file(task_id=task_id)
-            page_exploration(task_id=task_id)
+    # task_replay_steps_file = os.listdir(settings.autodroid_output)
+    # task_ids = [
+    #     int(file.replace(".json", "")[5:])
+    #     for file in task_replay_steps_file
+    #     if file.endswith((".json"))
+    # ]
+    # task_ids.sort()
+    # if task_ids:
+    #     for task_id in task_ids:
+    #         replay_task_based_on_file(task_id=task_id)
+    #         page_exploration(task_id=task_id)

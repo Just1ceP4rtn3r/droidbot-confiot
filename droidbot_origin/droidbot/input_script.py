@@ -321,6 +321,9 @@ class ViewSelector(object):
             return False
         if self.class_re and not safe_re_match(self.class_re, view_dict['class']):
             return False
+
+        if(view_dict["visible"] == False):
+            return False
         bounds = view_dict['bounds']
         bound_x_min = bounds[0][0]
         bound_x_max = bounds[1][0]
