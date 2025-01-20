@@ -358,7 +358,7 @@ def test_autodroid(task_id, page=None, task=None):
     from AutoDroid.droidbot.droidbot import DroidBot as AutoDroid
 
     s = settings(
-        "192.168.137.73:5555",
+        "192.168.137.249:5555",
         "/root/documents/Output/mihome/mihome-smartscale-12-27/mihome.apk",
         r"/root/documents/Output/mihome/mihome-smartscale-12-27/host/result",
     )
@@ -421,11 +421,10 @@ def replay_task_based_on_file(task_id):
     from AutoDroid.droidbot.input_event import IntentEvent as autoIntentEvent
 
     s = settings(
-        "192.168.137.73:5555",
+        "192.168.137.249:5555",
         "/root/documents/Output/mihome/mihome-smartscale-12-27/mihome.apk",
         r"/root/documents/Output/mihome/mihome-smartscale-12-27/host/result",
     )
-
     steps = get_task_replay_steps(task_id, settings.autodroid_output)
 
     Agent = Confiot()
@@ -454,7 +453,7 @@ def page_exploration(task_id):
     )
 
     s = settings(
-        "192.168.137.153:5555",
+        "192.168.137.152:5555",
         "/root/documents/Output/mihome/mihome-smartscale-12-27/mihome.apk",
         r"/root/documents/Output/mihome/mihome-smartscale-12-27/guest/result",
     )
@@ -478,7 +477,7 @@ if __name__ == "__main__":
     from Confiot_main.settings import settings
 
     s = settings(
-        "192.168.137.73:5555",
+        "192.168.137.249:5555",
         "/root/documents/Output/mihome/mihome-smartscale-12-27/mihome.apk",
         r"/root/documents/Output/mihome/mihome-smartscale-12-27/host/result",
     )
