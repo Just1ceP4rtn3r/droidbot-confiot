@@ -81,13 +81,21 @@ class ConfiotOracle:
         snapshot_add, snapshot_delete = [], []
         for file in xml_pairs:
             output = os.path.join(
-                os.path.dirname(snapshot_old),
+                settings.Static_comparation_output,
                 "Comparation",
                 os.path.basename(snapshot_old)
                 + "_to_"
-                + os.path.basename(snapshot_new),
-                ".html",
+                + os.path.basename(snapshot_new)
+                + ".html",
             )
+
+            if not os.path.exists(
+                os.path.join(settings.Static_comparation_output, "Comparation")
+            ):
+                os.mkdir(
+                    os.path.join(settings.Static_comparation_output, "Comparation")
+                )
+
             UI_add, UI_delete = self.ParseUIChanges(file[0], file[1], output)
             snapshot_add.append(UI_add)
             snapshot_delete.append(UI_delete)
@@ -193,7 +201,7 @@ class ConfiotOracle:
                     text = re.findall(r"<text>(.*?)</text>", element)[0]
                     texts.append(self.get_clean_text(text))
         return texts
-    
+
     def GetValueGPT(self, snapshot_change):
         api_key = os.environ.get("OPENAI_API_KEY")
         headers = {
@@ -261,8 +269,10 @@ class ConfiotOracle:
         result = response.json().get("choices")[0].get("message").get("content")
         print(result)
         return result
-    
-    def GetBelongingGPT(self, privacy_data, snapshot_change, related_pages, current_user_id):
+
+    def GetBelongingGPT(
+        self, privacy_data, snapshot_change, related_pages, current_user_id
+    ):
         api_key = os.environ.get("OPENAI_API_KEY")
         headers = {
             "Content-Type": "application/json",
@@ -383,11 +393,13 @@ class ConfiotOracle:
         # 3. Given each snapshot change, if there are privacy changes, get the privacy data
         # e.g., phone number, email, address, time, etc. +1 800-xxx-xxxx is a phone number
         # e.g., age, heart rate, blood pressure, etc. 25 is an age
-        privacy_data = self.GetValueGPT(snapshot_privacy_add+snapshot_privacy_delete)
+        privacy_data = self.GetValueGPT(snapshot_privacy_add + snapshot_privacy_delete)
 
         # 4. Given the privacy data, find the belonging
-        belongings = self.GetBelongingGPT(privacy_data, snapshot_privacy_add+snapshot_privacy_delete, [], id)
-        
+        belongings = self.GetBelongingGPT(
+            privacy_data, snapshot_privacy_add + snapshot_privacy_delete, [], id
+        )
+
         return privacy_data, belongings
 
     def ParseSharedData(self, snapshot_old: str, snapshot_new: str):
@@ -427,14 +439,19 @@ class ConfiotOracle:
             )
 
         return data
-    
+
     def GetSnapshotPair(self, confiot_output):
         snapshot_dir = os.path.join(confiot_output, "Comparation/UIHierarchy")
-        dirs = sorted([d for d in os.listdir(snapshot_dir) if os.path.isdir(os.path.join(snapshot_dir, d))])
-        pairs = [(dirs[i], dirs[i+1]) for i in range(len(dirs) - 1)]
+        dirs = sorted(
+            [
+                d
+                for d in os.listdir(snapshot_dir)
+                if os.path.isdir(os.path.join(snapshot_dir, d))
+            ]
+        )
+        pairs = [(dirs[i], dirs[i + 1]) for i in range(len(dirs) - 1)]
 
         return pairs
-            
 
     # Report the Confiot Chaoses
     def IdnetifyConfiot(self, confiot_output, id):
@@ -453,7 +470,7 @@ class ConfiotOracle:
 
         confiot_pairs = self.GetSnapshotPair(confiot_output)
 
-        for (old, new) in confiot_pairs:
+        for old, new in confiot_pairs:
             snapshot_old = os.path.join(confiot_output, "Comparation/UIHierarchy", old)
             snapshot_new = os.path.join(confiot_output, "Comparation/UIHierarchy", new)
 
@@ -461,24 +478,41 @@ class ConfiotOracle:
             # ui_add_texts, ui_delete_texts, todo: ui_change_texts
             # snapshot_old, snapshot_new = self.ParseDeviceSnapshots(droidbot_output) # todo
             # snapshot_add, snapshot_delete = self.ParseSnapshotChanges(snapshot_old, snapshot_new)
-            privacy_data, belongings = self.ParsePrivacyData(snapshot_old, snapshot_new, id)
+            privacy_data, belongings = self.ParsePrivacyData(
+                snapshot_old, snapshot_new, id
+            )
             privacy_warning = []
-            
+
             for items in criteria:
                 if "privacy" in items["Capabilities"]:
                     if "Should not view" in items["Capabilities"]:
                         if privacy_data:
-                            privacy_warning.append(f"Possible violation - guest can view privacy data:\n {privacy_data}! ")
-                            print(f"Possible violation - guest can view privacy data:\n {privacy_data}! ")
+                            privacy_warning.append(
+                                f"Possible violation - guest can view privacy data:\n {privacy_data}! "
+                            )
+                            print(
+                                f"Possible violation - guest can view privacy data:\n {privacy_data}! "
+                            )
                         if belongings:
-                            privacy_warning.append(f"Possible violation - guest can view privacy data:\n {belongings}! ")
-                            print(f"Possible violation - guest can view privacy data:\n {belongings}! ")
+                            privacy_warning.append(
+                                f"Possible violation - guest can view privacy data:\n {belongings}! "
+                            )
+                            print(
+                                f"Possible violation - guest can view privacy data:\n {belongings}! "
+                            )
                     else:
                         pass
             if not os.path.isdir(os.path.join(confiot_output, "privacy_violation")):
                 os.makedirs(os.path.join(confiot_output, "privacy_violation"))
-            with open (os.path.join(confiot_output, "privacy_violation", f"privacy_violation_{old}_to_{new}.txt"), "w") as f:
-                f.write(privacy_warning)
+            with open(
+                os.path.join(
+                    confiot_output,
+                    "privacy_violation",
+                    f"privacy_violation_{old}_to_{new}.txt",
+                ),
+                "w",
+            ) as f:
+                f.write(str(privacy_warning))
 
         # for conf_dir in data:
         #     if len(data[conf_dir]) == 2:
