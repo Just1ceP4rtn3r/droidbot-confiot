@@ -1,19 +1,39 @@
 {
     "Criteria": [
         {
-            "Id": "0",
-            "Role": "Any",
-            "Capablities": "should be able to see other users who can control the current device on the app"
-        },
-        {
             "Id": "1",
-            "Role": "Guests",
-            "Capablities": "must not be able to edit the any password related to the device"
+            "Role": "Administators, Guests",
+            "Capabilities": "Should be able to view the list of all current users"
         },
         {
             "Id": "2",
+            "Role": "Administators, Guests",
+            "Capabilities": "Should not view or modify privacy data of other users"
+        },
+        {
+            "Id": "3",
             "Role": "Guests",
-            "Capablities": "must not have access to the device's remote control (or out of home control) feature"
+            "Capabilities": "Should not have any capability after revocation"
+        },
+        {
+            "Id": "4",
+            "Role": "Guests",
+            "Capabilities": "Should not view any privacy data after revocation"
+        },
+        {
+            "Id": "5",
+            "Role": "Guests",
+            "Capabilities": "Should not modify WiFi password"
+        },
+        {
+            "Id": "6",
+            "Role": "Guests",
+            "Capabilities": "Should not delete or add devices to the home"
+        },
+        {
+            "Id": "7",
+            "Role": "Guests",
+            "Capabilities": "Should not access or edit any resource of other users"
         }
     ]
 }

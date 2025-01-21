@@ -324,7 +324,7 @@ def test_Configuration_parser():
     Agent.device.disconnect()
 
 
-def test_ConfioT_Hunter():
+def test_ConfioT_Hunter(last_task, task, role):
     from Confiot_main.settings import settings
     from Confiot_main.ConfigurationParser.ConfigurationParser import ConfigurationParser
     from Confiot_main.ConfiotHunter.TestingPhase import Phase
@@ -341,14 +341,14 @@ def test_ConfioT_Hunter():
     Configurations = oracle.LoadConfigurations(
         settings.Confiot_output + "/LLM_ConfigParsing"
     )
-    UIChanges = oracle.LoadUIChanges("000", "Task-0")
+    UIChanges = oracle.LoadUIChanges(last_task, task)
 
     oracle.IdentifyConfiot(
-        Phase.DuringUsage,
+        Phase.AfterDelegation if not last_task else Phase.DuringUsage,
         Criteria,
         Configurations,
         UIChanges,
-        "Guests",
+        role,
         settings.violation_output + "/" + oracle.proceed_configuration + "/",
     )
     return
@@ -364,9 +364,9 @@ def test_autodroid(task_id, page=None, task=None):
     from AutoDroid.droidbot.droidbot import DroidBot as AutoDroid
 
     s = settings(
-        "172.20.10.10:5555",
-        "/root/documents/Output/mihome/mihome-aqarahub-usenix25/mihome.apk",
-        r"/root/documents/Output/mihome/mihome-aqarahub-usenix25/host/result",
+        "192.168.137.174:5555",
+        "/root/documents/Output/Huawei_AI_Life_usenix25/Huawei.apk",
+        r"/root/documents/Output/Huawei_AI_Life_usenix25/guest/result",
     )
     if not page or not task:
         Tasks = {}
@@ -427,9 +427,9 @@ def replay_task_based_on_file(task_id):
     from AutoDroid.droidbot.input_event import IntentEvent as autoIntentEvent
 
     s = settings(
-        "172.20.10.10:5555",
-        "/root/documents/Output/mihome/mihome-aqarahub-usenix25/mihome.apk",
-        r"/root/documents/Output/mihome/mihome-aqarahub-usenix25/host/result",
+        "192.168.137.30:5555",
+        "/root/documents/Output/Huawei_AI_Life_usenix25/Huawei.apk",
+        r"/root/documents/Output/Huawei_AI_Life_usenix25/host/result",
     )
     steps = get_task_replay_steps(task_id, settings.autodroid_output)
 
@@ -459,9 +459,9 @@ def page_exploration(task_id):
     )
 
     s = settings(
-        "172.20.10.9:5555",
-        "/root/documents/Output/mihome/mihome-aqarahub-usenix25/mihome.apk",
-        r"/root/documents/Output/mihome/mihome-aqarahub-usenix25/guest/result",
+        "192.168.137.30:5555",
+        "/root/documents/Output/Huawei_AI_Life_usenix25/Huawei.apk",
+        r"/root/documents/Output/Huawei_AI_Life_usenix25/host/result",
     )
 
     Agent = Confiot()
@@ -473,12 +473,26 @@ def page_exploration(task_id):
     Agent.device.disconnect()
 
 
+def test_privacy_data():
+
+    from Confiot_main.ConfiotHunter.ConfiotOracle import (
+        ConfiotOracle,
+        ConfigurationConfiotOracle,
+    )
+
+    co = ConfiotOracle()
+    co.IdnetifyConfiot(
+        "/root/documents/Output/Huawei_AI_Life/host/result/Confiot",
+        ["guest"],
+    )
+
+
 if __name__ == "__main__":
     # test_device_guest_config_walker()
     # test_STEP0()
     # test_Enumerate_pages()
 
-    test_Configuration_parser()
+    # test_Configuration_parser()
 
     # test_autodroid(task_id=0)
 
@@ -502,3 +516,16 @@ if __name__ == "__main__":
     #     for task_id in task_ids:
     #         replay_task_based_on_file(task_id=task_id)
     #         page_exploration(task_id=task_id)
+
+
+
+    # test_privacy_data()
+
+    s = settings(
+        "192.168.137.174:5555",
+        "/root/documents/Output/Huawei_AI_Life_usenix25/Huawei.apk",
+        r"/root/documents/Output/Huawei_AI_Life_usenix25/guest/result",
+    )
+
+    # test_ConfioT_Hunter(None, "000", "Administrators")
+    test_ConfioT_Hunter(None, "000", "Guests")

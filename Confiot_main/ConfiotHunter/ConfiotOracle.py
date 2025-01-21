@@ -38,6 +38,9 @@ class ConfiotOracle:
 
     def ParseUIChanges(self, xml_old: str, xml_new: str, output: str):
         comparator = UIComparator()
+        if not os.path.exists(xml_old) or not os.path.exists(xml_new):
+            print("[DBG]: Do not found files:", xml_old, xml_new)
+            return None
         comparator.compare_xml_files(xml_old, xml_new, output)
 
         UI_old = xml_old
@@ -82,7 +85,6 @@ class ConfiotOracle:
         for file in xml_pairs:
             output = os.path.join(
                 settings.Static_comparation_output,
-                "Comparation",
                 os.path.basename(snapshot_old)
                 + "_to_"
                 + os.path.basename(snapshot_new)
@@ -90,15 +92,17 @@ class ConfiotOracle:
             )
 
             if not os.path.exists(
-                os.path.join(settings.Static_comparation_output, "Comparation")
+                settings.Static_comparation_output
             ):
                 os.mkdir(
-                    os.path.join(settings.Static_comparation_output, "Comparation")
+                    settings.Static_comparation_output
                 )
 
-            UI_add, UI_delete = self.ParseUIChanges(file[0], file[1], output)
-            snapshot_add.append(UI_add)
-            snapshot_delete.append(UI_delete)
+            result = self.ParseUIChanges(file[0], file[1], output)
+            if result:
+                UI_add, UI_delete = result
+                snapshot_add.append(UI_add)
+                snapshot_delete.append(UI_delete)
 
         return snapshot_add, snapshot_delete
 
@@ -198,11 +202,64 @@ class ConfiotOracle:
             for item in page:
                 element = item["element"]
                 if "<text>" in element:
-                    text = re.findall(r"<text>(.*?)</text>", element)[0]
-                    texts.append(self.get_clean_text(text))
+                    try:
+                        text = re.findall(r"<text>(.*?)</text>", element)[0]
+                        texts.append(self.get_clean_text(text))
+                    except:
+                        continue
         return texts
 
-    def GetValueGPT(self, snapshot_change):
+    def GetValueGPT(self, snapshot_change, privacy_texts):
+        from pydantic import BaseModel
+        from openai import OpenAI
+        # api_key = os.environ.get("OPENAI_API_KEY")
+        # headers = {
+        #     "Content-Type": "application/json",
+        #     "Authorization": f"Bearer {api_key}",
+        # }
+        class privacyFormat(BaseModel):
+            contains_privacy_data: bool
+            privacy_data: list[str]
+
+        class response(BaseModel):
+            privacy: privacyFormat
+
+        client = OpenAI()
+        # client.api_key = api_key
+        completion = client.beta.chat.completions.parse(
+            model="gpt-4o",
+            messages=[
+                {
+                    "role": "system",
+                    "content": "You are an privacy assistant tasked with parsing texts that extracted from IoT companion mobile apps. For provided privacy related texts, please identify corresponding privacy data in given list of texts. Notably, if you think the provided privacy text is not related to privacy, please ignore it, You will be provided with several examples containing data types and related values. Then given some texts containing data types, please identify related values. If you do not find any privacy data, return 'contains_privacy_data: 0, privacy_data: \"\"'. Else, return 'contains_privacy_data: 1, privacy_data: \"some data\"'.",
+                },
+                {
+                    "role": "user",
+                    "content": f"Here are some possible inputs. Evaluate the following texts:  ['my phone number is +1-123-456-7890', 'guest\'s email is abc@test.com', 'user home address: 1234 Main St, Springfield, IL 62701'm 'time for bed is 12:00 AM']. The privacy words in the texts are: ['phone number', 'email', 'address', 'time'].",
+                },
+                {   "role": "assistant",
+                    "content": "contains_privacy_data: 1, privacy_data: [\"+1-123-456-7890\", \"abc@test.com\", \"1234 Main St, Springfield, IL 62701\", \"12:00 AM\"]",
+                },
+                {
+                    "role": "user",
+                    "content": f"Evaluate the following texts: {snapshot_change}. The privacy words in the texts are: {privacy_texts}.",
+                },
+            ],
+            response_format=response,
+            # max_tokens=500,
+        )
+
+        # response = requests.post(
+        #     "https://api.openai.com/v1/chat/completions", headers=headers, json=payload
+        # )
+
+        result = completion.choices[0].message.parsed
+        # response.json().get("choices")[0].get("message").get("content")
+        # print(type(result.privacy))
+        if result.privacy.contains_privacy_data:
+            return result.privacy.privacy_data
+        else:
+            return ""
         api_key = os.environ.get("OPENAI_API_KEY")
         headers = {
             "Content-Type": "application/json",
@@ -273,18 +330,27 @@ class ConfiotOracle:
     def GetBelongingGPT(
         self, privacy_data, snapshot_change, related_pages, current_user_id
     ):
-        api_key = os.environ.get("OPENAI_API_KEY")
-        headers = {
-            "Content-Type": "application/json",
-            "Authorization": f"Bearer {api_key}",
-        }
+        from pydantic import BaseModel
+        from openai import OpenAI
+        # api_key = os.environ.get("OPENAI_API_KEY")
+        # headers = {
+        #     "Content-Type": "application/json",
+        #     "Authorization": f"Bearer {api_key}",
+        # }
+        class privacyFormat(BaseModel):
+            contains_privacy_belonging: bool
+            privacy_belonging: str
 
-        payload = {
-            "model": "gpt-4o",
-            "messages": [
+        class response(BaseModel):
+            privacy: privacyFormat
+
+        client = OpenAI()
+        completion = client.beta.chat.completions.parse(
+            model="gpt-4o",
+            messages=[
                 {
                     "role": "system",
-                    "content": "You are an privacy assistant tasked with parsing texts that extracted from IoT companion mobile apps. For provided privacy data, please identify corresponding privacy data belongings. You will be provided with some texts examples that contains possible privacy data belonging patterns. If you do not find any belongings to the given privacy data, return 'Unknown'. ",
+                    "content": "You are an privacy assistant tasked with parsing texts that extracted from IoT companion mobile apps. For provided privacy data, please identify corresponding privacy data belongings. You will be provided with some texts examples that contains possible privacy data belonging patterns. If you do not find any belongings to the given privacy data, return 'contains_privacy_belonging: 0, privacy_belonging: \"\"'. ",
                 },
                 {
                     "role": "user",
@@ -293,17 +359,22 @@ class ConfiotOracle:
                 {
                     "role": "user",
                     "content": f"Please find the belongings to data: {privacy_data} in the following texts: {snapshot_change}. You may also find some clues in the current page or the previous page texts: {related_pages}. The current other user IDs are: {current_user_id}.",
-                },
+                }
             ],
-            "max_tokens": 500,
-        }
-        response = requests.post(
-            "https://api.openai.com/v1/chat/completions", headers=headers, json=payload
+            response_format=response,
+            max_tokens=500,
         )
 
-        result = response.json().get("choices")[0].get("message").get("content")
-        print(result)
-        return result
+        # response = requests.post(
+        #     "https://api.openai.com/v1/chat/completions", headers=headers, json=payload
+        # )
+
+        result = completion.choices[0].message.parsed
+        # response.json().get("choices")[0].get("message").get("content")
+        if result.privacy.contains_privacy_belonging:
+            return result.privacy.privacy_belonging
+        else:
+            return ""
 
     # Return Type: [Data List]
     def ParsePrivacyData(self, snapshot_old, snapshot_new, id):
@@ -349,6 +420,8 @@ class ConfiotOracle:
         )
         model.to(device)
 
+        if snapshot_add_texts + snapshot_delete_texts == []:
+            return [], []
         encodings = tokenizer(
             snapshot_add_texts + snapshot_delete_texts,
             truncation=True,
@@ -373,9 +446,12 @@ class ConfiotOracle:
         # Print the predictions
         snapshot_privacy_add = []
         snapshot_privacy_delete = []
+        privacy_texts = []
         for text, pred in zip(snapshot_add_texts + snapshot_delete_texts, predictions):
             if pred.item() == 1:
                 label = "Privacy-related"
+                if text not in privacy_texts:
+                    privacy_texts.append(text)
                 if text in snapshot_add_texts:
                     snapshot_privacy_add.append(text)
                 else:
@@ -384,16 +460,20 @@ class ConfiotOracle:
                 label = "Non-privacy-related"
             print(f"UI text changes: '{text}' => Prediction: {label}")
 
+            print("Privacy-related texts: ", privacy_texts)
+
         # test data -> need to be replaced by the real data
         # snapshot_privacy_add = [
-        #     "Tracy's sleeping time is 10:00 PM",
+        #     "host's sleeping time is 10:00 PM",
         #     "phone number is +1-123-456-7890",
         # ]
+        # privacy_texts.append("phone number")
+        # privacy_texts.append("sleeping time")
 
         # 3. Given each snapshot change, if there are privacy changes, get the privacy data
         # e.g., phone number, email, address, time, etc. +1 800-xxx-xxxx is a phone number
         # e.g., age, heart rate, blood pressure, etc. 25 is an age
-        privacy_data = self.GetValueGPT(snapshot_privacy_add + snapshot_privacy_delete)
+        privacy_data = self.GetValueGPT(snapshot_privacy_add + snapshot_privacy_delete, privacy_texts)
 
         # 4. Given the privacy data, find the belonging
         belongings = self.GetBelongingGPT(
@@ -488,17 +568,17 @@ class ConfiotOracle:
                     if "Should not view" in items["Capabilities"]:
                         if privacy_data:
                             privacy_warning.append(
-                                f"Possible violation - guest can view privacy data:\n {privacy_data}! "
+                                f"Privacy data violation - {privacy_data} "
                             )
                             print(
-                                f"Possible violation - guest can view privacy data:\n {privacy_data}! "
+                                f"Privacy data violation - {privacy_data} "
                             )
                         if belongings:
                             privacy_warning.append(
-                                f"Possible violation - guest can view privacy data:\n {belongings}! "
+                                f"Privacy belonging violation - {belongings}! "
                             )
                             print(
-                                f"Possible violation - guest can view privacy data:\n {belongings}! "
+                                f"Privacy belonging - {belongings}! "
                             )
                     else:
                         pass
@@ -666,10 +746,8 @@ class ConfigurationConfiotOracle(ConfiotOracle):
     def IdentifyConfiot(
         self, TestingPhase, Criteria, Configurations, UIChanges, Role, outputdir
     ):
-        # if not os.path.exists(outputdir):
-        #     os.makedirs(outputdir)
-        # else:
-        #     return
+        if not os.path.exists(outputdir):
+            os.makedirs(outputdir)
 
         AfterDelegation_system_template = ""
         AfterDelegation_user_template = ""
