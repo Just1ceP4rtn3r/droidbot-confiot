@@ -305,9 +305,9 @@ def test_Configuration_parser():
     )
 
     s = settings(
-        "192.168.2.207:5555",
-        "/root/documents/Output/Huawei_AI_Life_usenix25/Huawei.apk",
-        r"/root/documents/Output/Huawei_AI_Life_usenix25/guest/result",
+        "192.168.137.7:5555",
+        "/root/documents/Output/Tuya/Tuya.apk",
+        r"/root/documents/Output/Tuya/guest/result",
     )
 
     Agent = Confiot()
@@ -364,9 +364,9 @@ def test_autodroid(task_id, page=None, task=None):
     from AutoDroid.droidbot.droidbot import DroidBot as AutoDroid
 
     s = settings(
-        "192.168.137.174:5555",
-        "/root/documents/Output/Huawei_AI_Life_usenix25/Huawei.apk",
-        r"/root/documents/Output/Huawei_AI_Life_usenix25/guest/result",
+        "172.20.10.10:5555",
+        "/root/documents/Output/Tuya/Tuya.apk",
+        r"/root/documents/Output/Tuya/guest/result",
     )
     if not page or not task:
         Tasks = {}
@@ -427,9 +427,9 @@ def replay_task_based_on_file(task_id):
     from AutoDroid.droidbot.input_event import IntentEvent as autoIntentEvent
 
     s = settings(
-        "192.168.137.30:5555",
-        "/root/documents/Output/Huawei_AI_Life_usenix25/Huawei.apk",
-        r"/root/documents/Output/Huawei_AI_Life_usenix25/host/result",
+        "172.20.10.10:5555",
+        "/root/documents/Output/Tuya/Tuya.apk",
+        r"/root/documents/Output/Tuya/guest/result",
     )
     steps = get_task_replay_steps(task_id, settings.autodroid_output)
 
@@ -459,9 +459,9 @@ def page_exploration(task_id):
     )
 
     s = settings(
-        "192.168.137.30:5555",
-        "/root/documents/Output/Huawei_AI_Life_usenix25/Huawei.apk",
-        r"/root/documents/Output/Huawei_AI_Life_usenix25/host/result",
+        "172.20.10.9:5555",
+        "/root/documents/Output/Tuya/Tuya.apk",
+        r"/root/documents/Output/Tuya/host/result",
     )
 
     Agent = Confiot()
@@ -494,38 +494,38 @@ if __name__ == "__main__":
 
     # test_Configuration_parser()
 
-    # test_autodroid(task_id=0)
+    # test_autodroid(task_id=4)
 
     # 获取目录下所有task_id, mihome/mihome-smartscale-12-27/host/result/Confiot/LLM_task_replay/Task-0.json
-    # from Confiot_main.settings import settings
+    from Confiot_main.settings import settings
 
-    # s = settings(
-    #     "172.20.10.10:5555",
-    #     "/root/documents/Output/mihome/mihome-aqarahub-usenix25/mihome.apk",
-    #     r"/root/documents/Output/mihome/mihome-aqarahub-usenix25/host/result",
-    # )
+    s = settings(
+        "172.20.10.10:5555",
+        "/root/documents/Output/Tuya/Tuya.apk",
+        r"/root/documents/Output/Tuya/guest/result",
+    )
 
-    # task_replay_steps_file = os.listdir(settings.autodroid_output)
-    # task_ids = [
-    #     int(file.replace(".json", "")[5:])
-    #     for file in task_replay_steps_file
-    #     if file.endswith((".json"))
-    # ]
-    # task_ids.sort()
-    # if task_ids:
-    #     for task_id in task_ids:
-    #         replay_task_based_on_file(task_id=task_id)
-    #         page_exploration(task_id=task_id)
+    task_replay_steps_file = os.listdir(settings.autodroid_output)
+    task_ids = [
+        int(file.replace(".json", "")[5:])
+        for file in task_replay_steps_file
+        if file.endswith((".json"))
+    ]
+    task_ids.sort()
+    if task_ids:
+        for task_id in task_ids:
+            replay_task_based_on_file(task_id=task_id)
+            page_exploration(task_id=task_id)
 
 
 
     # test_privacy_data()
 
-    s = settings(
-        "192.168.137.174:5555",
-        "/root/documents/Output/Huawei_AI_Life_usenix25/Huawei.apk",
-        r"/root/documents/Output/Huawei_AI_Life_usenix25/guest/result",
-    )
+    # s = settings(
+    #     "192.168.137.174:5555",
+    #     "/root/documents/Output/Huawei_AI_Life_usenix25/Huawei.apk",
+    #     r"/root/documents/Output/Huawei_AI_Life_usenix25/guest/result",
+    # )
 
-    # test_ConfioT_Hunter(None, "000", "Administrators")
-    test_ConfioT_Hunter(None, "000", "Guests")
+    # # test_ConfioT_Hunter(None, "000", "Administrators")
+    # test_ConfioT_Hunter(None, "000", "Guests")

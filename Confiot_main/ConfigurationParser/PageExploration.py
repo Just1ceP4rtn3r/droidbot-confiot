@@ -315,8 +315,8 @@ class PageExplorer:
             tmp_views = XMLParser(tmp_xml).views
             _page = self.identify_current_page(tmp_views)
 
-            if _page in unreachable_pages:
-                break
+            # if _page in unreachable_pages:
+            #     break
 
             is_new_page = False
             if _page:
@@ -434,13 +434,16 @@ class PageExplorer:
                 event = InputEvent.from_dict(event_dict)
 
             last_event_str = event_str
-            wait_time = 2
+            wait_time = 3
             self.device_send_event(event, event_str, wait_time)
             if edges != "BACK":
                 current_page = target
 
         for page in cannot_reach_pages:
-            self.test_device_page_replay(outputdir, page)
+            if not os.path.exists(
+                outputdir + f"/{page}.xml"
+            ):
+                self.test_device_page_replay(outputdir, page)
 
     def device_send_event(self, event, event_str, sleep_time):
         print("[DBG]: Action: " + event_str)
