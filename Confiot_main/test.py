@@ -482,8 +482,8 @@ def test_privacy_data():
 
     co = ConfiotOracle()
     co.IdnetifyConfiot(
-        "/root/documents/Output/Huawei_AI_Life/host/result/Confiot",
-        ["guest"],
+        "/root/documents/Output/Tuya/host/result/Confiot",
+        ["host"],
     )
 
 
@@ -497,34 +497,34 @@ if __name__ == "__main__":
     # test_autodroid(task_id=4)
 
     # 获取目录下所有task_id, mihome/mihome-smartscale-12-27/host/result/Confiot/LLM_task_replay/Task-0.json
-    from Confiot_main.settings import settings
-
-    s = settings(
-        "172.20.10.10:5555",
-        "/root/documents/Output/Tuya/Tuya.apk",
-        r"/root/documents/Output/Tuya/guest/result",
-    )
-
-    task_replay_steps_file = os.listdir(settings.autodroid_output)
-    task_ids = [
-        int(file.replace(".json", "")[5:])
-        for file in task_replay_steps_file
-        if file.endswith((".json"))
-    ]
-    task_ids.sort()
-    if task_ids:
-        for task_id in task_ids:
-            replay_task_based_on_file(task_id=task_id)
-            page_exploration(task_id=task_id)
-
-
-
-    # test_privacy_data()
+    # from Confiot_main.settings import settings
 
     # s = settings(
-    #     "192.168.137.174:5555",
-    #     "/root/documents/Output/Huawei_AI_Life_usenix25/Huawei.apk",
-    #     r"/root/documents/Output/Huawei_AI_Life_usenix25/guest/result",
+    #     "172.20.10.10:5555",
+    #     "/root/documents/Output/Tuya/Tuya.apk",
+    #     r"/root/documents/Output/Tuya/guest/result",
+    # )
+
+    # task_replay_steps_file = os.listdir(settings.autodroid_output)
+    # task_ids = [
+    #     int(file.replace(".json", "")[5:])
+    #     for file in task_replay_steps_file
+    #     if file.endswith((".json"))
+    # ]
+    # task_ids.sort()
+    # if task_ids:
+    #     for task_id in task_ids:
+    #         replay_task_based_on_file(task_id=task_id)
+    #         page_exploration(task_id=task_id)
+
+
+
+    test_privacy_data()
+
+    # s = settings(
+    #     "172.20.10.10:5555",
+    #     "/root/documents/Output/Tuya/Tuya.apk",
+    #     r"/root/documents/Output/Tuya/guest/result",
     # )
 
     # # test_ConfioT_Hunter(None, "000", "Administrators")

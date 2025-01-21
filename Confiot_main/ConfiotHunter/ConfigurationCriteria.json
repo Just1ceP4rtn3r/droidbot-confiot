@@ -28,7 +28,7 @@
         {
             "Id": "6",
             "Role": "Guests",
-            "Capabilities": "Should not delete or add devices to the home"
+            "Capabilities": "Should not pair a new device, or delete the device from the device list or smart home"
         },
         {
             "Id": "7",
