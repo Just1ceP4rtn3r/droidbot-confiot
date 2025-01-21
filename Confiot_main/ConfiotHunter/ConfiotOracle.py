@@ -41,6 +41,9 @@ class ConfiotOracle:
         if not os.path.exists(xml_old) or not os.path.exists(xml_new):
             print("[DBG]: Do not found files:", xml_old, xml_new)
             return None
+        if not os.path.exists(xml_old) or not os.path.exists(xml_new):
+            print("[DBG]: Do not found files:", xml_old, xml_new)
+            return None
         comparator.compare_xml_files(xml_old, xml_new, output)
 
         UI_old = xml_old
@@ -98,6 +101,11 @@ class ConfiotOracle:
                     settings.Static_comparation_output
                 )
 
+            result = self.ParseUIChanges(file[0], file[1], output)
+            if result:
+                UI_add, UI_delete = result
+                snapshot_add.append(UI_add)
+                snapshot_delete.append(UI_delete)
             result = self.ParseUIChanges(file[0], file[1], output)
             if result:
                 UI_add, UI_delete = result
@@ -348,8 +356,27 @@ class ConfiotOracle:
         completion = client.beta.chat.completions.parse(
             model="gpt-4o",
             messages=[
+        from pydantic import BaseModel
+        from openai import OpenAI
+        # api_key = os.environ.get("OPENAI_API_KEY")
+        # headers = {
+        #     "Content-Type": "application/json",
+        #     "Authorization": f"Bearer {api_key}",
+        # }
+        class privacyFormat(BaseModel):
+            contains_privacy_belonging: bool
+            privacy_belonging: str
+
+        class response(BaseModel):
+            privacy: privacyFormat
+
+        client = OpenAI()
+        completion = client.beta.chat.completions.parse(
+            model="gpt-4o",
+            messages=[
                 {
                     "role": "system",
+                    "content": "You are an privacy assistant tasked with parsing texts that extracted from IoT companion mobile apps. For provided privacy data, please identify corresponding privacy data belongings. You will be provided with some texts examples that contains possible privacy data belonging patterns. If you do not find any belongings to the given privacy data, return 'contains_privacy_belonging: 0, privacy_belonging: \"\"'. ",
                     "content": "You are an privacy assistant tasked with parsing texts that extracted from IoT companion mobile apps. For provided privacy data, please identify corresponding privacy data belongings. You will be provided with some texts examples that contains possible privacy data belonging patterns. If you do not find any belongings to the given privacy data, return 'contains_privacy_belonging: 0, privacy_belonging: \"\"'. ",
                 },
                 {
@@ -360,6 +387,7 @@ class ConfiotOracle:
                     "role": "user",
                     "content": f"Please find the belongings to data: {privacy_data} in the following texts: {snapshot_change}. You may also find some clues in the current page or the previous page texts: {related_pages}. The current other user IDs are: {current_user_id}.",
                 }
+                }
             ],
             response_format=response,
             max_tokens=500,
@@ -368,7 +396,20 @@ class ConfiotOracle:
         # response = requests.post(
         #     "https://api.openai.com/v1/chat/completions", headers=headers, json=payload
         # )
+            response_format=response,
+            max_tokens=500,
+        )
 
+        # response = requests.post(
+        #     "https://api.openai.com/v1/chat/completions", headers=headers, json=payload
+        # )
+
+        result = completion.choices[0].message.parsed
+        # response.json().get("choices")[0].get("message").get("content")
+        if result.privacy.contains_privacy_belonging:
+            return result.privacy.privacy_belonging
+        else:
+            return ""
         result = completion.choices[0].message.parsed
         # response.json().get("choices")[0].get("message").get("content")
         if result.privacy.contains_privacy_belonging:
@@ -422,6 +463,8 @@ class ConfiotOracle:
 
         if snapshot_add_texts + snapshot_delete_texts == []:
             return [], []
+        if snapshot_add_texts + snapshot_delete_texts == []:
+            return [], []
         encodings = tokenizer(
             snapshot_add_texts + snapshot_delete_texts,
             truncation=True,
@@ -447,9 +490,12 @@ class ConfiotOracle:
         snapshot_privacy_add = []
         snapshot_privacy_delete = []
         privacy_texts = []
+        privacy_texts = []
         for text, pred in zip(snapshot_add_texts + snapshot_delete_texts, predictions):
             if pred.item() == 1:
                 label = "Privacy-related"
+                if text not in privacy_texts:
+                    privacy_texts.append(text)
                 if text not in privacy_texts:
                     privacy_texts.append(text)
                 if text in snapshot_add_texts:
@@ -459,6 +505,8 @@ class ConfiotOracle:
             else:
                 label = "Non-privacy-related"
             print(f"UI text changes: '{text}' => Prediction: {label}")
+
+            print("Privacy-related texts: ", privacy_texts)
 
             print("Privacy-related texts: ", privacy_texts)
 
@@ -473,6 +521,7 @@ class ConfiotOracle:
         # 3. Given each snapshot change, if there are privacy changes, get the privacy data
         # e.g., phone number, email, address, time, etc. +1 800-xxx-xxxx is a phone number
         # e.g., age, heart rate, blood pressure, etc. 25 is an age
+        privacy_data = self.GetValueGPT(snapshot_privacy_add + snapshot_privacy_delete, privacy_texts)
         privacy_data = self.GetValueGPT(snapshot_privacy_add + snapshot_privacy_delete, privacy_texts)
 
         # 4. Given the privacy data, find the belonging
@@ -569,15 +618,19 @@ class ConfiotOracle:
                         if privacy_data:
                             privacy_warning.append(
                                 f"Privacy data violation - {privacy_data} "
+                                f"Privacy data violation - {privacy_data} "
                             )
                             print(
+                                f"Privacy data violation - {privacy_data} "
                                 f"Privacy data violation - {privacy_data} "
                             )
                         if belongings:
                             privacy_warning.append(
                                 f"Privacy belonging violation - {belongings}! "
+                                f"Privacy belonging violation - {belongings}! "
                             )
                             print(
+                                f"Privacy belonging - {belongings}! "
                                 f"Privacy belonging - {belongings}! "
                             )
                     else:
