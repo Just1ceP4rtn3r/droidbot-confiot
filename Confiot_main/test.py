@@ -365,8 +365,8 @@ def test_autodroid(task_id, page=None, task=None):
 
     s = settings(
         "172.20.10.10:5555",
-        "/root/documents/Output/Tuya/Tuya.apk",
-        r"/root/documents/Output/Tuya/guest/result",
+        "/root/documents/Output/mihome/mihome-aqarahub-usenix25/mihome.apk",
+        r"/root/documents/Output/mihome/mihome-aqarahub-usenix25/host/result",
     )
     if not page or not task:
         Tasks = {}
@@ -494,7 +494,7 @@ if __name__ == "__main__":
 
     # test_Configuration_parser()
 
-    # test_autodroid(task_id=4)
+    test_autodroid(task_id=6)
 
     # 获取目录下所有task_id, mihome/mihome-smartscale-12-27/host/result/Confiot/LLM_task_replay/Task-0.json
     # from Confiot_main.settings import settings
@@ -519,7 +519,7 @@ if __name__ == "__main__":
 
 
 
-    test_privacy_data()
+    # test_privacy_data()
 
     # s = settings(
     #     "172.20.10.10:5555",
