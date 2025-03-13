@@ -6,36 +6,26 @@
     },
     {
         "Id": "2",
-        "Role": "Host, Guest",
-        "Capabilities": "Should not view or modify privacy data of other users"
-    },
-    {
-        "Id": "3",
         "Role": "Guest",
         "Capabilities": "Should not have any capability after revocation"
     },
     {
-        "Id": "4",
-        "Role": "Guest",
-        "Capabilities": "Should not view any privacy data after revocation"
-    },
-    {
-        "Id": "5",
+        "Id": "3",
         "Role": "Guest",
         "Capabilities": "Should not modify WiFi password"
     },
     {
-        "Id": "6",
+        "Id": "4",
         "Role": "Guest",
         "Capabilities": "Should not delete or add devices to the home"
     },
     {
-        "Id": "7",
+        "Id": "5",
         "Role": "Host",
         "Capabilities": "Should be able to delete logs"
     },
     {
-        "Id": "8",
+        "Id": "6",
         "Role": "Guest",
         "Capabilities": "Should be able to remove privacy data or delete logs/activities"
     }
