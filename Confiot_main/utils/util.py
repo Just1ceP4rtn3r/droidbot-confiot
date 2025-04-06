@@ -541,8 +541,21 @@ def query_config_operation_mapping_with_structured_output(system_prompt, user_pr
     )
 
     event = completion.choices[0].message.parsed
+    Configurations = []
 
-    return event
+    for r in event.configuration_tasks:
+        task = {
+            "Task ID": r.task_id,
+            "Page ID": r.page_id,
+            "Tasks": r.task_content,
+            "Related operations": r.related_operations,
+            "Dependencies": r.dependencies,
+            "Reason": r.reason,
+        }
+        Configurations.append(task)
+
+
+    return Configurations
 
 
 def query_Confiot_identification(system_prompt, user_prompt):
