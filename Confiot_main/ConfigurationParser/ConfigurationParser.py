@@ -421,20 +421,9 @@ class ConfigurationParser:
                         )
 
             prompt = system_prompt + "\n" + user_prompt
-            res = query_config_operation_mapping_with_structured_output(
+            Configurations = query_config_operation_mapping_with_structured_output(
                 system_prompt=system_prompt, user_prompt=user_prompt
             )
-
-            for r in res.configuration_tasks:
-                task = {
-                    "Task ID": r.task_id,
-                    "Page ID": r.page_id,
-                    "Tasks": r.task_content,
-                    "Related operations": r.related_operations,
-                    "Dependencies": r.dependencies,
-                    "Reason": r.reason,
-                }
-                Configurations.append(task)
 
             with open(outputdir + f"/{page}/Raw.txt", "w") as f:
                 f.write("################ Page: " + page + "################\n")
