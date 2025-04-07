@@ -518,6 +518,9 @@ def query_config_operation_mapping_with_structured_output(system_prompt, user_pr
     
     if (llm == "gemini-2.5"):
         return query_config_operation_mapping_gemini_2_5(system_prompt, user_prompt)
+    
+    if (llm == "claude-3.7"):
+        return query_config_operation_mapping_claude_3_7(system_prompt, user_prompt)
 
     from pydantic import BaseModel
     from openai import OpenAI
@@ -592,26 +595,38 @@ def query_config_operation_mapping_gemini_2_5(system_prompt, user_prompt):
     return Configurations
     # print(Configurations)
 
+def query_config_operation_mapping_claude_3_7(system_prompt, user_prompt):
+    import anthropic, os, json
+    Claude_api_key=os.getenv("CLAUDE_API_KEY")
 
-# def query_config_operation_mapping_llama3(system_prompt, user_prompt):
-#     import torch
-#     from transformers import AutoModelForCausalLM, AutoTokenizer
+    example_format = json.dumps([{'Task ID': 'Task-1', 'Page ID': 'Page-7', 'Tasks': 'Add Aqara or Mi Zigbee device', 'Related operations': ['operation_0',], 'Dependencies': ['Task-1'], 'Reason': 'The operations on Page-7 involve selecting different Zigbee devices to add them to the control hub. This task depends on navigating to Page-7 from Page-0, where users prepare to manage child devices.'}, {'Task ID': 'Task-2', 'Page ID': 'Page-7', 'Tasks': '', 'Related operations': ['operation_0',], 'Dependencies': ['Task-1'], 'Reason': ''},], ensure_ascii=False)
 
-#     model_id = "meta-llama/Llama-3.3-70B-Instruct"
 
-#     model = AutoModelForCausalLM.from_pretrained(
-#         model_id,
-#         torch_dtype=torch.float32,  
-#     )
+    full_user_prompt = (
+        "EXAMPLE JSON OUTPUT:\n"
+        f"{example_format}\n\n"
+        f"{user_prompt}"
+        "Only return a valid JSON array. Do not include any markdown, explanations, or text outside the JSON."
+    )
 
-#     tokenizer = AutoTokenizer.from_pretrained(model_id)
+    client = anthropic.Anthropic(
+        # defaults to os.environ.get("ANTHROPIC_API_KEY")
+        api_key=Claude_api_key,
+    )
+    message = client.messages.create(
+        model="claude-3-7-sonnet-20250219",
+        max_tokens=1024,
+        system=system_prompt,
+        messages=[
+            {"role": "user", "content": full_user_prompt}
+        ]
+    )
 
-#     input_text = "What are we having for dinner?"
-#     input_ids = tokenizer(input_text, return_tensors="pt").to("cpu")
+    # print(message.content[0].text)
 
-#     output = model.generate(**input_ids, max_new_tokens=10)
-#     print(tokenizer.decode(output[0], skip_special_tokens=True))
-
+    Configurations = json.loads(message.content[0].text)
+    # print(Configurations)
+    return Configurations
 
 def query_config_operation_mapping_deepseek_v3(system_prompt, user_prompt):
     from openai import OpenAI
