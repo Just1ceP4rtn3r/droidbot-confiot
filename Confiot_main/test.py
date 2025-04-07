@@ -305,9 +305,9 @@ def test_Configuration_parser():
     )
 
     s = settings(
-        "192.168.137.7:5555",
-        "/root/documents/Output/Tuya/Tuya.apk",
-        r"/root/documents/Output/Tuya/guest/result",
+        "192.168.2.176:5555",
+        "/root/documents/Output/mihome/mihome-smartscale-CCS25-40min-droidbot-qwen/mihome.apk",
+        r"/root/documents/Output/mihome/mihome-smartscale-CCS25-40min-droidbot-qwen/host/result",
     )
 
     Agent = Confiot()
@@ -315,7 +315,7 @@ def test_Configuration_parser():
 
     CP = ConfigurationParser(Agent)
 
-    # os.environ["https_proxy"] = "http://192.168.72.1:1083"
+
     CP.query_LLM_for_configuration_mapping_based_on_page_graph(
         settings.LLMConfiguration_output
     )
@@ -488,13 +488,12 @@ def test_privacy_data():
 
 
 if __name__ == "__main__":
-    # test_device_guest_config_walker()
-    # test_STEP0()
     # test_Enumerate_pages()
 
-    # test_Configuration_parser()
+    os.environ["https_proxy"] = "http://192.168.72.1:1083"
+    test_Configuration_parser()
 
-    test_autodroid(task_id=6)
+    # test_autodroid(task_id=6)
 
     # 获取目录下所有task_id, mihome/mihome-smartscale-12-27/host/result/Confiot/LLM_task_replay/Task-0.json
     # from Confiot_main.settings import settings

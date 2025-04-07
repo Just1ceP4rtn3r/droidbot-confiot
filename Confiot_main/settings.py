@@ -1,11 +1,11 @@
 class settings:
-    device_serial = "172.20.10.10:5555"
+    device_serial = "192.168.72.132:5555"
 
     # app_path = "/root/documents/droidbot-new/a2dp/a2dp.Vol_169.apk"
     # droid_output = "/root/documents/droidbot-new/a2dp/"
-    app_path = "/root/documents/Output/mihome/mihome-aqarahub-usenix25/mihome.apk"
+    app_path = "/root/documents/Output/mihome/mihome-smartscale-CCS25-40min-droidbot-gpt-4o/mihome.apk"
     # droid_output = r"/root/ConfiotOutput/Output/Tuya/host/result"  #"/root/documents/Output/mihome/mihome-smartscale-guest/result"
-    droid_output = r"/root/documents/Output/mihome/mihome-aqarahub-usenix25/host/result"
+    droid_output = r"/root/documents/Output/mihome/mihome-smartscale-CCS25-40min-droidbot-gpt-4o/host/result"
 
     Confiot_output = f"{droid_output}/Confiot/"
     UI_output = Confiot_output + "/UI/"

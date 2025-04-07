@@ -512,9 +512,12 @@ def query_config_resource_mapping(prompt):
         return response.text
 
 
-def query_config_operation_mapping_with_structured_output(system_prompt, user_prompt, llm="gpt-4o"):
-    if (llm == "deepseek-v3"):
+def query_config_operation_mapping_with_structured_output(system_prompt, user_prompt, llm="xxx"):
+    if (llm == "deepseek"):
         return query_config_operation_mapping_deepseek_v3(system_prompt, user_prompt)
+
+    elif (llm == "qwen"):
+        return query_config_operation_mapping_qwen(system_prompt, user_prompt)
 
     from pydantic import BaseModel
     from openai import OpenAI
@@ -566,9 +569,10 @@ def query_config_operation_mapping_deepseek_v3(system_prompt, user_prompt):
     from openai import OpenAI
     import json
 
-    example_format = json.dumps([{'Task ID': 'Task-1', 'Page ID': 'Page-7', 'Tasks': 'Add Aqara or Mi Zigbee device', 'Related operations': ['operation_0',], 'Dependencies': ['Task-1'], 'Reason': 'The operations on Page-7 involve selecting different Zigbee devices to add them to the control hub. This task depends on navigating to Page-7 from Page-0, where users prepare to manage child devices.'}, {'Task ID': 'Task-2', 'Page ID': 'Page-7', 'Tasks': '', 'Related operations': ['operation_0',], 'Dependencies': ['Task-1'], 'Reason': ''},],
+    example_format = json.dumps({'Task-1':{'page_id': 'Page-7', 'task_content': 'Add Aqara or Mi Zigbee device', 'related_operations': ['operation_0',], 'dependencies': ['Task-1'], 'reason': 'The operations on Page-7 involve selecting different Zigbee devices to add them to the control hub. This task depends on navigating to Page-7 from Page-0, where users prepare to manage child devices.'}, 'Task-2':{'page_id': 'Page-7', 'task_content': '', 'related_operations': ['operation_0',], 'dependencies': ['Task-1'], 'reason': ''}},
         ensure_ascii=False
     )
+
 
 
 
@@ -594,11 +598,61 @@ def query_config_operation_mapping_deepseek_v3(system_prompt, user_prompt):
         response_format={"type": "json_object"},
     )
 
-
-    Configurations = json.loads(completion.choices[0].message.content)
-
+    Configurations = []
+    try:
+        ret = json.loads(completion.choices[0].message.content)
+        for task_id in ret:
+            c =  {"Task ID": task_id, "Page ID": ret[task_id]["page_id"], "Tasks": ret[task_id]["task_content"], "Related operations": ret[task_id]["related_operations"], "Dependencies": ret[task_id]["dependencies"], "Reason": ret[task_id]["reason"] }
+            Configurations.append(c)
+    except:
+        pass
 
     return Configurations
+
+
+def query_config_operation_mapping_qwen(system_prompt, user_prompt):
+    from openai import OpenAI
+    import json
+
+    example_format = json.dumps({'Task-1':{'page_id': 'Page-7', 'task_content': 'Add Aqara or Mi Zigbee device', 'related_operations': ['operation_0',], 'dependencies': ['Task-1'], 'reason': 'The operations on Page-7 involve selecting different Zigbee devices to add them to the control hub. This task depends on navigating to Page-7 from Page-0, where users prepare to manage child devices.'}, 'Task-2':{'page_id': 'Page-7', 'task_content': '', 'related_operations': ['operation_0',], 'dependencies': ['Task-1'], 'reason': ''}},
+        ensure_ascii=False
+    )
+
+
+
+    client = OpenAI(
+        # 若没有配置环境变量，请用百炼API Key将下行替换为：api_key="sk-xxx",
+        api_key=os.getenv("OPENAI_API_KEY"),  # 如何获取API Key：https://help.aliyun.com/zh/model-studio/developer-reference/get-api-key
+        base_url="https://dashscope.aliyuncs.com/compatible-mode/v1"
+    )
+
+
+    completion = client.chat.completions.create(
+        model="qwen2.5-vl-32b-instruct",
+        messages=[
+            {
+                "role": "system",
+                "content": system_prompt + "\n\n\n" + f'''
+                    EXAMPLE JSON OUTPUT:
+                    {example_format}
+                    ''',
+            },
+            {'role': 'user', 'content': user_prompt}
+        ],
+        response_format={"type": "json_object"},
+    )
+
+    Configurations = []
+    try:
+        ret = json.loads(completion.choices[0].message.content)
+        for task_id in ret:
+            c =  {"Task ID": task_id, "Page ID": ret[task_id]["page_id"], "Tasks": ret[task_id]["task_content"], "Related operations": ret[task_id]["related_operations"], "Dependencies": ret[task_id]["dependencies"], "Reason": ret[task_id]["reason"] }
+            Configurations.append(c)
+    except:
+        pass
+
+    return Configurations
+
 
 
 
