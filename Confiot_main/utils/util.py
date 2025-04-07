@@ -515,6 +515,9 @@ def query_config_resource_mapping(prompt):
 def query_config_operation_mapping_with_structured_output(system_prompt, user_prompt, llm="gpt-4o"):
     if (llm == "deepseek-v3"):
         return query_config_operation_mapping_deepseek_v3(system_prompt, user_prompt)
+    
+    if (llm == "gemini-2.5"):
+        return query_config_operation_mapping_gemini_2_5(system_prompt, user_prompt)
 
     from pydantic import BaseModel
     from openai import OpenAI
@@ -560,6 +563,54 @@ def query_config_operation_mapping_with_structured_output(system_prompt, user_pr
 
     return Configurations
 
+def query_config_operation_mapping_gemini_2_5(system_prompt, user_prompt):
+    from google import genai
+    import os
+
+    GEMINI_api_key=os.getenv("GEMINI_API_KEY")
+    client = genai.Client(api_key=GEMINI_api_key)
+
+    example_format = json.dumps([{'Task ID': 'Task-1', 'Page ID': 'Page-7', 'Tasks': 'Add Aqara or Mi Zigbee device', 'Related operations': ['operation_0',], 'Dependencies': ['Task-1'], 'Reason': 'The operations on Page-7 involve selecting different Zigbee devices to add them to the control hub. This task depends on navigating to Page-7 from Page-0, where users prepare to manage child devices.'}, {'Task ID': 'Task-2', 'Page ID': 'Page-7', 'Tasks': '', 'Related operations': ['operation_0',], 'Dependencies': ['Task-1'], 'Reason': ''},], ensure_ascii=False)
+
+    full_prompt = (
+        system_prompt + "\n\n\n"
+        "EXAMPLE JSON OUTPUT:\n"
+        f"{example_format}\n\n"
+        f"{user_prompt}"
+    )
+
+    response = client.models.generate_content(
+            model="gemini-2.5-pro-exp-03-25",
+            config={
+                'response_mime_type': 'application/json'
+            },
+            contents=full_prompt
+        )
+
+    Configurations = json.loads(response.text)
+
+    return Configurations
+    # print(Configurations)
+
+
+# def query_config_operation_mapping_llama3(system_prompt, user_prompt):
+#     import torch
+#     from transformers import AutoModelForCausalLM, AutoTokenizer
+
+#     model_id = "meta-llama/Llama-3.3-70B-Instruct"
+
+#     model = AutoModelForCausalLM.from_pretrained(
+#         model_id,
+#         torch_dtype=torch.float32,  
+#     )
+
+#     tokenizer = AutoTokenizer.from_pretrained(model_id)
+
+#     input_text = "What are we having for dinner?"
+#     input_ids = tokenizer(input_text, return_tensors="pt").to("cpu")
+
+#     output = model.generate(**input_ids, max_new_tokens=10)
+#     print(tokenizer.decode(output[0], skip_special_tokens=True))
 
 
 def query_config_operation_mapping_deepseek_v3(system_prompt, user_prompt):

@@ -363,11 +363,11 @@ def test_autodroid(task_id, page=None, task=None):
     from AutoDroid.droidbot import env_manager
     from AutoDroid.droidbot.droidbot import DroidBot as AutoDroid
 
-    s = settings(
-        "172.20.10.10:5555",
-        "/root/documents/Output/mihome/mihome-aqarahub-usenix25/mihome.apk",
-        r"/root/documents/Output/mihome/mihome-aqarahub-usenix25/host/result",
-    )
+    # s = settings(
+    #     "172.20.10.10:5555",
+    #     "/root/documents/Output/mihome/mihome-aqarahub-usenix25/mihome.apk",
+    #     r"/root/documents/Output/mihome/mihome-aqarahub-usenix25/host/result",
+    # )
     if not page or not task:
         Tasks = {}
         with open(
@@ -410,9 +410,9 @@ def test_autodroid(task_id, page=None, task=None):
     PE.parse_struture_unique_pages()
     PE.extract_navigations()
 
-    GlobalVars.event_dict_steps = PE.test_device_page_replay(
-        settings.UIHierarchy_comparation_output + "/tmp/", page, autodroid=True
-    )
+    # GlobalVars.event_dict_steps = PE.test_device_page_replay(
+    #     settings.UIHierarchy_comparation_output + "/tmp/", page, autodroid=True
+    # )
 
     GlobalVars.step_outputfile = (
         settings.autodroid_output + f"/Task-{str(task_id)}.json"
@@ -494,7 +494,7 @@ if __name__ == "__main__":
 
     # test_Configuration_parser()
 
-    test_autodroid(task_id=6)
+    test_autodroid(task_id=0)
 
     # 获取目录下所有task_id, mihome/mihome-smartscale-12-27/host/result/Confiot/LLM_task_replay/Task-0.json
     # from Confiot_main.settings import settings
