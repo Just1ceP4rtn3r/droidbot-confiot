@@ -515,6 +515,12 @@ def query_config_resource_mapping(prompt):
 def query_config_operation_mapping_with_structured_output(system_prompt, user_prompt, llm="xxx"):
     if (llm == "deepseek"):
         return query_config_operation_mapping_deepseek_v3(system_prompt, user_prompt)
+    
+    if (llm == "gemini-2.5"):
+        return query_config_operation_mapping_gemini_2_5(system_prompt, user_prompt)
+    
+    if (llm == "claude-3.7"):
+        return query_config_operation_mapping_claude_3_7(system_prompt, user_prompt)
 
     elif (llm == "qwen"):
         return query_config_operation_mapping_qwen(system_prompt, user_prompt)
@@ -563,7 +569,67 @@ def query_config_operation_mapping_with_structured_output(system_prompt, user_pr
 
     return Configurations
 
+def query_config_operation_mapping_gemini_2_5(system_prompt, user_prompt):
+    from google import genai
+    import os
 
+    GEMINI_api_key=os.getenv("GEMINI_API_KEY")
+    client = genai.Client(api_key=GEMINI_api_key)
+
+    example_format = json.dumps([{'Task ID': 'Task-1', 'Page ID': 'Page-7', 'Tasks': 'Add Aqara or Mi Zigbee device', 'Related operations': ['operation_0',], 'Dependencies': ['Task-1'], 'Reason': 'The operations on Page-7 involve selecting different Zigbee devices to add them to the control hub. This task depends on navigating to Page-7 from Page-0, where users prepare to manage child devices.'}, {'Task ID': 'Task-2', 'Page ID': 'Page-7', 'Tasks': '', 'Related operations': ['operation_0',], 'Dependencies': ['Task-1'], 'Reason': ''},], ensure_ascii=False)
+
+    full_prompt = (
+        system_prompt + "\n\n\n"
+        "EXAMPLE JSON OUTPUT:\n"
+        f"{example_format}\n\n"
+        f"{user_prompt}"
+    )
+
+    response = client.models.generate_content(
+            model="gemini-2.5-pro-exp-03-25",
+            config={
+                'response_mime_type': 'application/json'
+            },
+            contents=full_prompt
+        )
+
+    Configurations = json.loads(response.text)
+
+    return Configurations
+    # print(Configurations)
+
+def query_config_operation_mapping_claude_3_7(system_prompt, user_prompt):
+    import anthropic, os, json
+    Claude_api_key=os.getenv("CLAUDE_API_KEY")
+
+    example_format = json.dumps([{'Task ID': 'Task-1', 'Page ID': 'Page-7', 'Tasks': 'Add Aqara or Mi Zigbee device', 'Related operations': ['operation_0',], 'Dependencies': ['Task-1'], 'Reason': 'The operations on Page-7 involve selecting different Zigbee devices to add them to the control hub. This task depends on navigating to Page-7 from Page-0, where users prepare to manage child devices.'}, {'Task ID': 'Task-2', 'Page ID': 'Page-7', 'Tasks': '', 'Related operations': ['operation_0',], 'Dependencies': ['Task-1'], 'Reason': ''},], ensure_ascii=False)
+
+
+    full_user_prompt = (
+        "EXAMPLE JSON OUTPUT:\n"
+        f"{example_format}\n\n"
+        f"{user_prompt}"
+        "Only return a valid JSON array. Do not include any markdown, explanations, or text outside the JSON."
+    )
+
+    client = anthropic.Anthropic(
+        # defaults to os.environ.get("ANTHROPIC_API_KEY")
+        api_key=Claude_api_key,
+    )
+    message = client.messages.create(
+        model="claude-3-7-sonnet-20250219",
+        max_tokens=1024,
+        system=system_prompt,
+        messages=[
+            {"role": "user", "content": full_user_prompt}
+        ]
+    )
+
+    # print(message.content[0].text)
+
+    Configurations = json.loads(message.content[0].text)
+    # print(Configurations)
+    return Configurations
 
 def query_config_operation_mapping_deepseek_v3(system_prompt, user_prompt):
     from openai import OpenAI

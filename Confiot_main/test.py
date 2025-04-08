@@ -304,12 +304,6 @@ def test_Configuration_parser():
         get_ConfigResourceMapper_from_file,
     )
 
-    s = settings(
-        "192.168.2.176:5555",
-        "/root/documents/Output/mihome/mihome-smartscale-CCS25-40min-droidbot-qwen/mihome.apk",
-        r"/root/documents/Output/mihome/mihome-smartscale-CCS25-40min-droidbot-qwen/host/result",
-    )
-
     Agent = Confiot()
     Agent.device_connect()
 
@@ -363,11 +357,11 @@ def test_autodroid(task_id, page=None, task=None):
     from AutoDroid.droidbot import env_manager
     from AutoDroid.droidbot.droidbot import DroidBot as AutoDroid
 
-    s = settings(
-        "172.20.10.10:5555",
-        "/root/documents/Output/mihome/mihome-aqarahub-usenix25/mihome.apk",
-        r"/root/documents/Output/mihome/mihome-aqarahub-usenix25/host/result",
-    )
+    # s = settings(
+    #     "172.20.10.10:5555",
+    #     "/root/documents/Output/mihome/mihome-aqarahub-usenix25/mihome.apk",
+    #     r"/root/documents/Output/mihome/mihome-aqarahub-usenix25/host/result",
+    # )
     if not page or not task:
         Tasks = {}
         with open(
@@ -389,9 +383,9 @@ def test_autodroid(task_id, page=None, task=None):
         env_policy=env_manager.POLICY_NONE,
         policy_name=input_manager.POLICY_TASK,
         script_path=None,
-        event_interval=2,
+        event_interval=1,
         timeout=input_manager.DEFAULT_TIMEOUT,
-        event_count=input_manager.DEFAULT_EVENT_COUNT,
+        event_count=30,
         debug_mode=False,
         keep_app=True,
         keep_env=True,
@@ -490,19 +484,30 @@ def test_privacy_data():
 if __name__ == "__main__":
     # test_Enumerate_pages()
 
-    os.environ["https_proxy"] = "http://192.168.72.1:1083"
+
+    s = settings(
+        "192.168.2.176:5555",
+        "/root/documents/Output/mihome/mihome-smartscale-CCS25-40min-droidbot-gpt-4o/mihome.apk",
+        r"/root/documents/Output/mihome/mihome-smartscale-CCS25-40min-droidbot-gpt-4o/host/result",
+    )
+
     test_Configuration_parser()
 
-    # test_autodroid(task_id=6)
+
+    # Tasks = {}
+    # with open(
+    #     settings.LLMConfiguration_output + "/ConfigurationsSummary.json", "r"
+    # ) as f:
+    #     Tasks = json.load(f)
+    # for t in Tasks:
+    #     test_autodroid(task_id=t["Id"])
+    #     input()
+
 
     # 获取目录下所有task_id, mihome/mihome-smartscale-12-27/host/result/Confiot/LLM_task_replay/Task-0.json
     # from Confiot_main.settings import settings
 
-    # s = settings(
-    #     "172.20.10.10:5555",
-    #     "/root/documents/Output/Tuya/Tuya.apk",
-    #     r"/root/documents/Output/Tuya/guest/result",
-    # )
+
 
     # task_replay_steps_file = os.listdir(settings.autodroid_output)
     # task_ids = [
