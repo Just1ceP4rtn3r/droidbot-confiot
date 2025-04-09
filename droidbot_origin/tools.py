@@ -176,13 +176,13 @@ def extract_action(answer):
     llm_id = 'N/A'
     llm_action = 'tap'
     llm_input = "N/A"
-    whether_finished_answer = re.findall("3\.(.*)4\.", answer, flags=re.S)[0]
+    whether_finished_answer = re.findall("3\.((.|\n)*)4\.", answer, flags=re.S)[0][0]
     for e in ["Yes.", "Y.", "y.", "yes.", "is already finished"]:
         if e in whether_finished_answer:
             llm_id = -1
             llm_action = "N/A"
             llm_input = "N/A"
-            break
+            return llm_id, llm_action, llm_input
     finished_check = re.findall("4\.(.*)", answer, flags=re.S)[0]
     for e in [
             "No further interaction is required",
@@ -200,7 +200,7 @@ def extract_action(answer):
                 answer,
             )[0]
             if llm_id == "N/A":
-                llm_id = -1
+                llm_id = -2
             else:
                 llm_id = int(llm_id)
             if "tapon" in llm_action.lower():
@@ -220,14 +220,15 @@ def extract_action(answer):
                     llm_action = "N/A"
                 assert llm_action in ["tap", "input", "N/A"]
             except:
-                llm_id, llm_action, llm_input = eval(input(answer + "\nPlease input id, action, and text: "))
-                llm_id = int(llm_id)
-                llm_action = ["tap", "input", "N/A"][int(llm_action)]
-                try:
-                    if int(llm_input) == -1:
-                        llm_input = "N/A"
-                except:
-                    pass
+                pass
+                # llm_id, llm_action, llm_input = eval(input(answer + "\nPlease input id, action, and text: "))
+                # llm_id = int(llm_id)
+                # llm_action = ["tap", "input", "N/A"][int(llm_action)]
+                # try:
+                #     if int(llm_input) == -1:
+                #         llm_input = "N/A"
+                # except:
+                #     pass
     return llm_id, llm_action, llm_input
 
 

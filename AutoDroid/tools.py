@@ -169,11 +169,11 @@ def extract_gpt_answer(answer):
 
 
 def make_prompt(task, ui_desc, history):
-    introduction_prompt = "You are a smartphone assistant to help users complete tasks by interacting with mobile apps.\nGiven a task, the previous UI actions, and the content of current UI state, your job is to decide whether the task is already finished by the previous actions, and if not, decide which UI element in current UI state should be interacted. Please note that the same action should not be performed consecutively more than three times on the same page."
+    introduction_prompt = "You are a smartphone assistant to help users complete tasks by interacting with mobile apps.\nGiven a task, the previous UI actions, and the content of current UI state, your job is to decide whether the task is already finished by the previous actions, and if not, decide which UI element in current UI state should be interacted. If the given task content is vague or may involve multiple configuration tasks (e.g., 'Configure settings in the page'), please analyze the current page information and autonomously break down the task into more specific subtasks. Please note that the same action should not be performed consecutively more than three times on the same page."
     task_prompt = "Task: "
     history_prompt = "Previous UI actions: "
     interface_prompt = "Current UI state: "
-    question_prompt = "Your answer should always use the following format:\n1. Completing this task on a smartphone usually involves these steps: <?>.\n2. Analyse the relations between the task and the previous UI actions and current UI state: <?>.\n3. Based on the analyses, is the task already finished? <Y/N>. The next step should be <?/None>.\n4. Can the task be proceeded with the current UI state? <Y/N>. Fill in the blank about next interaction: - id=<id/-1 for finished> - action=<tap/input> - input text=<text or N/A>"
+    question_prompt = "Your answer should always use the following format:\n1. What task/subtasks you need to complete and completing this tasks on a smartphone usually involves these steps: <?>.\n2. Analyse the relations between the task and the previous UI actions and current UI state: <?>.\n3. Based on the analyses, is the task already finished? <Y/N>. The next step should be <?/None>.\n4. Can the task be proceeded with the current UI state? <Y/N>. Fill in the blank about next interaction: - id=<id/-1 for finished> - action=<tap/input> - input text=<text or N/A>"
     return (
         introduction_prompt
         + "\n"
