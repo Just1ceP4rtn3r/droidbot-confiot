@@ -524,7 +524,7 @@ class ConfigurationParser:
         completion = client.beta.chat.completions.parse(
             model="gpt-4o",
             messages=[
-                {"role": "system", "content": "Below are some JSON-formatted testing tasks for an IoT app. Please deduplicate the tasks within the same page ID based on their semantics. That is, if two tasks perform the same operation (or configure the same resource) and only differ in their configuration options, keep only one and try to retain one that with richer details (e.g., 'configure the light state to off'). Finally, Remove tasks that only involve read semantic (not write to any resource): ['view', 'access', 'retrieve', 'obtain', 'read', 'inspect']. "},
+                {"role": "system", "content": "Below are some JSON-formatted testing tasks for an IoT app. Please deduplicate the tasks within the same page ID based on their semantics. That is, if two tasks perform the same operation (or configure the same resource) and only differ in their configuration options, keep only one and try to retain one that with richer details (e.g., 'configure the light state to off'). Finally, Remove tasks that only involve read semantic (not write to any resource): ['view', 'access', 'retrieve', 'obtain', 'read', 'inspect']. Additionally, please exclude tasks related to signing out or removing devices, such as Sign Out, Remove Device, etc."},
                 {
                     "role": "user",
                     "content": json.dumps(config_json),
