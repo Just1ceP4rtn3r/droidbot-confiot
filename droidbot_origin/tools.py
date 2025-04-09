@@ -53,21 +53,82 @@ def get_view_without_id(view_desc):
     return re.sub(id_string, '', view_desc)
 
 
-def query_gpt(prompt):
+def query_gpt(prompt, llm="xxx"):
     import requests
-    api_key = os.environ.get("OPENAI_API_KEY")
-    headers = {"Content-Type": "application/json", "Authorization": f"Bearer {api_key}"}
+    from openai import OpenAI
 
-    payload = {"model": "gpt-3.5-turbo", "messages": [{"role": "user", "content": prompt}]}
 
-    response = requests.post("https://api.openai.com/v1/chat/completions", headers=headers, json=payload)
+    if (llm == "deepseek"):
+        client = OpenAI(
+            # 若没有配置环境变量，请用百炼API Key将下行替换为：api_key="sk-xxx",
+            api_key=os.getenv("DEEPSEEK_API_KEY"),  # 如何获取API Key：https://help.aliyun.com/zh/model-studio/developer-reference/get-api-key
+            base_url="https://api.deepseek.com"
+        )
 
-    # URL = os.environ['OPENAI_API_KEY']  # NOTE: replace with your own GPT API
-    # body = {"model": "gpt-3.5-turbo", "messages": [{"role": "user", "content": prompt}], "stream": True}
-    # headers = {'Content-Type': 'application/json', 'path': 'v1/chat/completions'}
-    # r = requests.post(url=URL, json=body, headers=headers)
-    #return response.content.decode()
-    return response.json()["choices"][0]["message"]["content"]
+        completion = client.chat.completions.create(
+            model="deepseek-chat",
+            messages=[
+                {
+                    "role": "user",
+                    "content": prompt,
+                },
+            ]
+        )
+
+        return completion.choices[0].message.content
+
+
+    elif (llm == "qwen"):
+        client = OpenAI(
+            # 若没有配置环境变量，请用百炼API Key将下行替换为：api_key="sk-xxx",
+            api_key=os.getenv("QWEN_API_KEY"),  # 如何获取API Key：https://help.aliyun.com/zh/model-studio/developer-reference/get-api-key
+            base_url="https://dashscope.aliyuncs.com/compatible-mode/v1"
+        )
+        completion = client.chat.completions.create(
+            model="qwen2.5-vl-32b-instruct",
+            messages=[
+                {
+                    "role": "user",
+                    "content": prompt,
+                },
+            ]
+        )
+
+        return completion.choices[0].message.content
+
+    else:
+        client = OpenAI()
+        completion = client.chat.completions.create(
+            model="gpt-3.5-turbo",
+            messages=[
+                {
+                    "role": "user",
+                    "content": prompt,
+                },
+            ]
+        )
+
+        return completion.choices[0].message.content
+
+
+
+
+    # api_key = os.environ.get("OPENAI_API_KEY")
+    # headers = {"Content-Type": "application/json", "Authorization": f"Bearer {api_key}"}
+
+    # payload = {"model": "gpt-3.5-turbo", "messages": [{"role": "user", "content": prompt}]}
+
+    # response = requests.post("https://api.openai.com/v1/chat/completions", headers=headers, json=payload)
+
+    # # URL = os.environ['OPENAI_API_KEY']  # NOTE: replace with your own GPT API
+    # # body = {"model": "gpt-3.5-turbo", "messages": [{"role": "user", "content": prompt}], "stream": True}
+    # # headers = {'Content-Type': 'application/json', 'path': 'v1/chat/completions'}
+    # # r = requests.post(url=URL, json=body, headers=headers)
+    # #return response.content.decode()
+    # return response.json()["choices"][0]["message"]["content"]
+
+
+
 
 
 def delete_old_views_from_new_state(old_state, new_state, without_id=True):
@@ -176,6 +237,7 @@ def extract_action(answer):
     llm_id = 'N/A'
     llm_action = 'tap'
     llm_input = "N/A"
+    answer = answer.replace("*", '')
     whether_finished_answer = re.findall("3\.((.|\n)*)4\.", answer, flags=re.S)[0][0]
     for e in ["Yes.", "Y.", "y.", "yes.", "is already finished"]:
         if e in whether_finished_answer:
