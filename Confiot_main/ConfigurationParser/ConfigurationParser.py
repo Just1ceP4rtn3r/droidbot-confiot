@@ -458,8 +458,8 @@ class ConfigurationParser:
         for page in page_worklist:
             if not os.path.exists(LLMResult_dir + f"/{page}/Configurations.json"):
                 continue
-            if page in completed_pages:
-                continue
+            # if page in completed_pages:
+            #     continue
             with open(LLMResult_dir + f"/{page}/Configurations.json") as f:
                 tasks = json.load(f)
                 # 可能包含来自child pages的tasks
@@ -485,7 +485,7 @@ class ConfigurationParser:
                         ):
                             continue
                         configurations[page_id][task_content] = related_operations
-                        completed_pages.add(page_id)
+                        # completed_pages.add(page_id)
                     except:
                         print(
                             "[ERR]: wrong structure of the configuration file ",
@@ -506,9 +506,51 @@ class ConfigurationParser:
                     }
                 )
 
-        config_json = filter_configurations(config_json)
-        with open(LLMResult_dir + "/ConfigurationsSummary.json", "w") as f:
+        # config_json = filter_configurations(config_json)
+
+        from pydantic import BaseModel
+        from openai import OpenAI
+
+        class ConfigurationFormat(BaseModel):
+            task_id: int
+            page_id: str
+            task_content: str
+            related_operations: list[int]
+
+        class response(BaseModel):
+            configuration_tasks: list[ConfigurationFormat]
+
+        client = OpenAI()
+        completion = client.beta.chat.completions.parse(
+            model="gpt-4o",
+            messages=[
+                {"role": "system", "content": "Below are some JSON-formatted testing tasks for an IoT app. Please deduplicate the tasks within the same page ID based on their semantics. That is, if two tasks perform the same operation (or configure the same resource) and only differ in their configuration options, keep only one and try to retain one that with richer details (e.g., 'configure the light state to off'). Finally, Remove tasks that only involve read semantic (not write to any resource): ['view', 'access', 'retrieve', 'obtain', 'read', 'inspect']. "},
+                {
+                    "role": "user",
+                    "content": json.dumps(config_json),
+                },
+            ],
+            response_format=response,
+        )
+
+        event = completion.choices[0].message.parsed
+        Configurations = []
+
+        for r in event.configuration_tasks:
+            task =  {
+                        "Id": len(Configurations),
+                        "Page ID": r.page_id,
+                        "Tasks": r.task_content,
+                        "Related operations": r.related_operations,
+                    }
+            Configurations.append(task)
+
+
+        with open(LLMResult_dir + "/ConfigurationsComplete.json", "w") as f:
             f.write(json.dumps(config_json))
+
+        with open(LLMResult_dir + "/ConfigurationsSummary.json", "w") as f:
+            f.write(json.dumps(Configurations))
 
     # decrpted
     # def query_LLM_for_configuration_mapping(self, outputdir):

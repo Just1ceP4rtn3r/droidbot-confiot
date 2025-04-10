@@ -408,6 +408,14 @@ class PageExplorer:
                     print(cannot_reach_pages)
                     break
 
+                current_packetname = self.Agent.device.get_current_activity_stack()[0].split("/")[0]
+                print(current_packetname, self.Agent.app.get_package_name)
+                if self.Agent.app.get_package_name() != current_packetname:
+                    # PAGES.remove(_page)
+                    cannot_reach_pages = PAGES
+                    print(cannot_reach_pages)
+                    break
+
                 worklist["Back2LastPage"] = "BACK"
 
             print(f"[DBG]: worklist in current page {current_page}: ", worklist.keys())
