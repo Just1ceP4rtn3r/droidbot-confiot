@@ -329,29 +329,19 @@ class PageExplorer:
                     if _page in PAGES:
                         PAGES.remove(_page)
 
+                # print(f"[DBG]: Last action is : {last_event_str}, Current page is: {_page}")
                 # back无法跳转出此页面
                 if last_event_str == "BACK" and _page == current_page:
                     self.Agent.device_stop_app()
                     self.Agent.device.start_app(self.Agent.app)
                     time.sleep(5)
-                    # if current_page in self.page_navigation_graph.edges_dict:
-                    #     child_pages = list(
-                    #         self.page_navigation_graph.edges_dict[current_page].keys()
-                    #     )
-                    #     if not child_pages:
-                    #         cannot_reach_pages = PAGES
-                    #         print(cannot_reach_pages)
-                    #         break
-                    #     # Random choose a child page
-                    #     import random
+                    last_event_str = "RESTART"
+                    continue
 
-                    #     random.shuffle(child_pages)
-
-                    #     worklist[child_pages[0]] = (
-                    #         self.page_navigation_graph.edges_dict[current_page][
-                    #             child_pages[0]
-                    #         ]
-                    #     )
+                if last_event_str == "RESTART" and _page == current_page:
+                    cannot_reach_pages = PAGES
+                    print(cannot_reach_pages)
+                    break
 
                 if _page != current_page:
                     if last_event_str != "BACK":
@@ -409,7 +399,7 @@ class PageExplorer:
                     break
 
                 current_packetname = self.Agent.device.get_current_activity_stack()[0].split("/")[0]
-                print(current_packetname, self.Agent.app.get_package_name)
+                print(current_packetname, self.Agent.app.get_package_name())
                 if self.Agent.app.get_package_name() != current_packetname:
                     # PAGES.remove(_page)
                     cannot_reach_pages = PAGES
