@@ -248,9 +248,9 @@ class UtgBasedInputPolicy(InputPolicy):
 
         if event is None:
             old_state, event = self.generate_event_based_on_utg(input_manager)
-            import time
+            # import time
 
-            time.sleep(3)
+            # time.sleep(3)
         # update last events for humanoid
         if self.device.humanoid is not None:
             self.humanoid_events = self.humanoid_events + [event]
@@ -1147,7 +1147,7 @@ class TaskPolicy(UtgBasedInputPolicy):
         state_str,
         view_text=None,
         thought_history=None,
-        use_thoughts=False,
+        use_thoughts=True,
     ):
         if self.use_memory:
             # if isinstance(state_str, list):
@@ -1177,16 +1177,16 @@ class TaskPolicy(UtgBasedInputPolicy):
             history_with_thought = []
             for idx in range(len(action_history)):
                 history_with_thought.append(
-                    action_history[idx] + " Reason: " + thought_history[idx]
+                    action_history[idx] + "\n    Reason: " + thought_history[idx]
                 )
         else:
             history_with_thought = action_history
 
-        introduction = """You are a smartphone assistant to help users complete tasks by interacting with mobile apps.Given a task, the previous UI actions, and the content of current UI state, your job is to decide whether the task is already finished by the previous actions, and if not, decide which UI element in current UI state should be interacted. Please note that the same action should not be performed consecutively more than three times on the same page. Notably, when you encounter an operation that needs to input some text/id/number, or there are multiple options that are uncertain, please feel free to enter any legal content yourself, or choose a random certain value, and your answer should also be certain. Never use "or" in your answer."""
-        task_prompt = "Task: " + self.task
+        introduction = """You are a smartphone assistant to help users complete tasks by interacting with mobile apps.Given a task, the previous UI actions, and the content of current UI state, your job is to decide whether the task is already finished by the previous actions, and if not, decide which UI element in current UI state should be interacted. 1. If the given task content is vague or may involve multiple configuration tasks (e.g., 'Configure settings in the page'), please analyze the current page information and autonomously break down the task into more specific subtasks. 2. Notably, when you encounter an operation that needs to input some text/id/number, or there are multiple options that are uncertain, please feel free to enter any legal content yourself, or choose a random certain value, and your answer should also be certain. Never use "or" in your answer. 3. **Please note that the same action should not be performed consecutively more than three times on the same state.**"""
+        task_prompt = "Task (also see detailed task and subtasks in Previous UI actions): " + self.task
         history_prompt = "Previous UI actions: \n" + "\n".join(history_with_thought)
         full_state_prompt = "Current UI state: \n" + state_prompt
-        request_prompt = """Your answer should always use the following format:1. Completing this task on a smartphone usually involves these steps: <?>.\n2. Analyses of the relations between the task and the previous UI actions and current UI state: <?>.\n3. Based on the previous actions, is the task already finished? <Y/N>. The next step should be <?/None>.\n4. Can the task be proceeded with the current UI state? <Y/N>. Fill in the blanks about the next one interaction: - id=<id number> - action=<tap/input> - input text=<text or N/A>"""
+        request_prompt = """Your answer should always use the following format:1. What task/subtasks you need to complete and completing this tasks on a smartphone usually involves these steps: <?>.\n2. Analyses of the relations between the task and the previous UI actions and current UI state: <?>.\n3. Based on the previous actions, is the task already finished? <Y/N>. The next step should be (If this step has been performed more than 3 times in the same state in previous rounds, reorganize the response by selecting an alternative action.) <?/None>.\n4. Can the task be proceeded with the current UI state? <Y/N>. Fill in the blanks about the next one interaction: - id=<id number> - action=<tap/input> - input text=<text or N/A>"""
         prompt = (
             introduction
             + "\n"
@@ -1288,16 +1288,26 @@ class TaskPolicy(UtgBasedInputPolicy):
         )  # str(str(time.time()).replace('.', ''))
         idx, action_type, input_text = tools.extract_action(response)
 
+        if(idx == -1):
+            return FINISHED, None, None, None
+
         selected_action = candidate_actions[idx]
 
         selected_view_description = tools.get_item_properties_from_id(
             ui_state_desc=state_prompt, view_id=idx
         )
-        thought = ""  # tools.get_thought(response)
+        try:
+            thought = re.findall("involves these steps: (.*)?\.\n", response)[0]  # tools.get_thought(response)
+        except:
+            thought = ""
 
         if isinstance(selected_action, SetTextEvent):
             if input_text != "N/A" and input_text != None:
                 selected_action.text = input_text.replace('"', "").replace(" ", "-")
+                try:
+                    int(selected_action.text)
+                except:
+                    selected_action.text += "a"
                 if (
                     len(selected_action.text) > 30
                 ):  # heuristically disable long text input

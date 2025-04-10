@@ -512,13 +512,13 @@ def query_config_resource_mapping(prompt):
         return response.text
 
 
-def query_config_operation_mapping_with_structured_output(system_prompt, user_prompt, llm="xxx"):
+def query_config_operation_mapping_with_structured_output(system_prompt, user_prompt, llm="qwen"):
     if (llm == "deepseek"):
         return query_config_operation_mapping_deepseek_v3(system_prompt, user_prompt)
-    
+
     if (llm == "gemini-2.5"):
         return query_config_operation_mapping_gemini_2_5(system_prompt, user_prompt)
-    
+
     if (llm == "claude-3.7"):
         return query_config_operation_mapping_claude_3_7(system_prompt, user_prompt)
 
@@ -644,7 +644,7 @@ def query_config_operation_mapping_deepseek_v3(system_prompt, user_prompt):
 
     client = OpenAI(
         # 若没有配置环境变量，请用百炼API Key将下行替换为：api_key="sk-xxx",
-        api_key=os.getenv("OPENAI_API_KEY"),  # 如何获取API Key：https://help.aliyun.com/zh/model-studio/developer-reference/get-api-key
+        api_key=os.getenv("DEEPSEEK_API_KEY"),  # 如何获取API Key：https://help.aliyun.com/zh/model-studio/developer-reference/get-api-key
         base_url="https://api.deepseek.com"
     )
 
@@ -688,7 +688,7 @@ def query_config_operation_mapping_qwen(system_prompt, user_prompt):
 
     client = OpenAI(
         # 若没有配置环境变量，请用百炼API Key将下行替换为：api_key="sk-xxx",
-        api_key=os.getenv("OPENAI_API_KEY"),  # 如何获取API Key：https://help.aliyun.com/zh/model-studio/developer-reference/get-api-key
+        api_key=os.getenv("QWEN_API_KEY"),  # 如何获取API Key：https://help.aliyun.com/zh/model-studio/developer-reference/get-api-key
         base_url="https://dashscope.aliyuncs.com/compatible-mode/v1"
     )
 
