@@ -502,7 +502,10 @@ class PageExplorer:
                 else:
                     # [TODO]: 如果是一个新的page，或跳转到别的page了（page navigation存在问题）
                     print("[ERR]: Failed to navigate to page ", page)
-                    return None
+                    self.Agent.device_get_UIElement(
+                        store_path=outputdir, store_file=f"{page}.xml"
+                    )
+                    complete_pages.append(page)
 
             candidate_operations = steps[page]
             chosen_operation = candidate_operations[0]
