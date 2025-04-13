@@ -212,7 +212,17 @@ class PageExplorer:
                 if screenshot and os.path.exists(screenshot):
                     import shutil
 
-                    shutil.copy(screenshot, settings.Pages + f"/{page_name}.jpg")
+                    state_file = screenshot.split("screen")[0] + "state" + screenshot.split("screen")[-1].split(".")[0] + ".json"
+
+                    if os.path.exists(state_file):
+                        with open(state_file, "r") as f:
+                            state_info = json.load(f)
+                            package_name = state_info["foreground_activity"].split("/")[0]
+                            if package_name == self.Agent.app.get_package_name():
+                                shutil.copy(screenshot, settings.Pages + f"/{page_name}.jpg")
+                                shutil.copy(state_file, settings.Pages + f"/{page_name}.json")
+                            else:
+                                self.pages.pop(page_name)
 
             else:
                 # 将state加入最相似的page
@@ -278,6 +288,31 @@ class PageExplorer:
         self.page_navigation_graph.set_node_level()
         UITree.draw(self.page_navigation_graph, settings.Confiot_output)
 
+    def reorder_child_pages(self, current_page, child_pages):
+        current_page_json = settings.Pages + f"/{current_page}.json"
+        new_child_pages = []
+        new_child_pages_same_activity = []
+        if not os.path.exists(current_page_json):
+            print(f"[ERR]: {current_page_json} not exists!")
+            return 0
+        with open(current_page_json, "r") as f:
+            page_info = json.load(f)
+            current_page_activity = page_info["foreground_activity"]
+        for page in child_pages:
+            page_json = settings.Pages + f"/{page}.json"
+            if not os.path.exists(page_json):
+                print(f"[ERR]: {page_json} not exists!")
+                continue
+            with open(page_json, "r") as f:
+                page_info = json.load(f)
+                page_activity = page_info["foreground_activity"]
+                if current_page_activity != page_activity:
+                    new_child_pages.append(page)
+                else:
+                    new_child_pages_same_activity.append(page)
+        
+        return new_child_pages + new_child_pages_same_activity
+
     # step-3: 遍历所有page，并获取snapshot
     # 贪心
     def device_page_replay(self, outputdir):
@@ -307,7 +342,13 @@ class PageExplorer:
         last_event_str = ""
         PAGES = list(self.pages.keys())
         is_new_page = False
+        child_pages_visited = []
+
         while PAGES:
+            if "launcher3" in self.Agent.device.get_top_activity_name():
+                self.Agent.device.start_app(self.Agent.app)
+                time.sleep(3)
+            print("[DBG]: PAGES: ", PAGES)
             worklist = {}
             self.Agent.device_get_UIElement(store_path=outputdir, store_file="tmp.xml")
 
@@ -379,15 +420,21 @@ class PageExplorer:
                 is_new_page = True
                 if PAGES:
                     worklist["Back2LastPage"] = "BACK"
+                    worklist["Back2LastPage2"] = "BACK"
 
             if not is_new_page:
                 if current_page in self.page_navigation_graph.edges_dict:
                     child_pages = list(
                         self.page_navigation_graph.edges_dict[current_page].keys()
                     )
+                    print(
+                        "[DBG]: child pages of current page: ", child_pages)
+                    
+                    child_pages = self.reorder_child_pages(current_page, child_pages)
+                    print("[DBG]: reordered child pages: ", child_pages)
                     # 过滤已经遍历过
                     for page in child_pages:
-                        if page in PAGES and page != current_page:
+                        if page not in child_pages_visited and page != current_page:
                             worklist[page] = self.page_navigation_graph.edges_dict[
                                 current_page
                             ][page]
@@ -395,22 +442,26 @@ class PageExplorer:
                 # 如果back到start_node, 并且所有child page都遍历完了，那么剩余的page大概率没有路径到达
                 if current_page == home_page and len(worklist) == 0:
                     cannot_reach_pages = PAGES
-                    print(cannot_reach_pages)
+                    print("[DBG]: cannot reach pages: ", cannot_reach_pages)
                     break
 
-                current_packetname = self.Agent.device.get_current_activity_stack()[0].split("/")[0]
-                print(current_packetname, self.Agent.app.get_package_name())
-                if self.Agent.app.get_package_name() != current_packetname:
-                    # PAGES.remove(_page)
-                    cannot_reach_pages = PAGES
-                    print(cannot_reach_pages)
-                    break
+                # current_packetname = self.Agent.device.get_current_activity_stack()[0].split("/")[0]
+                # if self.Agent.app.get_package_name() != current_packetname:
+                #     # print("[DBG]: package name", self.Agent.app.get_package_name(), current_packetname)
+                #     # # PAGES.remove(_page)
+                #     # cannot_reach_pages = PAGES
+                #     # print("[DBG]: cannot reach pages: ", cannot_reach_pages)
+                #     continue
 
                 worklist["Back2LastPage"] = "BACK"
 
             print(f"[DBG]: worklist in current page {current_page}: ", worklist.keys())
             target = list(worklist.keys())[0]
             edges = worklist[target]
+            child_pages_visited.append(target)
+
+            print("[DBG]: target page: ", target)
+
 
             view = None
             event = None
@@ -433,6 +484,7 @@ class PageExplorer:
 
             last_event_str = event_str
             wait_time = 3
+            print("[DBG]: Current page: ", current_page)
             self.device_send_event(event, event_str, wait_time)
             if edges != "BACK":
                 current_page = target
@@ -481,7 +533,7 @@ class PageExplorer:
     ):
         event_steps = []
         self.Agent.device_stop_app(autodroid=autodroid)
-        # self.Agent.device.start_app(self.Agent.app)
+        self.Agent.device.start_app(self.Agent.app)
         time.sleep(2)
 
         # 在当前page，需要做的操作
@@ -500,6 +552,7 @@ class PageExplorer:
                     )
                     complete_pages.append(page)
                 else:
+                    print(current_page, page)
                     # [TODO]: 如果是一个新的page，或跳转到别的page了（page navigation存在问题）
                     print("[ERR]: Failed to navigate to page ", page)
                     self.Agent.device_get_UIElement(

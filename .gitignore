@@ -67,3 +67,5 @@ Gemfile.lock
 documents
 temp
 venv
+Confiot_main/settings.py
+Confiot_main/test.py

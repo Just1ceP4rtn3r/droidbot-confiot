@@ -512,7 +512,7 @@ def query_config_resource_mapping(prompt):
         return response.text
 
 
-def query_config_operation_mapping_with_structured_output(system_prompt, user_prompt, llm="qwen"):
+def query_config_operation_mapping_with_structured_output(system_prompt, user_prompt, llm="gpt"):
     if (llm == "deepseek"):
         return query_config_operation_mapping_deepseek_v3(system_prompt, user_prompt)
 
