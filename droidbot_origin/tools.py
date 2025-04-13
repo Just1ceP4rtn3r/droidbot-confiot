@@ -99,7 +99,7 @@ def query_gpt(prompt, llm="xxx"):
     else:
         client = OpenAI()
         completion = client.chat.completions.create(
-            model="gpt-3.5-turbo",
+            model="gpt-4o",
             messages=[
                 {
                     "role": "user",
@@ -237,9 +237,9 @@ def extract_action(answer):
     llm_id = 'N/A'
     llm_action = 'tap'
     llm_input = "N/A"
-    answer = answer.replace("*", '')
+    answer = answer.replace("*", '').replace("<", '').replace(">", '')
     whether_finished_answer = re.findall("3\.((.|\n)*)4\.", answer, flags=re.S)[0][0]
-    for e in ["Yes.", "Y.", "y.", "yes.", "is already finished"]:
+    for e in ["Yes.", "Y. ", "y. ", "yes.", "is already finished"]:
         if e in whether_finished_answer:
             llm_id = -1
             llm_action = "N/A"

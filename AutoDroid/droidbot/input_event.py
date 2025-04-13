@@ -245,6 +245,9 @@ class EventLog(object):
         from Confiot_main.globalvars import GlobalVars
         from Confiot_main.settings import settings
 
+        if not GlobalVars.event_dict_steps:
+            GlobalVars.event_dict_steps = []
+
         event_dict = self.event.to_dict()
         GlobalVars.event_dict_steps.append(event_dict)
 
