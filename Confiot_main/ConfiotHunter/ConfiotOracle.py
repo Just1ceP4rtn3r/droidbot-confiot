@@ -209,7 +209,7 @@ class ConfiotOracle:
                         continue
         return texts
 
-    def GetValueGPT(self, snapshot_change, privacy_texts, llm="deepseek"):
+    def GetValueGPT(self, snapshot_change, privacy_texts, llm="xxx"):
         from pydantic import BaseModel
         from openai import OpenAI
         # api_key = os.environ.get("OPENAI_API_KEY")
