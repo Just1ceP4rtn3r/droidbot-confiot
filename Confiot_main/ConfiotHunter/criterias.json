@@ -1,0 +1,32 @@
+[
+    {
+        "Id": "1",
+        "Role": "Host, Guest",
+        "Capabilities": "Should be able to view the list of all current users"
+    },
+    {
+        "Id": "2",
+        "Role": "Guest",
+        "Capabilities": "Should not have any capability after revocation"
+    },
+    {
+        "Id": "3",
+        "Role": "Guest",
+        "Capabilities": "Should not modify WiFi password"
+    },
+    {
+        "Id": "4",
+        "Role": "Guest",
+        "Capabilities": "Should not delete or add devices to the home"
+    },
+    {
+        "Id": "5",
+        "Role": "Host",
+        "Capabilities": "Should be able to delete logs"
+    },
+    {
+        "Id": "6",
+        "Role": "Guest",
+        "Capabilities": "Should be able to remove privacy data or delete logs/activities"
+    }
+]

@@ -15,10 +15,13 @@ Security Criteria: Specific rules that each role must adhere to (e.g., guests ca
 
 # Task
 
-Please perform a semantic comparison between the configurations capabilities of the Input role and the security criteria, one by one. If a security criterion prohibits Guests from having the ability to perform a specific configuration (e.g., changing the device password), but the Guests' configuration capabilities happen to include this ability, you need to report a violation of this criterion in specific format like:
+Please perform a semantic comparison between the configurations capabilities of the Input role and the security criteria, one by one. If a security criterion prohibits the Input role from having the ability to perform a specific configuration (e.g., changing the device password), but the Input role' configuration capabilities happen to include this ability, you need to report a violation of this criterion in specific format like:
         violated_criterion_id: str // the security criterion that is violated, set to "None" if no criteria is violated
         configuration_resource: str // the reported violation involves capabilities and criteria that reference the same configuration resource
         reason: str // the reason why the security criterion is violated, especially why the reported violation involves capabilities and criteria that reference the same configuration resource
+        Confidence_score: str // How confident you report this violation. The standard for this value should be: Start with an initial score of 1.0 for your guesses during this judging process. If any of your guesses in your judging reason are based on the information I provided, subtract 0.1 for each guess step. If your guesses rely primarily on your own experience and have little to do with my input, subtract 0.5 for each guessing step.
+        Guess_steps: [str]
+
 
 Please ensure that:
 The reported violation involves capabilities and criteria that reference the same configuration resource. For example, changing the password would involve the configuration resource 'password.'

@@ -209,7 +209,7 @@ class ConfiotOracle:
                         continue
         return texts
 
-    def GetValueGPT(self, snapshot_change, privacy_texts):
+    def GetValueGPT(self, snapshot_change, privacy_texts, llm="deepseek"):
         from pydantic import BaseModel
         from openai import OpenAI
         # api_key = os.environ.get("OPENAI_API_KEY")
@@ -217,49 +217,115 @@ class ConfiotOracle:
         #     "Content-Type": "application/json",
         #     "Authorization": f"Bearer {api_key}",
         # }
-        class privacyFormat(BaseModel):
-            contains_privacy_data: bool
-            privacy_data: list[str]
 
-        class response(BaseModel):
-            privacy: privacyFormat
+        if(llm == "deepseek"):
+            client = OpenAI(
+                # 若没有配置环境变量，请用百炼API Key将下行替换为：api_key="sk-xxx",
+                api_key=os.getenv("DEEPSEEK_API_KEY"),  # 如何获取API Key：https://help.aliyun.com/zh/model-studio/developer-reference/get-api-key
+                base_url="https://api.deepseek.com"
+            )
 
-        client = OpenAI()
-        # client.api_key = api_key
-        completion = client.beta.chat.completions.parse(
-            model="gpt-4o",
-            messages=[
-                {
-                    "role": "system",
-                    "content": "You are an privacy assistant tasked with parsing texts that extracted from IoT companion mobile apps. For provided privacy related texts, please identify corresponding privacy data in given list of texts. Notably, if you think the provided privacy text is not related to privacy, please ignore it, You will be provided with several examples containing data types and related values. Then given some texts containing data types, please identify related values. If you do not find any privacy data, return 'contains_privacy_data: 0, privacy_data: \"\"'. Else, return 'contains_privacy_data: 1, privacy_data: \"some data\"'.",
-                },
-                {
-                    "role": "user",
-                    "content": f"Here are some possible inputs. Evaluate the following texts:  ['my phone number is +1-123-456-7890', 'guest\'s email is abc@test.com', 'user home address: 1234 Main St, Springfield, IL 62701'm 'time for bed is 12:00 AM']. The privacy words in the texts are: ['phone number', 'email', 'address', 'time'].",
-                },
-                {   "role": "assistant",
-                    "content": "contains_privacy_data: 1, privacy_data: [\"+1-123-456-7890\", \"abc@test.com\", \"1234 Main St, Springfield, IL 62701\", \"12:00 AM\"]",
-                },
-                {
-                    "role": "user",
-                    "content": f"Evaluate the following texts: {snapshot_change}. The privacy words in the texts are: {privacy_texts}.",
-                },
-            ],
-            response_format=response,
-            # max_tokens=500,
-        )
 
-        # response = requests.post(
-        #     "https://api.openai.com/v1/chat/completions", headers=headers, json=payload
-        # )
+            completion = client.chat.completions.create(
+                model="deepseek-chat",  # 此处以 deepseek-r1 为例，可按需更换模型名称。
+                messages=[
+                    {
+                        "role": "system",
+                        "content": "You are an privacy assistant tasked with parsing texts that extracted from IoT companion mobile apps. For provided privacy related texts, please identify corresponding privacy data in given list of texts. Notably, if you think the provided privacy text is not related to privacy, please ignore it, You will be provided with several examples containing data types and related values. Then given some texts containing data types, please identify related values. If you do not find any privacy data, return 'contains_privacy_data: 0, privacy_data: \"\"'. Else, return 'contains_privacy_data: 1, privacy_data: \"some data\"'.",
+                    },
+                    {
+                        "role": "user",
+                        "content": f"Here are some possible inputs. Evaluate the following texts:  ['my phone number is +1-123-456-7890', 'guest\'s email is abc@test.com', 'user home address: 1234 Main St, Springfield, IL 62701'm 'time for bed is 12:00 AM']. The privacy words in the texts are: ['phone number', 'email', 'address', 'time'].",
+                    },
+                    {   "role": "assistant",
+                        "content": "contains_privacy_data: 1, privacy_data: [\"+1-123-456-7890\", \"abc@test.com\", \"1234 Main St, Springfield, IL 62701\", \"12:00 AM\"]",
+                    },
+                    {
+                        "role": "user",
+                        "content": f"Evaluate the following texts: {snapshot_change}. The privacy words in the texts are: {privacy_texts}.",
+                    },
+                ],
+            )
 
-        result = completion.choices[0].message.parsed
-        # response.json().get("choices")[0].get("message").get("content")
-        # print(type(result.privacy))
-        if result.privacy.contains_privacy_data:
-            return result.privacy.privacy_data
+            print("[RESULT]: ", completion.choices[0].message.content)
+
+        elif(llm == "qwen"):
+            client = OpenAI(
+                # 若没有配置环境变量，请用百炼API Key将下行替换为：api_key="sk-xxx",
+                api_key=os.getenv("QWEN_API_KEY"),  # 如何获取API Key：https://help.aliyun.com/zh/model-studio/developer-reference/get-api-key
+                base_url="https://dashscope.aliyuncs.com/compatible-mode/v1"
+            )
+
+
+            completion = client.chat.completions.create(
+                model="qwen2.5-vl-32b-instruct",
+                messages=[
+                    {
+                        "role": "system",
+                        "content": "You are an privacy assistant tasked with parsing texts that extracted from IoT companion mobile apps. For provided privacy related texts, please identify corresponding privacy data in given list of texts. Notably, if you think the provided privacy text is not related to privacy, please ignore it, You will be provided with several examples containing data types and related values. Then given some texts containing data types, please identify related values. If you do not find any privacy data, return 'contains_privacy_data: 0, privacy_data: \"\"'. Else, return 'contains_privacy_data: 1, privacy_data: \"some data\"'.",
+                    },
+                    {
+                        "role": "user",
+                        "content": f"Here are some possible inputs. Evaluate the following texts:  ['my phone number is +1-123-456-7890', 'guest\'s email is abc@test.com', 'user home address: 1234 Main St, Springfield, IL 62701'm 'time for bed is 12:00 AM']. The privacy words in the texts are: ['phone number', 'email', 'address', 'time'].",
+                    },
+                    {   "role": "assistant",
+                        "content": "contains_privacy_data: 1, privacy_data: [\"+1-123-456-7890\", \"abc@test.com\", \"1234 Main St, Springfield, IL 62701\", \"12:00 AM\"]",
+                    },
+                    {
+                        "role": "user",
+                        "content": f"Evaluate the following texts: {snapshot_change}. The privacy words in the texts are: {privacy_texts}.",
+                    },
+                ],
+            )
+
+            print("[RESULT]: ", completion.choices[0].message.content)
+
         else:
-            return ""
+
+
+            class privacyFormat(BaseModel):
+                contains_privacy_data: bool
+                privacy_data: list[str]
+
+            class response(BaseModel):
+                privacy: privacyFormat
+
+            client = OpenAI()
+            # client.api_key = api_key
+            completion = client.beta.chat.completions.parse(
+                model="gpt-4o",
+                messages=[
+                    {
+                        "role": "system",
+                        "content": "You are an privacy assistant tasked with parsing texts that extracted from IoT companion mobile apps. For provided privacy related texts, please identify corresponding privacy data in given list of texts. Notably, if you think the provided privacy text is not related to privacy, please ignore it, You will be provided with several examples containing data types and related values. Then given some texts containing data types, please identify related values. If you do not find any privacy data, return 'contains_privacy_data: 0, privacy_data: \"\"'. Else, return 'contains_privacy_data: 1, privacy_data: \"some data\"'.",
+                    },
+                    {
+                        "role": "user",
+                        "content": f"Here are some possible inputs. Evaluate the following texts:  ['my phone number is +1-123-456-7890', 'guest\'s email is abc@test.com', 'user home address: 1234 Main St, Springfield, IL 62701'm 'time for bed is 12:00 AM']. The privacy words in the texts are: ['phone number', 'email', 'address', 'time'].",
+                    },
+                    {   "role": "assistant",
+                        "content": "contains_privacy_data: 1, privacy_data: [\"+1-123-456-7890\", \"abc@test.com\", \"1234 Main St, Springfield, IL 62701\", \"12:00 AM\"]",
+                    },
+                    {
+                        "role": "user",
+                        "content": f"Evaluate the following texts: {snapshot_change}. The privacy words in the texts are: {privacy_texts}.",
+                    },
+                ],
+                response_format=response,
+                # max_tokens=500,
+            )
+
+            # response = requests.post(
+            #     "https://api.openai.com/v1/chat/completions", headers=headers, json=payload
+            # )
+
+            result = completion.choices[0].message.parsed
+            # response.json().get("choices")[0].get("message").get("content")
+            # print(type(result.privacy))
+            if result.privacy.contains_privacy_data:
+                return result.privacy.privacy_data
+            else:
+                return ""
         api_key = os.environ.get("OPENAI_API_KEY")
         headers = {
             "Content-Type": "application/json",
@@ -476,9 +542,10 @@ class ConfiotOracle:
         privacy_data = self.GetValueGPT(snapshot_privacy_add + snapshot_privacy_delete, privacy_texts)
 
         # 4. Given the privacy data, find the belonging
-        belongings = self.GetBelongingGPT(
-            privacy_data, snapshot_privacy_add + snapshot_privacy_delete, [], id
-        )
+        belongings = None
+        # belongings = self.GetBelongingGPT(
+        #     privacy_data, snapshot_privacy_add + snapshot_privacy_delete, [], id
+        # )
 
         return privacy_data, belongings
 
@@ -635,12 +702,23 @@ class ConfigurationConfiotOracle(ConfiotOracle):
 
     def LoadCriterias(
         self,
+        role="all",
         Configuration_criteria=os.path.dirname(os.path.abspath(__file__))
         + "/ConfigurationCriteria.json",
     ):
         # Load the data from the PKL file
+        criteria = {"Criteria":[]}
+        _cri = {}
         with open(Configuration_criteria, "r") as f:
-            criteria = json.load(f)
+            _cri = json.load(f)
+
+        if(role != "all"):
+            for c in _cri["Criteria"]:
+                if role in c["Role"]:
+                    criteria["Criteria"].append(c)
+        else:
+            criteria = _cri
+
         return criteria
 
     def LoadUIChanges(self, last_task, task):
@@ -753,6 +831,8 @@ class ConfigurationConfiotOracle(ConfiotOracle):
         AfterDelegation_user_template = ""
         DuringUsage_system_template = ""
         DuringUsage_user_template = ""
+        AfterRevocation_system_template = ""
+        AfterRevocation_user_template = ""
         PageUIChange_template = ""
         BASE_DIR = os.path.dirname(os.path.abspath(__file__))
         with open(
@@ -763,6 +843,16 @@ class ConfigurationConfiotOracle(ConfiotOracle):
             BASE_DIR + "/../prompt/IdentifyCapabilityConfiot/AfterDelegation_user.txt"
         ) as f:
             AfterDelegation_user_template = f.read()
+
+        with open(
+            BASE_DIR + "/../prompt/IdentifyCapabilityConfiot/AfterRevocation_system.txt"
+        ) as f:
+            AfterRevocation_system_template = f.read()
+        with open(
+            BASE_DIR + "/../prompt/IdentifyCapabilityConfiot/AfterRevocation_user.txt"
+        ) as f:
+            AfterRevocation_user_template = f.read()
+
 
         with open(
             BASE_DIR + "/../prompt/IdentifyCapabilityConfiot/DuringUsage_system.txt"
@@ -833,24 +923,24 @@ class ConfigurationConfiotOracle(ConfiotOracle):
                         if uichange.add_or_delete == SpecificUIChange.ADD:
                             operation_changes["Add"].append(uichange.operation)
                             operation_changes["Add_str"].append(
-                                uichange.operation["op_str"]
+                                uichange.operation["op_str"] if "op_str" in uichange.operation else str(uichange.operation["op_text"])
                             )
                         else:
                             operation_changes["Delete"].append(uichange.operation)
                             operation_changes["Delete_str"].append(
-                                uichange.operation["op_str"]
+                                uichange.operation["op_str"] if "op_str" in uichange.operation else str(uichange.operation["op_text"])
                             )
 
                 _change_details_str = ""
                 if operation_changes["Add"]:
                     _change_details_str += (
-                        "* Add Operations:\n"
+                        "* Add text/Operations:\n"
                         + "\n".join(operation_changes["Add_str"])
                         + "\n"
                     )
                 if operation_changes["Delete"]:
                     _change_details_str += (
-                        "* Delete Operations:\n"
+                        "* Delete text/Operations:\n"
                         + "\n".join(operation_changes["Delete_str"])
                         + "\n"
                     )
@@ -862,18 +952,122 @@ class ConfigurationConfiotOracle(ConfiotOracle):
                 "{{UICHANGE}}", "\n".join(page_ui_changes_str)
             )
 
+        elif TestingPhase == Phase.AfterRevocation:
+            system_prompt = AfterRevocation_system_template
+            user_prompt = AfterRevocation_user_template
+            page_ui_changes_str = []
+
+            if len(UIChanges) == 0:
+                user_prompt = user_prompt.replace(
+                    "{{UICHANGE}}", "No UI changes!\n"
+                )
+            else:
+                for changed_page in UIChanges:
+                    _prompt = PageUIChange_template
+
+                    if not os.path.exists(
+                        settings.LLMConfiguration_output + f"/{changed_page}"
+                    ):
+                        continue
+                    with open(
+                        settings.LLMConfiguration_output + f"/{changed_page}/PageInfo.txt",
+                        "r",
+                    ) as f:
+                        page_info = f.read()
+
+                    _prompt = _prompt.replace("{{PAGEINFO}}", page_info)
+
+                    operation_changes = {
+                        "Add": [],
+                        "Delete": [],
+                        "Add_str": [],
+                        "Delete_str": [],
+                    }
+
+                    for uichange in UIChanges[changed_page]:
+                        if isinstance(uichange, OperationChange):
+                            if uichange.add_or_delete == SpecificUIChange.ADD:
+                                operation_changes["Add"].append(uichange.operation)
+                                operation_changes["Add_str"].append(
+                                    uichange.operation["op_str"] if "op_str" in uichange.operation else str(uichange.operation["op_text"])
+                                )
+                            else:
+                                operation_changes["Delete"].append(uichange.operation)
+                                operation_changes["Delete_str"].append(
+                                    uichange.operation["op_str"] if "op_str" in uichange.operation else str(uichange.operation["op_text"])
+                                )
+
+                    _change_details_str = ""
+                    if operation_changes["Add"]:
+                        _change_details_str += (
+                            "* Add text/Operations:\n"
+                            + "\n".join(operation_changes["Add_str"])
+                            + "\n"
+                        )
+                    if operation_changes["Delete"]:
+                        _change_details_str += (
+                            "* Delete text/Operations:\n"
+                            + "\n".join(operation_changes["Delete_str"])
+                            + "\n"
+                        )
+
+                    _prompt = _prompt.replace("{{PAGEUICHANGE}}", _change_details_str)
+                    page_ui_changes_str.append(_prompt)
+
+                user_prompt = user_prompt.replace(
+                    "{{UICHANGE}}", "\n".join(page_ui_changes_str)
+                )
+
+            activiy = ""
+            if os.path.exists(settings.violation_output + "/Activities.txt"):
+                with open(settings.violation_output + "/Activities.txt", "r") as f:
+                    activiy = f.read()
+
+            user_prompt = user_prompt.replace(
+                "{{ACTIVITY}}", activiy
+            )
+
+
+
         res = query_Confiot_identification(
             system_prompt=system_prompt, user_prompt=user_prompt
         )
 
-        violations = []
-        for r in res.violations:
-            violation = {
-                "Violated criterion id": r.violated_criterion_id,
-                "configuration_resource": r.configuration_resource,
-                "Reason": r.reason,
-            }
-            violations.append(violation)
+        #  gpt-4o
+        try:
+            violations = []
+            for r in res.violations:
+                violation = {
+                    "Violated criterion id": r.violated_criterion_id,
+                    "configuration_resource": r.configuration_resource,
+                    "Reason": r.reason,
+                    "Confidence_score": r.Confidence_score,
+                    "Guess_steps": r.Guess_steps
+                }
+                violations.append(violation)
 
-        with open(outputdir + "/raw.txt", "w") as f:
-            f.write(system_prompt + user_prompt + "\n\n\n" + str(violations) + "\n")
+            with open(outputdir + "/raw.txt", "w") as f:
+                f.write(system_prompt + user_prompt + "\n\n\n" + str(violations) + "\n")
+
+
+            if not os.path.exists(settings.violation_output + "/Activities.txt"):
+                with open(settings.violation_output + "/Activities.txt", "w") as f:
+                    for v in res.resource_update:
+                        f.write(v + "\n")
+            else:
+                with open(settings.violation_output + "/Activities.txt", "a") as f:
+                    for v in res.resource_update:
+                        f.write(v + "\n")
+        except:
+            # deepseek or qwen
+            with open(outputdir + "/raw.txt", "w") as f:
+                f.write(system_prompt + user_prompt + "\n\n\n" + res + "\n")
+
+
+            if not os.path.exists(settings.violation_output + "/Activities.txt"):
+                with open(settings.violation_output + "/Activities.txt", "w") as f:
+                    f.write(res)
+            else:
+                with open(settings.violation_output + "/Activities.txt", "a") as f:
+                    f.write(res)
+

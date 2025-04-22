@@ -512,7 +512,7 @@ def query_config_resource_mapping(prompt):
         return response.text
 
 
-def query_config_operation_mapping_with_structured_output(system_prompt, user_prompt, llm="qwen"):
+def query_config_operation_mapping_with_structured_output(system_prompt, user_prompt, llm="xxx"):
     if (llm == "deepseek"):
         return query_config_operation_mapping_deepseek_v3(system_prompt, user_prompt)
 
@@ -722,34 +722,86 @@ def query_config_operation_mapping_qwen(system_prompt, user_prompt):
 
 
 
-def query_Confiot_identification(system_prompt, user_prompt):
+def query_Confiot_identification(system_prompt, user_prompt, llm="xxx"):
     from pydantic import BaseModel
     from openai import OpenAI
 
-    class ViolationFormat(BaseModel):
-        violated_criterion_id: str
-        configuration_resource: str
-        reason: str
+    if(llm == "deepseek"):
+        client = OpenAI(
+            # 若没有配置环境变量，请用百炼API Key将下行替换为：api_key="sk-xxx",
+            api_key=os.getenv("DEEPSEEK_API_KEY"),  # 如何获取API Key：https://help.aliyun.com/zh/model-studio/developer-reference/get-api-key
+            base_url="https://api.deepseek.com"
+        )
 
-    class response(BaseModel):
-        violations: list[ViolationFormat]
 
-    client = OpenAI()
-    completion = client.beta.chat.completions.parse(
-        model="gpt-4o",
-        messages=[
-            {"role": "system", "content": system_prompt},
-            {
-                "role": "user",
-                "content": user_prompt,
-            },
-        ],
-        response_format=response,
-    )
+        completion = client.chat.completions.create(
+            model="deepseek-chat",  # 此处以 deepseek-r1 为例，可按需更换模型名称。
+            messages=[
+                {
+                    "role": "system",
+                    "content": system_prompt,
+                },
+                {'role': 'user', 'content': user_prompt}
+            ]
+        )
 
-    event = completion.choices[0].message.parsed
+        try:
+            return completion.choices[0].message.content
+        except:
+            pass
 
-    return event
+    elif(llm == "qwen"):
+        client = OpenAI(
+            # 若没有配置环境变量，请用百炼API Key将下行替换为：api_key="sk-xxx",
+            api_key=os.getenv("QWEN_API_KEY"),  # 如何获取API Key：https://help.aliyun.com/zh/model-studio/developer-reference/get-api-key
+            base_url="https://dashscope.aliyuncs.com/compatible-mode/v1"
+        )
+
+
+        completion = client.chat.completions.create(
+            model="qwen2.5-vl-32b-instruct",
+            messages=[
+                {
+                    "role": "system",
+                    "content": system_prompt,
+                },
+                {'role': 'user', 'content': user_prompt}
+            ]
+        )
+
+        try:
+            return completion.choices[0].message.content
+        except:
+            pass
+
+    else:
+        class ViolationFormat(BaseModel):
+            violated_criterion_id: str
+            configuration_resource: str
+            reason: str
+            Confidence_score: str
+            Guess_steps: list[str]
+
+        class response(BaseModel):
+            violations: list[ViolationFormat]
+            resource_update: list[str]
+
+        client = OpenAI()
+        completion = client.beta.chat.completions.parse(
+            model="gpt-4o",
+            messages=[
+                {"role": "system", "content": system_prompt},
+                {
+                    "role": "user",
+                    "content": user_prompt,
+                },
+            ],
+            response_format=response,
+        )
+
+        event = completion.choices[0].message.parsed
+
+        return event
 
 
 def filter_configurations(Configurations):

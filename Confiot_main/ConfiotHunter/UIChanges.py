@@ -83,6 +83,14 @@ class UIChangeParser:
                 semantic_changes.append(
                     OperationChange(SpecificUIChange.DELETE, target_op)
                 )
+
+        for new_op in self.operations_new:
+            exist_in_old = self.find_op(new_op, self.operations_old)
+            if exist_in_old is None:
+                semantic_changes.append(
+                    OperationChange(SpecificUIChange.ADD, new_op)
+                )
+
         return semantic_changes
 
     # 1. 比较op_text

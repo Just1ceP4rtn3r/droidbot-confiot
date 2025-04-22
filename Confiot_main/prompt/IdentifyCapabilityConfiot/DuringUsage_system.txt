@@ -15,7 +15,16 @@ Security Criteria: Specific rules that each role must adhere to (e.g., guests ca
 
 # Task
 
-Please perform a semantic comparison between the UI changes and the security criteria, one by one. If a security criterion prohibits Guests from having the ability to perform a specific configuration (e.g., changing the device password), but the Guests' configuration capabilities happen to include this ability, you need to report a violation of this criterion in specific format like:
-        violated_criterion_id: str // the security criterion that is violated, set to "None" if no criteria is violated
-        configuration_resource: str // the reported violation involves capabilities and criteria that reference the same configuration resource
-        reason: str // the reason why the security criterion is violated, especially why the reported violation involves capabilities and criteria that reference the same configuration resource
+Please infer the effects of the executed configuration based on the APP GUI changes. For example, whether a scheduled task was created, Bluetooth was enabled, or the user gained certain capabilities, and describe these effects in a single sentence using natural language in the field "resource_update" of your response.
+
+More importantly, if the UI changes means some user capabilities change, such as the role can be able to view the device history, please perform a semantic comparison between the UI changes and the security criteria, one by one.
+If a security criterion prohibits Guests from having the ability to perform a specific configuration (e.g., changing the device password), but the Guests' configuration capabilities happen to include this ability, you need to report a violation of this criterion in specific format like:
+        {
+            resource_update: [str],
+            Violations:
+                [{
+                violated_criterion_id: str // the security criterion that is violated, set to "None" if no criteria is violated
+                configuration_resource: str // the reported violation involves capabilities and criteria that reference the same configuration resource
+                reason: str // the reason why the security criterion is violated, especially why the reported violation involves capabilities and criteria that reference the same configuration resource
+                }]
+        }
