@@ -309,7 +309,6 @@ def test_Configuration_parser():
 
     CP = ConfigurationParser(Agent)
 
-
     CP.query_LLM_for_configuration_mapping_based_on_page_graph(
         settings.LLMConfiguration_output
     )
@@ -443,6 +442,94 @@ def replay_task_based_on_file(task_id):
     Agent.device.disconnect()
 
 
+def test_replay_revoke(jsonfile):
+    from Confiot_main.utils.util import get_task_replay_steps
+    from Confiot_main.settings import settings
+    from AutoDroid.droidbot.input_event import IntentEvent as autoIntentEvent
+
+    def find_view_in_page(Agent, view):
+        found_view = None
+
+        if not view:
+            return None
+
+        current_state = Agent.device.get_current_state()
+        if current_state is None:
+            return None
+
+        views_in_state = current_state.views
+
+        candidates = []
+        for v in views_in_state:
+            if (
+                v["resource_id"] == view["resource_id"]
+                and v["class"] == view["class"]
+                and (
+                    not view["content_description"]
+                    or v["content_description"] == view["content_description"]
+                )
+                and (not view["text"] or v["text"] == view["text"])
+            ):
+                candidates.append(v)
+                if v["bounds"] == view["bounds"]:
+                    found_view = v
+                    return found_view
+
+        # 按照直线距离排序
+        view_center = [
+            (view["bounds"][1][0] - view["bounds"][0][0]) / 2,
+            (view["bounds"][1][1] - view["bounds"][0][1]) / 2,
+        ]
+        min_dist = 9999999
+        for v in candidates:
+            v_center = [
+                (v["bounds"][1][0] - v["bounds"][0][0]) / 2,
+                (v["bounds"][1][1] - v["bounds"][0][1]) / 2,
+            ]
+            dist = math.sqrt(
+                (view_center[0] - v_center[0]) ** 2
+                + (view_center[1] - v_center[1]) ** 2
+            )
+
+            if dist < min_dist:
+                min_dist = dist
+                found_view = v
+
+        if not found_view:
+            return None
+        return found_view
+
+    s = settings(
+        "192.168.2.207:5555",
+        "/root/documents/Output/Tuya/Tuya-2025-6-30/Tuya.apk",
+        r"/root/documents/Output/Tuya/Tuya-2025-6-30/guest/result",
+    )
+
+    event_dict_steps = []
+    with open(jsonfile, "r") as f:
+        records = json.load(f)
+        for record in records:
+            event_dict_steps.append(record)
+
+    Agent = Confiot()
+    Agent.device_connect()
+    Agent.device_stop_app()
+    Agent.device.start_app(Agent.app)
+
+    time.sleep(3)
+    for event_dict in event_dict_steps:
+        view = event_dict["view"]
+        event_dict["view"] = find_view_in_page(Agent, view)
+        event = InputEvent.from_dict(event_dict)
+        if not event:
+            event = autoIntentEvent.from_dict(event_dict)
+        print("[DBG]: Action: ", str(event_dict))
+        event.send(Agent.device)
+        time.sleep(3)
+
+    Agent.device.disconnect()
+
+
 def page_exploration(task_id):
     from Confiot_main.settings import settings
     from Confiot_main.ConfigurationParser.ConfigurationParser import ConfigurationParser
@@ -483,16 +570,15 @@ def test_privacy_data():
 
 if __name__ == "__main__":
     # test_Enumerate_pages()
+    test_replay_revoke("/tmp/test.json")
 
+    # s = settings(
+    #     "192.168.2.176:5555",
+    #     "/root/documents/Output/mihome/mihome-smartscale-CCS25-40min-droidbot-gpt-4o/mihome.apk",
+    #     r"/root/documents/Output/mihome/mihome-smartscale-CCS25-40min-droidbot-gpt-4o/host/result",
+    # )
 
-    s = settings(
-        "192.168.2.176:5555",
-        "/root/documents/Output/mihome/mihome-smartscale-CCS25-40min-droidbot-gpt-4o/mihome.apk",
-        r"/root/documents/Output/mihome/mihome-smartscale-CCS25-40min-droidbot-gpt-4o/host/result",
-    )
-
-    test_Configuration_parser()
-
+    # test_Configuration_parser()
 
     # Tasks = {}
     # with open(
@@ -503,11 +589,8 @@ if __name__ == "__main__":
     #     test_autodroid(task_id=t["Id"])
     #     input()
 
-
     # 获取目录下所有task_id, mihome/mihome-smartscale-12-27/host/result/Confiot/LLM_task_replay/Task-0.json
     # from Confiot_main.settings import settings
-
-
 
     # task_replay_steps_file = os.listdir(settings.autodroid_output)
     # task_ids = [
@@ -520,8 +603,6 @@ if __name__ == "__main__":
     #     for task_id in task_ids:
     #         replay_task_based_on_file(task_id=task_id)
     #         page_exploration(task_id=task_id)
-
-
 
     # test_privacy_data()
 

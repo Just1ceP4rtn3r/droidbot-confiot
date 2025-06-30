@@ -97,24 +97,29 @@ class Confiot:
         if not os.path.exists(settings.Feasibility_comparation_output):
             os.makedirs(settings.Feasibility_comparation_output)
 
-        self.parse_event()
-        self.parse_utg()
-        self.parse_state_json()
-        self.parse_conf_list()
+        try:
+            self.parse_event()
+            self.parse_utg()
+            self.parse_state_json()
+            self.parse_conf_list()
 
-        # 计算 "mihome/mihome-smartscale-12-27/host/result/states" 目录下第一张图片的分辨率大小,赋值给screen_xy
-        from PIL import Image
+            # 计算 "mihome/mihome-smartscale-12-27/host/result/states" 目录下第一张图片的分辨率大小,赋值给screen_xy
+            from PIL import Image
 
-        directory = settings.droid_output + "/states/"
-        screenshot_files = os.listdir(directory)
-        image_files = [
-            file for file in screenshot_files if file.endswith((".jpg", ".png"))
-        ]
-        if image_files:
-            first_image_path = os.path.join(directory, image_files[0])
-            with Image.open(first_image_path) as img:
-                settings.screen_xy = img.size  # (width, height)
-                settings.LabelResoluation_threshold = 80 * settings.screen_xy[0] // 1080
+            directory = settings.droid_output + "/states/"
+            screenshot_files = os.listdir(directory)
+            image_files = [
+                file for file in screenshot_files if file.endswith((".jpg", ".png"))
+            ]
+            if image_files:
+                first_image_path = os.path.join(directory, image_files[0])
+                with Image.open(first_image_path) as img:
+                    settings.screen_xy = img.size  # (width, height)
+                    settings.LabelResoluation_threshold = (
+                        80 * settings.screen_xy[0] // 1080
+                    )
+        except:
+            pass
 
     def device_connect(self):
         self.device = Device(

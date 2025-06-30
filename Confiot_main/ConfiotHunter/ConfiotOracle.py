@@ -91,12 +91,8 @@ class ConfiotOracle:
                 + ".html",
             )
 
-            if not os.path.exists(
-                settings.Static_comparation_output
-            ):
-                os.mkdir(
-                    settings.Static_comparation_output
-                )
+            if not os.path.exists(settings.Static_comparation_output):
+                os.mkdir(settings.Static_comparation_output)
 
             result = self.ParseUIChanges(file[0], file[1], output)
             if result:
@@ -212,19 +208,21 @@ class ConfiotOracle:
     def GetValueGPT(self, snapshot_change, privacy_texts, llm="xxx"):
         from pydantic import BaseModel
         from openai import OpenAI
+
         # api_key = os.environ.get("OPENAI_API_KEY")
         # headers = {
         #     "Content-Type": "application/json",
         #     "Authorization": f"Bearer {api_key}",
         # }
 
-        if(llm == "deepseek"):
+        if llm == "deepseek":
             client = OpenAI(
                 # 若没有配置环境变量，请用百炼API Key将下行替换为：api_key="sk-xxx",
-                api_key=os.getenv("DEEPSEEK_API_KEY"),  # 如何获取API Key：https://help.aliyun.com/zh/model-studio/developer-reference/get-api-key
-                base_url="https://api.deepseek.com"
+                api_key=os.getenv(
+                    "DEEPSEEK_API_KEY"
+                ),  # 如何获取API Key：https://help.aliyun.com/zh/model-studio/developer-reference/get-api-key
+                base_url="https://api.deepseek.com",
             )
-
 
             completion = client.chat.completions.create(
                 model="deepseek-chat",  # 此处以 deepseek-r1 为例，可按需更换模型名称。
@@ -235,10 +233,11 @@ class ConfiotOracle:
                     },
                     {
                         "role": "user",
-                        "content": f"Here are some possible inputs. Evaluate the following texts:  ['my phone number is +1-123-456-7890', 'guest\'s email is abc@test.com', 'user home address: 1234 Main St, Springfield, IL 62701'm 'time for bed is 12:00 AM']. The privacy words in the texts are: ['phone number', 'email', 'address', 'time'].",
+                        "content": f"Here are some possible inputs. Evaluate the following texts:  ['my phone number is +1-123-456-7890', 'guest's email is abc@test.com', 'user home address: 1234 Main St, Springfield, IL 62701'm 'time for bed is 12:00 AM']. The privacy words in the texts are: ['phone number', 'email', 'address', 'time'].",
                     },
-                    {   "role": "assistant",
-                        "content": "contains_privacy_data: 1, privacy_data: [\"+1-123-456-7890\", \"abc@test.com\", \"1234 Main St, Springfield, IL 62701\", \"12:00 AM\"]",
+                    {
+                        "role": "assistant",
+                        "content": 'contains_privacy_data: 1, privacy_data: ["+1-123-456-7890", "abc@test.com", "1234 Main St, Springfield, IL 62701", "12:00 AM"]',
                     },
                     {
                         "role": "user",
@@ -249,13 +248,14 @@ class ConfiotOracle:
 
             print("[RESULT]: ", completion.choices[0].message.content)
 
-        elif(llm == "qwen"):
+        elif llm == "qwen":
             client = OpenAI(
                 # 若没有配置环境变量，请用百炼API Key将下行替换为：api_key="sk-xxx",
-                api_key=os.getenv("QWEN_API_KEY"),  # 如何获取API Key：https://help.aliyun.com/zh/model-studio/developer-reference/get-api-key
-                base_url="https://dashscope.aliyuncs.com/compatible-mode/v1"
+                api_key=os.getenv(
+                    "QWEN_API_KEY"
+                ),  # 如何获取API Key：https://help.aliyun.com/zh/model-studio/developer-reference/get-api-key
+                base_url="https://dashscope.aliyuncs.com/compatible-mode/v1",
             )
-
 
             completion = client.chat.completions.create(
                 model="qwen2.5-vl-32b-instruct",
@@ -266,10 +266,11 @@ class ConfiotOracle:
                     },
                     {
                         "role": "user",
-                        "content": f"Here are some possible inputs. Evaluate the following texts:  ['my phone number is +1-123-456-7890', 'guest\'s email is abc@test.com', 'user home address: 1234 Main St, Springfield, IL 62701'm 'time for bed is 12:00 AM']. The privacy words in the texts are: ['phone number', 'email', 'address', 'time'].",
+                        "content": f"Here are some possible inputs. Evaluate the following texts:  ['my phone number is +1-123-456-7890', 'guest's email is abc@test.com', 'user home address: 1234 Main St, Springfield, IL 62701'm 'time for bed is 12:00 AM']. The privacy words in the texts are: ['phone number', 'email', 'address', 'time'].",
                     },
-                    {   "role": "assistant",
-                        "content": "contains_privacy_data: 1, privacy_data: [\"+1-123-456-7890\", \"abc@test.com\", \"1234 Main St, Springfield, IL 62701\", \"12:00 AM\"]",
+                    {
+                        "role": "assistant",
+                        "content": 'contains_privacy_data: 1, privacy_data: ["+1-123-456-7890", "abc@test.com", "1234 Main St, Springfield, IL 62701", "12:00 AM"]',
                     },
                     {
                         "role": "user",
@@ -281,7 +282,6 @@ class ConfiotOracle:
             print("[RESULT]: ", completion.choices[0].message.content)
 
         else:
-
 
             class privacyFormat(BaseModel):
                 contains_privacy_data: bool
@@ -301,10 +301,11 @@ class ConfiotOracle:
                     },
                     {
                         "role": "user",
-                        "content": f"Here are some possible inputs. Evaluate the following texts:  ['my phone number is +1-123-456-7890', 'guest\'s email is abc@test.com', 'user home address: 1234 Main St, Springfield, IL 62701'm 'time for bed is 12:00 AM']. The privacy words in the texts are: ['phone number', 'email', 'address', 'time'].",
+                        "content": f"Here are some possible inputs. Evaluate the following texts:  ['my phone number is +1-123-456-7890', 'guest's email is abc@test.com', 'user home address: 1234 Main St, Springfield, IL 62701'm 'time for bed is 12:00 AM']. The privacy words in the texts are: ['phone number', 'email', 'address', 'time'].",
                     },
-                    {   "role": "assistant",
-                        "content": "contains_privacy_data: 1, privacy_data: [\"+1-123-456-7890\", \"abc@test.com\", \"1234 Main St, Springfield, IL 62701\", \"12:00 AM\"]",
+                    {
+                        "role": "assistant",
+                        "content": 'contains_privacy_data: 1, privacy_data: ["+1-123-456-7890", "abc@test.com", "1234 Main St, Springfield, IL 62701", "12:00 AM"]',
                     },
                     {
                         "role": "user",
@@ -398,6 +399,7 @@ class ConfiotOracle:
     ):
         from pydantic import BaseModel
         from openai import OpenAI
+
         # api_key = os.environ.get("OPENAI_API_KEY")
         # headers = {
         #     "Content-Type": "application/json",
@@ -425,7 +427,7 @@ class ConfiotOracle:
                 {
                     "role": "user",
                     "content": f"Please find the belongings to data: {privacy_data} in the following texts: {snapshot_change}. You may also find some clues in the current page or the previous page texts: {related_pages}. The current other user IDs are: {current_user_id}.",
-                }
+                },
             ],
             response_format=response,
             max_tokens=500,
@@ -539,7 +541,9 @@ class ConfiotOracle:
         # 3. Given each snapshot change, if there are privacy changes, get the privacy data
         # e.g., phone number, email, address, time, etc. +1 800-xxx-xxxx is a phone number
         # e.g., age, heart rate, blood pressure, etc. 25 is an age
-        privacy_data = self.GetValueGPT(snapshot_privacy_add + snapshot_privacy_delete, privacy_texts)
+        privacy_data = self.GetValueGPT(
+            snapshot_privacy_add + snapshot_privacy_delete, privacy_texts
+        )
 
         # 4. Given the privacy data, find the belonging
         belongings = None
@@ -637,16 +641,12 @@ class ConfiotOracle:
                             privacy_warning.append(
                                 f"Privacy data violation - {privacy_data} "
                             )
-                            print(
-                                f"Privacy data violation - {privacy_data} "
-                            )
+                            print(f"Privacy data violation - {privacy_data} ")
                         if belongings:
                             privacy_warning.append(
                                 f"Privacy belonging violation - {belongings}! "
                             )
-                            print(
-                                f"Privacy belonging - {belongings}! "
-                            )
+                            print(f"Privacy belonging - {belongings}! ")
                     else:
                         pass
             if not os.path.isdir(os.path.join(confiot_output, "privacy_violation")):
@@ -707,12 +707,12 @@ class ConfigurationConfiotOracle(ConfiotOracle):
         + "/ConfigurationCriteria.json",
     ):
         # Load the data from the PKL file
-        criteria = {"Criteria":[]}
+        criteria = {"Criteria": []}
         _cri = {}
         with open(Configuration_criteria, "r") as f:
             _cri = json.load(f)
 
-        if(role != "all"):
+        if role != "all":
             for c in _cri["Criteria"]:
                 if role in c["Role"]:
                     criteria["Criteria"].append(c)
@@ -853,7 +853,6 @@ class ConfigurationConfiotOracle(ConfiotOracle):
         ) as f:
             AfterRevocation_user_template = f.read()
 
-
         with open(
             BASE_DIR + "/../prompt/IdentifyCapabilityConfiot/DuringUsage_system.txt"
         ) as f:
@@ -923,12 +922,16 @@ class ConfigurationConfiotOracle(ConfiotOracle):
                         if uichange.add_or_delete == SpecificUIChange.ADD:
                             operation_changes["Add"].append(uichange.operation)
                             operation_changes["Add_str"].append(
-                                uichange.operation["op_str"] if "op_str" in uichange.operation else str(uichange.operation["op_text"])
+                                uichange.operation["op_str"]
+                                if "op_str" in uichange.operation
+                                else str(uichange.operation["op_text"])
                             )
                         else:
                             operation_changes["Delete"].append(uichange.operation)
                             operation_changes["Delete_str"].append(
-                                uichange.operation["op_str"] if "op_str" in uichange.operation else str(uichange.operation["op_text"])
+                                uichange.operation["op_str"]
+                                if "op_str" in uichange.operation
+                                else str(uichange.operation["op_text"])
                             )
 
                 _change_details_str = ""
@@ -958,9 +961,7 @@ class ConfigurationConfiotOracle(ConfiotOracle):
             page_ui_changes_str = []
 
             if len(UIChanges) == 0:
-                user_prompt = user_prompt.replace(
-                    "{{UICHANGE}}", "No UI changes!\n"
-                )
+                user_prompt = user_prompt.replace("{{UICHANGE}}", "No UI changes!\n")
             else:
                 for changed_page in UIChanges:
                     _prompt = PageUIChange_template
@@ -970,7 +971,8 @@ class ConfigurationConfiotOracle(ConfiotOracle):
                     ):
                         continue
                     with open(
-                        settings.LLMConfiguration_output + f"/{changed_page}/PageInfo.txt",
+                        settings.LLMConfiguration_output
+                        + f"/{changed_page}/PageInfo.txt",
                         "r",
                     ) as f:
                         page_info = f.read()
@@ -989,12 +991,16 @@ class ConfigurationConfiotOracle(ConfiotOracle):
                             if uichange.add_or_delete == SpecificUIChange.ADD:
                                 operation_changes["Add"].append(uichange.operation)
                                 operation_changes["Add_str"].append(
-                                    uichange.operation["op_str"] if "op_str" in uichange.operation else str(uichange.operation["op_text"])
+                                    uichange.operation["op_str"]
+                                    if "op_str" in uichange.operation
+                                    else str(uichange.operation["op_text"])
                                 )
                             else:
                                 operation_changes["Delete"].append(uichange.operation)
                                 operation_changes["Delete_str"].append(
-                                    uichange.operation["op_str"] if "op_str" in uichange.operation else str(uichange.operation["op_text"])
+                                    uichange.operation["op_str"]
+                                    if "op_str" in uichange.operation
+                                    else str(uichange.operation["op_text"])
                                 )
 
                     _change_details_str = ""
@@ -1023,11 +1029,7 @@ class ConfigurationConfiotOracle(ConfiotOracle):
                 with open(settings.violation_output + "/Activities.txt", "r") as f:
                     activiy = f.read()
 
-            user_prompt = user_prompt.replace(
-                "{{ACTIVITY}}", activiy
-            )
-
-
+            user_prompt = user_prompt.replace("{{ACTIVITY}}", activiy)
 
         res = query_Confiot_identification(
             system_prompt=system_prompt, user_prompt=user_prompt
@@ -1042,13 +1044,12 @@ class ConfigurationConfiotOracle(ConfiotOracle):
                     "configuration_resource": r.configuration_resource,
                     "Reason": r.reason,
                     "Confidence_score": r.Confidence_score,
-                    "Guess_steps": r.Guess_steps
+                    "Guess_steps": r.Guess_steps,
                 }
                 violations.append(violation)
 
             with open(outputdir + "/raw.txt", "w") as f:
                 f.write(system_prompt + user_prompt + "\n\n\n" + str(violations) + "\n")
-
 
             if not os.path.exists(settings.violation_output + "/Activities.txt"):
                 with open(settings.violation_output + "/Activities.txt", "w") as f:
@@ -1060,14 +1061,15 @@ class ConfigurationConfiotOracle(ConfiotOracle):
                         f.write(v + "\n")
         except:
             # deepseek or qwen
-            with open(outputdir + "/raw.txt", "w") as f:
-                f.write(system_prompt + user_prompt + "\n\n\n" + res + "\n")
+            try:
+                with open(outputdir + "/raw.txt", "w") as f:
+                    f.write(system_prompt + user_prompt + "\n\n\n" + res + "\n")
 
-
-            if not os.path.exists(settings.violation_output + "/Activities.txt"):
-                with open(settings.violation_output + "/Activities.txt", "w") as f:
-                    f.write(res)
-            else:
-                with open(settings.violation_output + "/Activities.txt", "a") as f:
-                    f.write(res)
-
+                if not os.path.exists(settings.violation_output + "/Activities.txt"):
+                    with open(settings.violation_output + "/Activities.txt", "w") as f:
+                        f.write(res)
+                else:
+                    with open(settings.violation_output + "/Activities.txt", "a") as f:
+                        f.write(res)
+            except:
+                pass

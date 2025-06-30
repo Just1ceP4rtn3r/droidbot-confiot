@@ -7,3 +7,5 @@ graphviz
 nltk
 cleantext
 openai
+loguru==0.7.3
+uiautomator2==2.16.23

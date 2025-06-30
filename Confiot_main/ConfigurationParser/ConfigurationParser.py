@@ -235,8 +235,8 @@ class ConfigurationParser:
     def query_LLM_for_configuration_mapping_based_on_page_graph(self, outputdir):
         if not os.path.exists(outputdir):
             os.makedirs(outputdir)
-        else:
-            return
+        # else:
+        #     return
 
         LeafQuery_template = ""
         FatherQuery_template = ""
@@ -264,6 +264,7 @@ class ConfigurationParser:
         page_worklist = dict(
             sorted(page_worklist.items(), key=lambda item: item[1], reverse=True)
         )
+        # print("[DBG] pages: ", page_worklist)
 
         leaf_level = page_worklist[list(page_worklist.keys())[0]]
 
@@ -524,7 +525,10 @@ class ConfigurationParser:
         completion = client.beta.chat.completions.parse(
             model="gpt-4o",
             messages=[
-                {"role": "system", "content": "Below are some JSON-formatted testing tasks for an IoT app. You have following requirements: (1) Please deduplicate the tasks in the same page based on their semantics. If two tasks perform the same operation (or configure the same resource) and only differ in their configuration options (e.g., pair with/add device_a'' and add device_b'' is the same task), keep only one and try to retain the one with richer and more complete details like options (e.g., keep 'configure the light state to off' instead of 'light management'). (2) Then, remove tasks that only involve read semantic (not write to any resource): ['view', 'access', 'retrieve', 'obtain', 'read', 'inspect']."},
+                {
+                    "role": "system",
+                    "content": "Below are some JSON-formatted testing tasks for an IoT app. You have following requirements: (1) Please deduplicate the tasks in the same page based on their semantics. If two tasks perform the same operation (or configure the same resource) and only differ in their configuration options (e.g., pair with/add device_a'' and add device_b'' is the same task), keep only one and try to retain the one with richer and more complete details like options (e.g., keep 'configure the light state to off' instead of 'light management'). (2) Then, remove tasks that only involve read semantic (not write to any resource): ['view', 'access', 'retrieve', 'obtain', 'read', 'inspect'].",
+                },
                 # {"role": "system", "content": "Below are some JSON-formatted testing tasks for an IoT app. You have following requirements: (1) Please deduplicate the tasks in the same page based on their semantics. If two tasks perform the same operation (or configure the same resource) and only differ in their configuration options (e.g., pair with/add device_a'' and add device_b'' is the same task), keep only one and try to retain the one with richer and more complete details like options (e.g., keep 'configure the light state to off' instead of 'light management'). (2) Prioritize tasks with more specific details or options by ranking them first in the response. (3) Then, remove tasks that only involve read semantic (not write to any resource): ['view', 'access', 'retrieve', 'obtain', 'read', 'inspect']."},
                 {
                     "role": "user",
@@ -538,14 +542,13 @@ class ConfigurationParser:
         Configurations = []
 
         for r in event.configuration_tasks:
-            task =  {
-                        "Id": len(Configurations),
-                        "Page ID": r.page_id,
-                        "Tasks": r.task_content,
-                        "Related operations": r.related_operations,
-                    }
+            task = {
+                "Id": len(Configurations),
+                "Page ID": r.page_id,
+                "Tasks": r.task_content,
+                "Related operations": r.related_operations,
+            }
             Configurations.append(task)
-
 
         # Configurations = sorted(Configurations, key=lambda x: len(x["Tasks"]), reverse=True)
 
