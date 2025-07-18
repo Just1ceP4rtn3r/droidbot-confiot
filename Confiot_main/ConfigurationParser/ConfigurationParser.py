@@ -8,13 +8,7 @@ from Confiot_main.Confiot import Confiot
 from Confiot_main.settings import settings
 from Confiot_main.ConfigurationParser.PageExploration import PageExplorer
 from Confiot_main.ConfigurationParser.OperationExtraction import OperationExtractor
-from Confiot_main.utils.util import (
-    query_config_resource_mapping,
-    parse_config_resource_mapping_v2_0,
-    get_ConfigResourceMapper_from_file,
-    query_config_operation_mapping_with_structured_output,
-    filter_configurations,
-)
+from Confiot_main.utils.util import *
 
 
 class ConfigurationParser:
@@ -51,6 +45,9 @@ class ConfigurationParser:
         self.pagecontext_extraction()
 
         self.save_operations_to_file(settings.Confiot_output)
+
+        self.PAGEINFO = {}
+        self.page_dependency = set()
 
         # LLM configuration mapping
         # {"page-1": {"configuration": [viewhash,...]}}
@@ -232,7 +229,7 @@ class ConfigurationParser:
             with open(save_dir + f"{page}.json", "w") as f:
                 f.write(json.dumps(overview, indent=2))
 
-    def query_LLM_for_configuration_mapping_based_on_page_graph(self, outputdir):
+    def query_LLM_for_page_summarization(self, outputdir):
         if not os.path.exists(outputdir):
             os.makedirs(outputdir)
         # else:
@@ -246,17 +243,8 @@ class ConfigurationParser:
         BASE_DIR = os.path.dirname(os.path.abspath(__file__))
         with open(BASE_DIR + "/../prompt/ConfigParsing_PromptChain/LeafQuery.txt") as f:
             LeafQuery_template = f.read()
-        with open(
-            BASE_DIR + "/../prompt/ConfigParsing_PromptChain/FatherQuery.txt"
-        ) as f:
-            FatherQuery_template = f.read()
-        with open(BASE_DIR + "/../prompt/ConfigParsing_PromptChain/PageInfo.txt") as f:
-            PageInfo_template = f.read()
-        with open(BASE_DIR + "/../prompt/ConfigParsing_PromptChain/ChildPage.txt") as f:
-            ChildPage_template = f.read()
 
         page_worklist = {}
-        page_infos = {}
         for node in self.page_navigation_graph.nodes:
             page_worklist[node.name] = node.level
 
@@ -279,7 +267,15 @@ class ConfigurationParser:
                     if page_worklist[child_page] == page_worklist[page] + 1:
                         children.append(child_page)
 
+            # 停止使用page_info
             page_info = ""
+            page_info_json = {
+                "Page ID": "",
+                "Plain Texts": [],
+                "Operation List": [],
+                "The operation lead to this page": "",
+                "Summarized Features": [],
+            }
             operations_file = settings.Confiot_output + f"/Operations/{page}.json"
             if not os.path.exists(operations_file):
                 print(f"[ERR]: missing file {operations_file}")
@@ -308,24 +304,20 @@ class ConfigurationParser:
                         else:
                             plain_texts_str.append("<p>" + label["text"] + "</p>")
 
-                page_info = PageInfo_template.replace("{{PAGE}}", page)
-                page_info = page_info.replace("{{LIST}}", "\n".join(operations_str))
-                page_info = page_info.replace("{{TEXT}}", "\n".join(plain_texts_str))
+                page_info_json["Page ID"] = page
+                page_info_json["Plain Texts"] = plain_texts_str
+                page_info_json["Operation List"] = [
+                    {"ID": i, "Operation": o} for i, o in enumerate(operations_str)
+                ]
+                page_info_json["The operation lead to this page"] = context_str
+
+                self.PAGEINFO[page] = page_info_json
 
                 if not os.path.exists(outputdir + f"/{page}"):
                     os.makedirs(outputdir + f"/{page}")
 
-                with open(outputdir + f"/{page}/PageInfo.txt", "w") as f:
-                    f.write(
-                        page_info.replace(
-                            'The operation lead to this page is: "{{CONTEXT}}"\n', ""
-                        )
-                        + "\n"
-                    )
-
-                page_info = page_info.replace("{{CONTEXT}}", context_str)
-
-                page_infos[page] = {"context": context_str}
+                with open(outputdir + f"/{page}/PageInfo.json", "w") as f:
+                    f.write(json.dumps(page_info_json))
 
             print(page)
             print(
@@ -337,103 +329,226 @@ class ConfigurationParser:
             # prompt = system_prompt + "\n" + user_prompt
             prompt = ""
 
-            # 如果是叶子节点，直接总结
-            if page_worklist[page] == leaf_level or len(children) == 0:
-                system_prompt = LeafQuery_template
-                user_prompt = page_info
-                prompt = LeafQuery_template + "\n" + page_info
-            # 父节点，一方面总结父节点，另一方面，反省叶子节点是否正确
-            else:
-                # {
-                #     "PageInfo": "",
-                #     "Response": "",
-                # }
-                children_info = {}
-                for child_page in children:
-                    childpage_info = ""
-                    response = ""
-                    result = {}
-
-                    if not os.path.exists(outputdir + f"/{child_page}"):
-                        continue
-
-                    with open(outputdir + f"/{child_page}/PageInfo.txt", "r") as f:
-                        childpage_info = f.read()
-
-                    with open(
-                        outputdir + f"/{child_page}/Configurations.json", "r"
-                    ) as f:
-                        response = f.read()
-
-                    children_info[child_page] = {
-                        "PageInfo": childpage_info,
-                        "Response": response,
-                    }
-
-                system_prompt = FatherQuery_template
-                user_prompt = (
-                    "# Current Page information\n"
-                    + page_info
-                    + "\n"
-                    + "-" * 60
-                    + "\nFrom the current page, here are the pages (child pages) that can be navigated to:\n"
-                )
-                for child_page in children_info:
-                    if child_page not in page_infos:
-                        continue
-
-                    if not page_infos[child_page]["context"].strip():
-                        user_prompt += (
-                            (
-                                ChildPage_template.replace(
-                                    "{{CONTEXT}}", "<click, A button without text>"
-                                )
-                                .replace(
-                                    "{{PAGEINFO}}",
-                                    children_info[child_page]["PageInfo"],
-                                )
-                                .replace(
-                                    "{{RESPONSE}}",
-                                    children_info[child_page]["Response"],
-                                )
-                            )
-                            + "\n"
-                            + "-" * 60
-                            + "\n"
-                        )
-                    else:
-                        user_prompt += (
-                            (
-                                ChildPage_template.replace(
-                                    "{{CONTEXT}}", page_infos[child_page]["context"]
-                                )
-                                .replace(
-                                    "{{PAGEINFO}}",
-                                    children_info[child_page]["PageInfo"],
-                                )
-                                .replace(
-                                    "{{RESPONSE}}",
-                                    children_info[child_page]["Response"],
-                                )
-                            )
-                            + "\n"
-                            + "-" * 60
-                            + "\n"
-                        )
+            system_prompt = LeafQuery_template
+            user_prompt = json.dumps(self.PAGEINFO[page])
 
             prompt = system_prompt + "\n" + user_prompt
-            Configurations = query_config_operation_mapping_with_structured_output(
+            features = query_page_features(
                 system_prompt=system_prompt, user_prompt=user_prompt
             )
+
+            self.PAGEINFO[page]["Summarized Features"] = features
 
             with open(outputdir + f"/{page}/Raw.txt", "w") as f:
                 f.write("################ Page: " + page + "################\n")
                 f.write(prompt + "\n")
                 f.write("################ Response: " + page + "################\n")
-                f.write(str(Configurations) + "\n")
+                f.write(json.dumps(features) + "\n")
 
-            with open(outputdir + f"/{page}/Configurations.json", "w") as f:
-                f.write(json.dumps(Configurations))
+            with open(outputdir + f"/{page}/PageInfo.json", "w") as f:
+                f.write(json.dumps(self.PAGEINFO[page]))
+
+    # def query_LLM_for_page_dependency(self, outputdir):
+    #     if not os.path.exists(outputdir):
+    #         os.makedirs(outputdir)
+
+    #     FatherQuery_template = ""
+    #     BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+    #     with open(
+    #         BASE_DIR + "/../prompt/ConfigParsing_PromptChain/FatherQuery.txt"
+    #     ) as f:
+    #         FatherQuery_template = f.read()
+
+    #     page_worklist = {}
+    #     for node in self.page_navigation_graph.nodes:
+    #         page_worklist[node.name] = node.level
+
+    #     # 根据node.level，从大到小排序
+    #     page_worklist = dict(
+    #         sorted(page_worklist.items(), key=lambda item: item[1], reverse=True)
+    #     )
+    #     # print("[DBG] pages: ", page_worklist)
+
+    #     leaf_level = page_worklist[list(page_worklist.keys())[0]]
+
+    #     for page in page_worklist:
+    #         if page not in self.operations:
+    #             continue
+
+    #         children = []
+    #         if page in self.page_navigation_graph.edges_dict:
+    #             for child_page in self.page_navigation_graph.edges_dict[page]:
+    #                 if page_worklist[child_page] == page_worklist[page] + 1:
+    #                     children.append(child_page)
+
+    #         # 如果是叶子节点
+    #         if page_worklist[page] == leaf_level or len(children) == 0:
+    #             continue
+    #         # 父节点，一方面总结父节点，另一方面，反省叶子节点是否正确
+    #         else:
+    #             children_info = {}
+    #             for child_page in children:
+    #                 if not os.path.exists(outputdir + f"/{child_page}"):
+    #                     continue
+
+    #                 with open(outputdir + f"/{child_page}/PageInfo.json", "r") as f:
+    #                     childpage_info = f.read()
+
+    #                 children_info[child_page] = json.loads(childpage_info)
+    #                 children_info[child_page]["ChildPage ID"] = children_info[
+    #                     child_page
+    #                 ].pop("Page ID")
+
+    #             with open(outputdir + f"/{page}/PageInfo.json", "r") as f:
+    #                 page_info = f.read()
+
+    #             system_prompt = FatherQuery_template
+    #             user_prompt = (
+    #                 "# Parent Page information\n"
+    #                 + page_info
+    #                 + "\n"
+    #                 + "-" * 60
+    #                 + "\nFrom the Parent page, here are the pages (child pages) that can be navigated to:\n"
+    #             )
+    #             for child_page in children_info:
+    #                 user_prompt += (
+    #                     json.dumps(children_info[child_page]) + "\n" + "-" * 60 + "\n"
+    #                 )
+
+    #         prompt = system_prompt + "\n" + user_prompt
+    #         page_groups = query_page_dependencies(
+    #             system_prompt=system_prompt, user_prompt=user_prompt
+    #         )
+
+    #         for g in page_groups:
+    #             self.page_dependency.add(g)
+
+    #         with open(outputdir + f"/{page}/Raw_page_dependency.txt", "w") as f:
+    #             f.write("################ Page: " + page + "################\n")
+    #             f.write(prompt + "\n")
+    #             f.write("################ Response: " + page + "################\n")
+    #             f.write(json.dumps(list(page_groups)) + "\n")
+
+    #     def filter_subsets(list_of_lists):
+    #         initial_sets = {frozenset(sublist) for sublist in list_of_lists}
+    #         current_sets = [set(s) for s in initial_sets]
+
+    #         result_sets = []
+
+    #         for i, s1 in enumerate(current_sets):
+    #             is_subset_of_another = False
+
+    #             for j, s2 in enumerate(current_sets):
+    #                 if i == j:
+    #                     continue
+    #                 if s1.issubset(s2) and s1 != s2:
+    #                     is_subset_of_another = True
+    #                     break
+
+    #             if not is_subset_of_another:
+    #                 result_sets.append(s1)
+
+    #         final_sets = {frozenset(s) for s in list_of_lists}
+    #         while True:
+    #             sets_to_remove = set()
+    #             for s1 in final_sets:
+    #                 for s2 in final_sets:
+    #                     if s1 != s2 and s1.issubset(s2):
+    #                         sets_to_remove.add(s1)
+    #                         break
+    #             if not sets_to_remove:
+    #                 break
+
+    #             final_sets = final_sets - sets_to_remove
+    #         return [list(s) for s in final_sets]
+
+    #     with open(outputdir + f"/PageDependency.json", "w") as f:
+    #         f.write(json.dumps(list(filter_subsets(self.page_dependency))))
+
+    def query_LLM_for_continuation_features(self, outputdir):
+        if not os.path.exists(outputdir):
+            os.makedirs(outputdir)
+
+        FatherQuery_template = ""
+        BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+        with open(
+            BASE_DIR + "/../prompt/ConfigParsing_PromptChain/FatherQuery.txt"
+        ) as f:
+            FatherQuery_template = f.read()
+
+        page_worklist = {}
+        for node in self.page_navigation_graph.nodes:
+            page_worklist[node.name] = node.level
+
+        # 根据node.level，从大到小排序
+        page_worklist = dict(
+            sorted(page_worklist.items(), key=lambda item: item[1], reverse=True)
+        )
+        # print("[DBG] pages: ", page_worklist)
+
+        leaf_level = page_worklist[list(page_worklist.keys())[0]]
+
+        for page in page_worklist:
+            if page not in self.operations:
+                continue
+
+            children = []
+            if page in self.page_navigation_graph.edges_dict:
+                for child_page in self.page_navigation_graph.edges_dict[page]:
+                    if page_worklist[child_page] == page_worklist[page] + 1:
+                        children.append(child_page)
+
+            # 如果是叶子节点
+            if page_worklist[page] == leaf_level or len(children) == 0:
+                continue
+            # 父节点，一方面总结父节点，另一方面，反省叶子节点是否正确
+            else:
+                children_info = {}
+                for child_page in children:
+                    if not os.path.exists(outputdir + f"/{child_page}"):
+                        continue
+
+                    with open(outputdir + f"/{child_page}/PageInfo.json", "r") as f:
+                        childpage_info = f.read()
+
+                    children_info[child_page] = json.loads(childpage_info)
+                    children_info[child_page]["ChildPage ID"] = children_info[
+                        child_page
+                    ].pop("Page ID")
+
+                with open(outputdir + f"/{page}/PageInfo.json", "r") as f:
+                    page_info = f.read()
+
+                system_prompt = FatherQuery_template
+                user_prompt = (
+                    "# Parent Page information\n"
+                    + page_info
+                    + "\n"
+                    + "-" * 60
+                    + "\nFrom the Parent page, here are the pages (child pages) that can be navigated to:\n"
+                )
+                for child_page in children_info:
+                    user_prompt += (
+                        json.dumps(children_info[child_page]) + "\n" + "-" * 60 + "\n"
+                    )
+
+            prompt = system_prompt + "\n" + user_prompt
+            features = query_continuation_features(
+                system_prompt=system_prompt, user_prompt=user_prompt
+            )
+
+            with open(outputdir + f"/{page}/Raw_bottom_up.txt", "w") as f:
+                f.write("################ Page: " + page + "################\n")
+                f.write(prompt + "\n")
+                f.write("################ Response: " + page + "################\n")
+                f.write(json.dumps(features) + "\n")
+
+            with open(outputdir + f"/{page}/Features.json", "w") as f:
+                f.write(json.dumps(features))
+
+    def query_LLM_for_configuration_mapping_based_on_page_graph(self, outputdir):
+        self.query_LLM_for_page_summarization(outputdir)
+        self.query_LLM_for_continuation_features(outputdir)
 
     # [TODO]: 添加对于LLM configuration种Dependency的解析
     def save_configurations(self, LLMResult_dir):
@@ -444,7 +559,7 @@ class ConfigurationParser:
             )
             return
 
-        configurations = {}
+        configurations = []
 
         page_worklist = {}
         for node in self.page_navigation_graph.nodes:
@@ -455,58 +570,26 @@ class ConfigurationParser:
             sorted(page_worklist.items(), key=lambda item: item[1], reverse=False)
         )
 
-        completed_pages = set()
+        config_json = []
         for page in page_worklist:
-            if not os.path.exists(LLMResult_dir + f"/{page}/Configurations.json"):
+            if not os.path.exists(LLMResult_dir + f"/{page}/Features.json"):
                 continue
             # if page in completed_pages:
             #     continue
-            with open(LLMResult_dir + f"/{page}/Configurations.json") as f:
-                tasks = json.load(f)
-                # 可能包含来自child pages的tasks
-                for t in tasks:
-                    try:
-                        page_id = t["Page ID"]
-                        task_content = t["Tasks"]
-                        related_operations = []
+            with open(LLMResult_dir + f"/{page}/Features.json") as f:
+                content = json.loads(f.read())
+                for c in content:
+                    config_json.append(
+                        {
+                            "Id": len(config_json),
+                            "Page ID": page,
+                            "Tasks": c["Feature"],
+                            "Related operations": c["Sequence"],
+                        }
+                    )
 
-                        page_id = "Page-" + "".join(re.findall(r"\d", page_id))
-
-                        for o in t["Related operations"]:
-                            digits = re.findall(r"\d", o)
-                            related_operations.append(int("".join(digits)))
-                        if page_id not in configurations:
-                            configurations[page_id] = {}
-
-                        if (
-                            task_content == "None"
-                            or task_content == ""
-                            or not task_content
-                            or not related_operations
-                        ):
-                            continue
-                        configurations[page_id][task_content] = related_operations
-                        # completed_pages.add(page_id)
-                    except:
-                        print(
-                            "[ERR]: wrong structure of the configuration file ",
-                            LLMResult_dir + f"{page}/Configurations.json",
-                        )
-                        continue
-
-        config_json = []
-
-        for page in configurations:
-            for task_content in configurations[page]:
-                config_json.append(
-                    {
-                        "Id": len(config_json),
-                        "Page ID": page,
-                        "Tasks": task_content,
-                        "Related operations": configurations[page][task_content],
-                    }
-                )
-
+        with open(LLMResult_dir + "/ConfigurationsComplete.json", "w") as f:
+            f.write(json.dumps(config_json))
         # config_json = filter_configurations(config_json)
 
         from pydantic import BaseModel
@@ -551,9 +634,6 @@ class ConfigurationParser:
             Configurations.append(task)
 
         # Configurations = sorted(Configurations, key=lambda x: len(x["Tasks"]), reverse=True)
-
-        with open(LLMResult_dir + "/ConfigurationsComplete.json", "w") as f:
-            f.write(json.dumps(config_json))
 
         with open(LLMResult_dir + "/ConfigurationsSummary.json", "w") as f:
             f.write(json.dumps(Configurations))

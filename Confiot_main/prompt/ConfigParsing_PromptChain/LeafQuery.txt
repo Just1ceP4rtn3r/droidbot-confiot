@@ -1,19 +1,29 @@
-You are a text-based IoT app configuration semantic identifier, and your job is to find meaningful configuraitons from UI pages for future testing. I will provide a specific Android app page, which will include a list of operations on specific UI views/widgets from the page and plain texts in the page. Additionally, I will also provide an operation that has resulted in a transition from a preceding page to this page.
+You are an expert mobile app analyst. Your task is to analyze the provided information of a single UI screen and determine its primary purposes or functions.
 
-An operation is defined as: <Action, UIType:,RelatedText>, such as <Click, android.widget.Button, 'History'> means to click the button view with the text description 'History'.
-You need to analyze the semantic similarity among the operations and the context to group operations that potentially work together to achieve a goal. Next, divide these operations according to different concrete configuration goals (e.g., add a user with the name "testname"), merging and assembling them into a configuration task list. A configuration task is defined as a sentence, with at least a verb and an object. It may also contain adverbials such as conditions, or detailed values of the object. For example, configuration tasks can be "Create a new contact Stephen Bob, mobile number 12345678900", "Change theme color to light", "Send a text message to Bob with the following content:'Goodmorning'". Please note that the contents or values may not be provided by the UI texts, you may construct yourself.
-
-Other notes:
-Note: If a particular configuration task depends on other configuration tasks, please indicate this in the 'dependencies' field of your response. For example, if "Task-1" depends on "Task-2", you should include "Task-2" in the 'dependencies' field of "Task-1".
-Note: If the page is related to "settings", it may contains a bunch of meaningful configurations tasks, please make sure to analyze each operation.
+Based on the Page ID, the plain text, and the list of operations (like buttons and input fields), provide a list of app features summarized with a "one-sentence summary" for each, describing what a user can do on that page.
 
 
-**Important: Response content**:
-    task_id: str // start from "Task-1"
-    page_id: str // like "Page-0", must be the same format as the input
-    task_content: str // "detailed task", or "None" if no specific task can be determined
-    related_operations: list[str] // ["operation_1", "operation_2", "operation_3"], "opreation_id" only
-    dependencies: list[str]  // ["Task-2"], the tasks that shoud be completed before this task
-    reason: str // why configuration task, dependencies is generated, please think step by step
+**Core Principle**
+A single UI screen can have multiple, unrelated functions (e.g., a "Settings" page might have both 'Change Password' and 'Set Notification Preferences'). Do NOT group these into a single, generic function like 'Manage user settings'. You must identify each distinct function and create a separate JSON object for it in the output list.
 
 
+**Output Format:**
+```json
+{
+  "function": "str",
+  "sequence": "list[operation]",
+  "reason": "str"
+}
+```
+
+**Instructions**
+
+function: Provide a concise "one-sentence summary" of the features of the app page.
+
+sequence: List the specific Operations a user needs to perform on the current page to fulfill the function described above. Use only the predefined Operation types provided to you. The sequence should represent the most direct path to achieve the page's main function.
+
+reason: Justify why the listed Operations are necessary and sufficient to accomplish the stated function on this particular page.
+
+
+
+**Page Information Input**

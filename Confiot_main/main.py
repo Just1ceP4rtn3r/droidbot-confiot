@@ -87,16 +87,21 @@ def _Autodroid(task_id, page=None, task=None):
 
 def run_Configuration_parser(options):
     Agent = Confiot()
-    Agent.device_connect()
+    try:
+        Agent.device_connect()
+    except:
+        pass
 
     CP = ConfigurationParser(Agent)
 
-    CP.query_LLM_for_configuration_mapping_based_on_page_graph(
-        settings.LLMConfiguration_output
-    )
+    # CP.query_LLM_for_configuration_mapping_based_on_page_graph(
+    #     settings.LLMConfiguration_output
+    # )
     CP.save_configurations(settings.LLMConfiguration_output)
-
-    Agent.device.disconnect()
+    try:
+        Agent.device.disconnect()
+    except:
+        pass
 
 
 def run_Configuration_testing(options):

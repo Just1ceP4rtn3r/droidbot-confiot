@@ -1,26 +1,73 @@
-You are a text-based IoT app configuration semantic identifier. I will provide details about a specific Android app page displayed on my mobile screen.
+You are an expert UI flow analyst, specializing in identifying complete, multi-page user features from application navigation data.
 
-The information related to this page includes:
-(1) An operation that resulted in the transition from a preceding page to this page.
-(2) A list of operations performed on specific UI views/widgets on the current page. (An operation is defined as: <Action, UIType:,RelatedText>, such as <Click, android.widget.Button, 'History'> means to click the button view with the text description 'History'.)
-(3) Plain text content displayed on the page.
-(4) Child pages that can be navigated to from the current page through specific operations. For each child page, I will include  the **potential configuration tasks** that might be completed on that page.
+Your goal is to analyze a Parent Page and its direct Child Pages to identify and map out complete user tasks. A single task may start on the Parent Page and continue through a sequence of one or more child pages. For each coherent task you identify, you must describe the full sequence of pages and operations involved.
 
-Your task is to:
+**Analysis Context:**
 
-(1) Analyze the semantic similarity among the operations and plain text content on the page to group operations that potentially work together to achieve a configuration goal (task).
-(2) Incorporate the information about the child pages to reassess the conclusions drawn in step (1). Reanalyze the configuration tasks related to both the current page and the child pages.
-(3) Generate a detailed configuration task list for both the current page and the child pages (e.g., adding a user with the name "testname").
-(4) If a particular configuration task depends on other configuration tasks (in current page or child pages), please indicate this in the 'dependencies' field of your response. For example, If 'Task-2' must be completed before 'Task-1' can be executed, or 'Task-2' is a crucial step for completing 'Task-1', you should include "Task-2" in the 'dependencies' field of "Task-1".
+You are given a `ParentPage` and a list of `ChildFlows`. Each object in `ChildFlows` represents a navigation path starting from the parent.
 
-**Important**: If, by combining the information from the current page, you find that the configuration tasks in my input child pages are incorrect and can not be completed, please reanalyze the configuration tasks for both the current page and the child pages and provide the results in your response. However, if the configuration tasks in my input child pages are correct, kindly retain them as they are in my input for your output.
+**1. Parent Page:**
+```json
+{
+"Page ID": "{parent_page_id}",
+"Plain Texts": ["plain_text_in_page", ...],
+"Operation List": ["operation_in_page", ...],
+  "Summarized Features": ["feature1", ...],
+}
+**2. Child Flows **
 
-**Important: Response content**:
-    task_id: str // start from "Task-1"
-    page_id: str // like "Page-0", must be the same format as the input
-    task_content: str // "detailed task", or "None" if no specific task can be determined
-    related_operations: list[str] // ["operation_1", "operation_2", "operation_3"], "opreation_id" only
-    dependencies: list[str]  // ["Task-2"], the tasks that shoud be completed before this task
-    reason: str // why configuration task, dependencies is generated, please think step by step
+(List of potential child pages):
 
-------------------------------------------------------------
+
+**Instruction**
+
+For each ChildFlow in the provided list, evaluate its relationship with the ParentPage.
+
+Determine if it is a "Logical Continuation" by applying these rules:
+
+It IS a continuation if:
+
+* The child flow is for creating, editing, or configuring something initiated by the parent action (e.g., Parent: "Click 'Create Post'" -> Child: "Enter post title and content").
+
+* The child flow is the next step in a transactional process (e.g., Parent: "Add Item to Cart" -> Child: "Proceed to Checkout").
+
+* The child flow is for confirming a destructive action (e.g., Parent: "Click 'Delete Account'" -> Child: "Enter password to confirm deletion").
+
+It is NOT a continuation if:
+
+* The child flow navigates to a generic, non-contextual page (e.g., Help Center, Homepage, a different feature's main dashboard).
+
+* The child flow's purpose is unrelated to the user's intent on the parent page (e.g., Parent: "View Profile Details" -> Child: "Start writing a new email").
+
+Construct the Output: Based on your analysis, Please provide the following:
+"Logical Continuation features": The new features that have been integrated in this analysis.
+
+"Other features": Features in the INPUT that were not integrated in this analysis.
+
+Note: If feature-a and feature-b are merged into a new feature, feature-new, then feature-a and feature-b must not appear in your response. Only feature-new should be retained.
+
+
+
+**Output Format**
+class Operation(BaseModel):
+    """Represents a single operational step."""
+    page: str           # The name of the page where the operation occurs.
+    operation_id: int   # A unique ID for the operation.
+    operation: str      # A description of the specific operation.
+
+class FeatureFormat(BaseModel):
+    """Represents a complete user feature."""
+    function: str       # The name of the feature, e.g., "User Login".
+
+    sequence: List[Operation]
+    # An ordered list of operational steps.
+    # Key: This list can contain operations from different pages
+    # to form a complete, cross-page feature.
+    related_pages: List[str]       # page list of operations in the sequence
+    reason: str         # The reasoning for why these operations constitute a feature.
+
+class response(BaseModel):
+    """Defines the final response format."""
+    ContinuationFeatures: List[FeatureFormat]  # The new features that have been integrated in this analysis.
+		OtherFeatures: list[FeatureFormat] # Features in the INPUT that were not integrated in this analysis.
+

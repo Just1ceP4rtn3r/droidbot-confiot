@@ -512,17 +512,171 @@ def query_config_resource_mapping(prompt):
         return response.text
 
 
-def query_config_operation_mapping_with_structured_output(system_prompt, user_prompt, llm="xxx"):
-    if (llm == "deepseek"):
+def query_page_features(system_prompt, user_prompt, llm="xxx"):
+
+    from pydantic import BaseModel
+    from openai import OpenAI
+
+    class Operation(BaseModel):
+        page: str
+        operation_id: int
+        operation: str
+
+    class FeatureFormat(BaseModel):
+        feature: str
+        sequence: list[Operation]
+        reason: str
+
+    class response(BaseModel):
+        Features: list[FeatureFormat]
+
+    client = OpenAI()
+    completion = client.beta.chat.completions.parse(
+        model="gpt-4o",
+        messages=[
+            {"role": "system", "content": system_prompt},
+            {
+                "role": "user",
+                "content": user_prompt,
+            },
+        ],
+        response_format=response,
+    )
+
+    event = completion.choices[0].message.parsed
+    features = []
+
+    for r in event.Features:
+        task = {
+            "Feature": r.feature,
+            "Sequence": [
+                {
+                    "Page ID": o.page,
+                    "Operation": {"ID": o.operation_id, "Operation": o.operation},
+                }
+                for o in r.sequence
+            ],
+            "Reason": r.reason,
+        }
+        features.append(task)
+
+    return features
+
+
+def query_page_dependencies(system_prompt, user_prompt, llm="xxx"):
+
+    from pydantic import BaseModel
+    from openai import OpenAI
+
+    class PageGruop(BaseModel):
+        pages: list[str]
+
+    class response(BaseModel):
+        groups: list[PageGruop]
+
+    client = OpenAI()
+    completion = client.beta.chat.completions.parse(
+        model="gpt-4o",
+        messages=[
+            {"role": "system", "content": system_prompt},
+            {
+                "role": "user",
+                "content": user_prompt,
+            },
+        ],
+        response_format=response,
+    )
+
+    event = completion.choices[0].message.parsed
+    page_groups = set()
+
+    for g in event.groups:
+        page_groups.add(tuple(sorted(g.pages)))
+
+    return page_groups
+
+
+def query_continuation_features(system_prompt, user_prompt, llm="xxx"):
+
+    from pydantic import BaseModel
+    from openai import OpenAI
+
+    class Operation(BaseModel):
+        page: str
+        operation_id: int
+        operation: str
+
+    class FeatureFormat(BaseModel):
+        feature: str
+        sequence: list[Operation]
+        realted_pages: list[str]
+        reason: str
+
+    class response(BaseModel):
+        ContinuationFeatures: list[FeatureFormat]
+        OtherFeatures: list[FeatureFormat]
+
+    client = OpenAI()
+    completion = client.beta.chat.completions.parse(
+        model="gpt-4o",
+        messages=[
+            {"role": "system", "content": system_prompt},
+            {
+                "role": "user",
+                "content": user_prompt,
+            },
+        ],
+        response_format=response,
+    )
+
+    event = completion.choices[0].message.parsed
+    features = []
+
+    for r in event.ContinuationFeatures:
+        task = {
+            "IsContinuationFeature": True,
+            "Feature": r.feature,
+            "Sequence": [
+                {
+                    "Page ID": o.page,
+                    "Operation": {"ID": o.operation_id, "Operation": o.operation},
+                }
+                for o in r.sequence
+            ],
+            "Reason": r.reason,
+        }
+        features.append(task)
+
+    for r in event.OtherFeatures:
+        task = {
+            "Feature": r.feature,
+            "Sequence": [
+                {
+                    "Page ID": o.page,
+                    "Operation": {"ID": o.operation_id, "Operation": o.operation},
+                }
+                for o in r.sequence
+            ],
+            "Reason": r.reason,
+        }
+        features.append(task)
+
+    return features
+
+
+def query_config_operation_mapping_with_structured_output(
+    system_prompt, user_prompt, llm="xxx"
+):
+    if llm == "deepseek":
         return query_config_operation_mapping_deepseek_v3(system_prompt, user_prompt)
 
-    if (llm == "gemini-2.5"):
+    if llm == "gemini-2.5":
         return query_config_operation_mapping_gemini_2_5(system_prompt, user_prompt)
 
-    if (llm == "claude-3.7"):
+    if llm == "claude-3.7":
         return query_config_operation_mapping_claude_3_7(system_prompt, user_prompt)
 
-    elif (llm == "qwen"):
+    elif llm == "qwen":
         return query_config_operation_mapping_qwen(system_prompt, user_prompt)
 
     from pydantic import BaseModel
@@ -566,17 +720,41 @@ def query_config_operation_mapping_with_structured_output(system_prompt, user_pr
         }
         Configurations.append(task)
 
-
     return Configurations
+
 
 def query_config_operation_mapping_gemini_2_5(system_prompt, user_prompt):
     from google import genai
     import os
 
-    GEMINI_api_key=os.getenv("GEMINI_API_KEY")
+    GEMINI_api_key = os.getenv("GEMINI_API_KEY")
     client = genai.Client(api_key=GEMINI_api_key)
 
-    example_format = json.dumps([{'Task ID': 'Task-1', 'Page ID': 'Page-7', 'Tasks': 'Add Aqara or Mi Zigbee device', 'Related operations': ['operation_0',], 'Dependencies': ['Task-1'], 'Reason': 'The operations on Page-7 involve selecting different Zigbee devices to add them to the control hub. This task depends on navigating to Page-7 from Page-0, where users prepare to manage child devices.'}, {'Task ID': 'Task-2', 'Page ID': 'Page-7', 'Tasks': '', 'Related operations': ['operation_0',], 'Dependencies': ['Task-1'], 'Reason': ''},], ensure_ascii=False)
+    example_format = json.dumps(
+        [
+            {
+                "Task ID": "Task-1",
+                "Page ID": "Page-7",
+                "Tasks": "Add Aqara or Mi Zigbee device",
+                "Related operations": [
+                    "operation_0",
+                ],
+                "Dependencies": ["Task-1"],
+                "Reason": "The operations on Page-7 involve selecting different Zigbee devices to add them to the control hub. This task depends on navigating to Page-7 from Page-0, where users prepare to manage child devices.",
+            },
+            {
+                "Task ID": "Task-2",
+                "Page ID": "Page-7",
+                "Tasks": "",
+                "Related operations": [
+                    "operation_0",
+                ],
+                "Dependencies": ["Task-1"],
+                "Reason": "",
+            },
+        ],
+        ensure_ascii=False,
+    )
 
     full_prompt = (
         system_prompt + "\n\n\n"
@@ -586,24 +764,47 @@ def query_config_operation_mapping_gemini_2_5(system_prompt, user_prompt):
     )
 
     response = client.models.generate_content(
-            model="gemini-2.5-pro-exp-03-25",
-            config={
-                'response_mime_type': 'application/json'
-            },
-            contents=full_prompt
-        )
+        model="gemini-2.5-pro-exp-03-25",
+        config={"response_mime_type": "application/json"},
+        contents=full_prompt,
+    )
 
     Configurations = json.loads(response.text)
 
     return Configurations
     # print(Configurations)
 
+
 def query_config_operation_mapping_claude_3_7(system_prompt, user_prompt):
     import anthropic, os, json
-    Claude_api_key=os.getenv("CLAUDE_API_KEY")
 
-    example_format = json.dumps([{'Task ID': 'Task-1', 'Page ID': 'Page-7', 'Tasks': 'Add Aqara or Mi Zigbee device', 'Related operations': ['operation_0',], 'Dependencies': ['Task-1'], 'Reason': 'The operations on Page-7 involve selecting different Zigbee devices to add them to the control hub. This task depends on navigating to Page-7 from Page-0, where users prepare to manage child devices.'}, {'Task ID': 'Task-2', 'Page ID': 'Page-7', 'Tasks': '', 'Related operations': ['operation_0',], 'Dependencies': ['Task-1'], 'Reason': ''},], ensure_ascii=False)
+    Claude_api_key = os.getenv("CLAUDE_API_KEY")
 
+    example_format = json.dumps(
+        [
+            {
+                "Task ID": "Task-1",
+                "Page ID": "Page-7",
+                "Tasks": "Add Aqara or Mi Zigbee device",
+                "Related operations": [
+                    "operation_0",
+                ],
+                "Dependencies": ["Task-1"],
+                "Reason": "The operations on Page-7 involve selecting different Zigbee devices to add them to the control hub. This task depends on navigating to Page-7 from Page-0, where users prepare to manage child devices.",
+            },
+            {
+                "Task ID": "Task-2",
+                "Page ID": "Page-7",
+                "Tasks": "",
+                "Related operations": [
+                    "operation_0",
+                ],
+                "Dependencies": ["Task-1"],
+                "Reason": "",
+            },
+        ],
+        ensure_ascii=False,
+    )
 
     full_user_prompt = (
         "EXAMPLE JSON OUTPUT:\n"
@@ -620,9 +821,7 @@ def query_config_operation_mapping_claude_3_7(system_prompt, user_prompt):
         model="claude-3-7-sonnet-20250219",
         max_tokens=1024,
         system=system_prompt,
-        messages=[
-            {"role": "user", "content": full_user_prompt}
-        ]
+        messages=[{"role": "user", "content": full_user_prompt}],
     )
 
     # print(message.content[0].text)
@@ -631,35 +830,56 @@ def query_config_operation_mapping_claude_3_7(system_prompt, user_prompt):
     # print(Configurations)
     return Configurations
 
+
 def query_config_operation_mapping_deepseek_v3(system_prompt, user_prompt):
     from openai import OpenAI
     import json
 
-    example_format = json.dumps({'Task-1':{'page_id': 'Page-7', 'task_content': 'Add Aqara or Mi Zigbee device', 'related_operations': ['operation_0',], 'dependencies': ['Task-1'], 'reason': 'The operations on Page-7 involve selecting different Zigbee devices to add them to the control hub. This task depends on navigating to Page-7 from Page-0, where users prepare to manage child devices.'}, 'Task-2':{'page_id': 'Page-7', 'task_content': '', 'related_operations': ['operation_0',], 'dependencies': ['Task-1'], 'reason': ''}},
-        ensure_ascii=False
+    example_format = json.dumps(
+        {
+            "Task-1": {
+                "page_id": "Page-7",
+                "task_content": "Add Aqara or Mi Zigbee device",
+                "related_operations": [
+                    "operation_0",
+                ],
+                "dependencies": ["Task-1"],
+                "reason": "The operations on Page-7 involve selecting different Zigbee devices to add them to the control hub. This task depends on navigating to Page-7 from Page-0, where users prepare to manage child devices.",
+            },
+            "Task-2": {
+                "page_id": "Page-7",
+                "task_content": "",
+                "related_operations": [
+                    "operation_0",
+                ],
+                "dependencies": ["Task-1"],
+                "reason": "",
+            },
+        },
+        ensure_ascii=False,
     )
-
-
-
 
     client = OpenAI(
         # 若没有配置环境变量，请用百炼API Key将下行替换为：api_key="sk-xxx",
-        api_key=os.getenv("DEEPSEEK_API_KEY"),  # 如何获取API Key：https://help.aliyun.com/zh/model-studio/developer-reference/get-api-key
-        base_url="https://api.deepseek.com"
+        api_key=os.getenv(
+            "DEEPSEEK_API_KEY"
+        ),  # 如何获取API Key：https://help.aliyun.com/zh/model-studio/developer-reference/get-api-key
+        base_url="https://api.deepseek.com",
     )
-
 
     completion = client.chat.completions.create(
         model="deepseek-chat",  # 此处以 deepseek-r1 为例，可按需更换模型名称。
         messages=[
             {
                 "role": "system",
-                "content": system_prompt + "\n\n\n" + f'''
+                "content": system_prompt
+                + "\n\n\n"
+                + f"""
                     EXAMPLE JSON OUTPUT:
                     {example_format}
-                    ''',
+                    """,
             },
-            {'role': 'user', 'content': user_prompt}
+            {"role": "user", "content": user_prompt},
         ],
         response_format={"type": "json_object"},
     )
@@ -668,7 +888,14 @@ def query_config_operation_mapping_deepseek_v3(system_prompt, user_prompt):
     try:
         ret = json.loads(completion.choices[0].message.content)
         for task_id in ret:
-            c =  {"Task ID": task_id, "Page ID": ret[task_id]["page_id"], "Tasks": ret[task_id]["task_content"], "Related operations": ret[task_id]["related_operations"], "Dependencies": ret[task_id]["dependencies"], "Reason": ret[task_id]["reason"] }
+            c = {
+                "Task ID": task_id,
+                "Page ID": ret[task_id]["page_id"],
+                "Tasks": ret[task_id]["task_content"],
+                "Related operations": ret[task_id]["related_operations"],
+                "Dependencies": ret[task_id]["dependencies"],
+                "Reason": ret[task_id]["reason"],
+            }
             Configurations.append(c)
     except:
         pass
@@ -680,30 +907,51 @@ def query_config_operation_mapping_qwen(system_prompt, user_prompt):
     from openai import OpenAI
     import json
 
-    example_format = json.dumps({'Task-1':{'page_id': 'Page-7', 'task_content': 'Add Aqara or Mi Zigbee device', 'related_operations': ['operation_0',], 'dependencies': ['Task-1'], 'reason': 'The operations on Page-7 involve selecting different Zigbee devices to add them to the control hub. This task depends on navigating to Page-7 from Page-0, where users prepare to manage child devices.'}, 'Task-2':{'page_id': 'Page-7', 'task_content': '', 'related_operations': ['operation_0',], 'dependencies': ['Task-1'], 'reason': ''}},
-        ensure_ascii=False
+    example_format = json.dumps(
+        {
+            "Task-1": {
+                "page_id": "Page-7",
+                "task_content": "Add Aqara or Mi Zigbee device",
+                "related_operations": [
+                    "operation_0",
+                ],
+                "dependencies": ["Task-1"],
+                "reason": "The operations on Page-7 involve selecting different Zigbee devices to add them to the control hub. This task depends on navigating to Page-7 from Page-0, where users prepare to manage child devices.",
+            },
+            "Task-2": {
+                "page_id": "Page-7",
+                "task_content": "",
+                "related_operations": [
+                    "operation_0",
+                ],
+                "dependencies": ["Task-1"],
+                "reason": "",
+            },
+        },
+        ensure_ascii=False,
     )
-
-
 
     client = OpenAI(
         # 若没有配置环境变量，请用百炼API Key将下行替换为：api_key="sk-xxx",
-        api_key=os.getenv("QWEN_API_KEY"),  # 如何获取API Key：https://help.aliyun.com/zh/model-studio/developer-reference/get-api-key
-        base_url="https://dashscope.aliyuncs.com/compatible-mode/v1"
+        api_key=os.getenv(
+            "QWEN_API_KEY"
+        ),  # 如何获取API Key：https://help.aliyun.com/zh/model-studio/developer-reference/get-api-key
+        base_url="https://dashscope.aliyuncs.com/compatible-mode/v1",
     )
-
 
     completion = client.chat.completions.create(
         model="qwen2.5-vl-32b-instruct",
         messages=[
             {
                 "role": "system",
-                "content": system_prompt + "\n\n\n" + f'''
+                "content": system_prompt
+                + "\n\n\n"
+                + f"""
                     EXAMPLE JSON OUTPUT:
                     {example_format}
-                    ''',
+                    """,
             },
-            {'role': 'user', 'content': user_prompt}
+            {"role": "user", "content": user_prompt},
         ],
         response_format={"type": "json_object"},
     )
@@ -712,7 +960,14 @@ def query_config_operation_mapping_qwen(system_prompt, user_prompt):
     try:
         ret = json.loads(completion.choices[0].message.content)
         for task_id in ret:
-            c =  {"Task ID": task_id, "Page ID": ret[task_id]["page_id"], "Tasks": ret[task_id]["task_content"], "Related operations": ret[task_id]["related_operations"], "Dependencies": ret[task_id]["dependencies"], "Reason": ret[task_id]["reason"] }
+            c = {
+                "Task ID": task_id,
+                "Page ID": ret[task_id]["page_id"],
+                "Tasks": ret[task_id]["task_content"],
+                "Related operations": ret[task_id]["related_operations"],
+                "Dependencies": ret[task_id]["dependencies"],
+                "Reason": ret[task_id]["reason"],
+            }
             Configurations.append(c)
     except:
         pass
@@ -720,19 +975,18 @@ def query_config_operation_mapping_qwen(system_prompt, user_prompt):
     return Configurations
 
 
-
-
 def query_Confiot_identification(system_prompt, user_prompt, llm="xxx"):
     from pydantic import BaseModel
     from openai import OpenAI
 
-    if(llm == "deepseek"):
+    if llm == "deepseek":
         client = OpenAI(
             # 若没有配置环境变量，请用百炼API Key将下行替换为：api_key="sk-xxx",
-            api_key=os.getenv("DEEPSEEK_API_KEY"),  # 如何获取API Key：https://help.aliyun.com/zh/model-studio/developer-reference/get-api-key
-            base_url="https://api.deepseek.com"
+            api_key=os.getenv(
+                "DEEPSEEK_API_KEY"
+            ),  # 如何获取API Key：https://help.aliyun.com/zh/model-studio/developer-reference/get-api-key
+            base_url="https://api.deepseek.com",
         )
-
 
         completion = client.chat.completions.create(
             model="deepseek-chat",  # 此处以 deepseek-r1 为例，可按需更换模型名称。
@@ -741,8 +995,8 @@ def query_Confiot_identification(system_prompt, user_prompt, llm="xxx"):
                     "role": "system",
                     "content": system_prompt,
                 },
-                {'role': 'user', 'content': user_prompt}
-            ]
+                {"role": "user", "content": user_prompt},
+            ],
         )
 
         try:
@@ -750,13 +1004,14 @@ def query_Confiot_identification(system_prompt, user_prompt, llm="xxx"):
         except:
             pass
 
-    elif(llm == "qwen"):
+    elif llm == "qwen":
         client = OpenAI(
             # 若没有配置环境变量，请用百炼API Key将下行替换为：api_key="sk-xxx",
-            api_key=os.getenv("QWEN_API_KEY"),  # 如何获取API Key：https://help.aliyun.com/zh/model-studio/developer-reference/get-api-key
-            base_url="https://dashscope.aliyuncs.com/compatible-mode/v1"
+            api_key=os.getenv(
+                "QWEN_API_KEY"
+            ),  # 如何获取API Key：https://help.aliyun.com/zh/model-studio/developer-reference/get-api-key
+            base_url="https://dashscope.aliyuncs.com/compatible-mode/v1",
         )
-
 
         completion = client.chat.completions.create(
             model="qwen2.5-vl-32b-instruct",
@@ -765,8 +1020,8 @@ def query_Confiot_identification(system_prompt, user_prompt, llm="xxx"):
                     "role": "system",
                     "content": system_prompt,
                 },
-                {'role': 'user', 'content': user_prompt}
-            ]
+                {"role": "user", "content": user_prompt},
+            ],
         )
 
         try:
@@ -775,6 +1030,7 @@ def query_Confiot_identification(system_prompt, user_prompt, llm="xxx"):
             pass
 
     else:
+
         class ViolationFormat(BaseModel):
             violated_criterion_id: str
             configuration_resource: str
