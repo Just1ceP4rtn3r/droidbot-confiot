@@ -581,9 +581,9 @@ class ConfigurationParser:
                 for c in content:
                     config_json.append(
                         {
-                            "Id": len(config_json),
+                            "Feature ID": len(config_json),
                             "Page ID": page,
-                            "Tasks": c["Feature"],
+                            "Feature Content": c["Feature"],
                             "Related operations": c["Sequence"],
                         }
                     )
@@ -595,14 +595,8 @@ class ConfigurationParser:
         from pydantic import BaseModel
         from openai import OpenAI
 
-        class ConfigurationFormat(BaseModel):
-            task_id: int
-            page_id: str
-            task_content: str
-            related_operations: list[int]
-
         class response(BaseModel):
-            configuration_tasks: list[ConfigurationFormat]
+            feature_IDs: list[int]
 
         client = OpenAI()
         completion = client.beta.chat.completions.parse(
@@ -610,7 +604,7 @@ class ConfigurationParser:
             messages=[
                 {
                     "role": "system",
-                    "content": "Below are some JSON-formatted testing tasks for an IoT app. You have following requirements: (1) Please deduplicate the tasks in the same page based on their semantics. If two tasks perform the same operation (or configure the same resource) and only differ in their configuration options (e.g., pair with/add device_a'' and add device_b'' is the same task), keep only one and try to retain the one with richer and more complete details like options (e.g., keep 'configure the light state to off' instead of 'light management'). (2) Then, remove tasks that only involve read semantic (not write to any resource): ['view', 'access', 'retrieve', 'obtain', 'read', 'inspect'].",
+                    "content": "Below are some JSON-formatted features (user functions/tasks) for an IoT app. You have following requirements: (1) Please deduplicate the tasks in the same page based on their semantics. If two tasks perform the same operation (or configure the same resource) and only differ in their configuration options (e.g., pair with/add device_a'' and add device_b'' is the same task), keep only one and try to retain the one with richer and more complete details like options (e.g., keep 'configure the light state to off' instead of 'light management'). (2) Then, remove tasks that only involve read semantic (not write to any resource): ['view', 'access', 'retrieve', 'obtain', 'read', 'inspect']. \n **Output Format** \n Please provide only the final filtered Feature IDs.",
                 },
                 # {"role": "system", "content": "Below are some JSON-formatted testing tasks for an IoT app. You have following requirements: (1) Please deduplicate the tasks in the same page based on their semantics. If two tasks perform the same operation (or configure the same resource) and only differ in their configuration options (e.g., pair with/add device_a'' and add device_b'' is the same task), keep only one and try to retain the one with richer and more complete details like options (e.g., keep 'configure the light state to off' instead of 'light management'). (2) Prioritize tasks with more specific details or options by ranking them first in the response. (3) Then, remove tasks that only involve read semantic (not write to any resource): ['view', 'access', 'retrieve', 'obtain', 'read', 'inspect']."},
                 {
@@ -622,21 +616,15 @@ class ConfigurationParser:
         )
 
         event = completion.choices[0].message.parsed
-        Configurations = []
 
-        for r in event.configuration_tasks:
-            task = {
-                "Id": len(Configurations),
-                "Page ID": r.page_id,
-                "Tasks": r.task_content,
-                "Related operations": r.related_operations,
-            }
-            Configurations.append(task)
+        filtered_configurations = [config_json[id] for id in event.feature_IDs]
 
         # Configurations = sorted(Configurations, key=lambda x: len(x["Tasks"]), reverse=True)
 
         with open(LLMResult_dir + "/ConfigurationsSummary.json", "w") as f:
-            f.write(json.dumps(Configurations))
+            _str = json.dumps(filtered_configurations)
+            _str = _str.replace("Feature ID", "Id").replace("Feature Content", "Tasks")
+            f.write(_str)
 
     # decrpted
     # def query_LLM_for_configuration_mapping(self, outputdir):
