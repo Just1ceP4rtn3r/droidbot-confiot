@@ -975,73 +975,34 @@ def query_config_operation_mapping_qwen(system_prompt, user_prompt):
     return Configurations
 
 
-def query_Confiot_identification(system_prompt, user_prompt, llm="xxx"):
+def query_Confiot_identification(system_prompt, user_prompt, TestingPhase, llm="xxx"):
     from pydantic import BaseModel
     from openai import OpenAI
 
-    if llm == "deepseek":
-        client = OpenAI(
-            # 若没有配置环境变量，请用百炼API Key将下行替换为：api_key="sk-xxx",
-            api_key=os.getenv(
-                "DEEPSEEK_API_KEY"
-            ),  # 如何获取API Key：https://help.aliyun.com/zh/model-studio/developer-reference/get-api-key
-            base_url="https://api.deepseek.com",
-        )
+    class ViolationFormat(BaseModel):
+        violated_criterion_id: str
+        configuration_resource: str
+        Verification_Question: str
+        Verification_Answer_bool: bool
+        Verification_Answer: str
+        Counterexample_Question: str
+        Counterexample_Answer_bool: bool
+        Counterexample_Answer: str
+        Confidence_score: str
+        Guess_steps: list[str]
 
-        completion = client.chat.completions.create(
-            model="deepseek-chat",  # 此处以 deepseek-r1 为例，可按需更换模型名称。
-            messages=[
-                {
-                    "role": "system",
-                    "content": system_prompt,
-                },
-                {"role": "user", "content": user_prompt},
-            ],
-        )
+    class response_AfterDelegation(BaseModel):
+        violations: list[ViolationFormat]
 
-        try:
-            return completion.choices[0].message.content
-        except:
-            pass
+    class response_DuringUsage(BaseModel):
+        violations: list[ViolationFormat]
+        Direct_Capability_Changes: list[str]
+        Resource_State_Changes: list[str]
+        Capability_Changes: list[str]
 
-    elif llm == "qwen":
-        client = OpenAI(
-            # 若没有配置环境变量，请用百炼API Key将下行替换为：api_key="sk-xxx",
-            api_key=os.getenv(
-                "QWEN_API_KEY"
-            ),  # 如何获取API Key：https://help.aliyun.com/zh/model-studio/developer-reference/get-api-key
-            base_url="https://dashscope.aliyuncs.com/compatible-mode/v1",
-        )
+    from Confiot_main.ConfiotHunter.TestingPhase import Phase
 
-        completion = client.chat.completions.create(
-            model="qwen2.5-vl-32b-instruct",
-            messages=[
-                {
-                    "role": "system",
-                    "content": system_prompt,
-                },
-                {"role": "user", "content": user_prompt},
-            ],
-        )
-
-        try:
-            return completion.choices[0].message.content
-        except:
-            pass
-
-    else:
-
-        class ViolationFormat(BaseModel):
-            violated_criterion_id: str
-            configuration_resource: str
-            reason: str
-            Confidence_score: str
-            Guess_steps: list[str]
-
-        class response(BaseModel):
-            violations: list[ViolationFormat]
-            resource_update: list[str]
-
+    if TestingPhase == Phase.AfterDelegation or TestingPhase == Phase.AfterRevocation:
         client = OpenAI()
         completion = client.beta.chat.completions.parse(
             model="gpt-4o",
@@ -1052,9 +1013,23 @@ def query_Confiot_identification(system_prompt, user_prompt, llm="xxx"):
                     "content": user_prompt,
                 },
             ],
-            response_format=response,
+            response_format=response_AfterDelegation,
         )
-
+        event = completion.choices[0].message.parsed
+        return event
+    elif TestingPhase == Phase.DuringUsage:
+        client = OpenAI()
+        completion = client.beta.chat.completions.parse(
+            model="gpt-4o",
+            messages=[
+                {"role": "system", "content": system_prompt},
+                {
+                    "role": "user",
+                    "content": user_prompt,
+                },
+            ],
+            response_format=response_DuringUsage,
+        )
         event = completion.choices[0].message.parsed
 
         return event

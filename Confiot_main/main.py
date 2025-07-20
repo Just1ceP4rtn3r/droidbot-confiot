@@ -94,9 +94,9 @@ def run_Configuration_parser(options):
 
     CP = ConfigurationParser(Agent)
 
-    # CP.query_LLM_for_configuration_mapping_based_on_page_graph(
-    #     settings.LLMConfiguration_output
-    # )
+    CP.query_LLM_for_configuration_mapping_based_on_page_graph(
+        settings.LLMConfiguration_output
+    )
     CP.save_configurations(settings.LLMConfiguration_output)
     try:
         Agent.device.disconnect()
@@ -150,12 +150,16 @@ def run_Oracle(options):
 
     task_replay_steps_file = os.listdir(settings.UIHierarchy_comparation_output)
     task_ids = [
-        int(file[5:]) for file in task_replay_steps_file if file.startswith(("Task"))
+        int(file[5:])
+        for file in task_replay_steps_file
+        if file.startswith(("Task")) and file != "Task-REVOKE"
     ]
     task_ids.sort()
     task_ids = [f"Task-{id}" for id in task_ids]
     if "000" in task_replay_steps_file:
         task_ids.insert(0, "000")
+    if "Task-REVOKE" in task_replay_steps_file:
+        task_ids.append("Task-REVOKE")
     # Capabilities Oracle
 
     Agent = Confiot()
@@ -170,10 +174,10 @@ def run_Oracle(options):
 
         if not last_task:
             phase = Phase.AfterDelegation
-        elif task == task_ids[-1]:
+        elif task == "Task-REVOKE":
             phase = Phase.AfterRevocation
         else:
-            Phase.DuringUsage
+            phase = Phase.DuringUsage
         oracle.IdentifyConfiot(
             phase,
             Criteria,
@@ -186,11 +190,11 @@ def run_Oracle(options):
 
     # Privacy Oracle
 
-    co = ConfiotOracle()
-    co.IdnetifyConfiot(
-        options.guest_droidbot_output + "/Confiot/",
-        [],
-    )
+    # co = ConfiotOracle()
+    # co.IdnetifyConfiot(
+    #     options.guest_droidbot_output + "/Confiot/",
+    #     [],
+    # )
 
 
 def main():

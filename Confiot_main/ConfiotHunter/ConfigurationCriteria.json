@@ -8,7 +8,7 @@
         {
             "Id": "2",
             "Role": "Administrators, Guests",
-            "Capabilities": "Should not view or modify privacy data of other users"
+            "Capabilities": "Should not view or modify privacy data of other user, consider: Credit Card Numbers、Bank Account、Payment History、Passwords and PINs、Biometric Data、Location History、Private Messages and Personal Files and Documents"
         },
         {
             "Id": "3",
@@ -18,17 +18,12 @@
         {
             "Id": "4",
             "Role": "Guests",
-            "Capabilities": "Should not delete the device from the device list or smart home"
+            "Capabilities": "Should not add/delete the device to/from the device list or smart home"
         },
         {
             "Id": "5",
             "Role": "Guests",
             "Capabilities": "Should not access or edit user access rights"
-        },
-        {
-            "Id": "6",
-            "Role": "Administrators, Guests",
-            "Capabilities": "Should not access or edit any resource of other users, including device automation/scheduled task, history, log and other resource created by others"
         }
     ]
 }

@@ -316,7 +316,7 @@ class ConfigurationParser:
                 if not os.path.exists(outputdir + f"/{page}"):
                     os.makedirs(outputdir + f"/{page}")
 
-                with open(outputdir + f"/{page}/PageInfo.json", "w") as f:
+                with open(outputdir + f"/{page}/PageInfo.txt", "w") as f:
                     f.write(json.dumps(page_info_json))
 
             print(page)
@@ -345,7 +345,7 @@ class ConfigurationParser:
                 f.write("################ Response: " + page + "################\n")
                 f.write(json.dumps(features) + "\n")
 
-            with open(outputdir + f"/{page}/PageInfo.json", "w") as f:
+            with open(outputdir + f"/{page}/PageInfo.txt", "w") as f:
                 f.write(json.dumps(self.PAGEINFO[page]))
 
     # def query_LLM_for_page_dependency(self, outputdir):
@@ -391,7 +391,7 @@ class ConfigurationParser:
     #                 if not os.path.exists(outputdir + f"/{child_page}"):
     #                     continue
 
-    #                 with open(outputdir + f"/{child_page}/PageInfo.json", "r") as f:
+    #                 with open(outputdir + f"/{child_page}/PageInfo.txt", "r") as f:
     #                     childpage_info = f.read()
 
     #                 children_info[child_page] = json.loads(childpage_info)
@@ -399,7 +399,7 @@ class ConfigurationParser:
     #                     child_page
     #                 ].pop("Page ID")
 
-    #             with open(outputdir + f"/{page}/PageInfo.json", "r") as f:
+    #             with open(outputdir + f"/{page}/PageInfo.txt", "r") as f:
     #                 page_info = f.read()
 
     #             system_prompt = FatherQuery_template
@@ -508,7 +508,7 @@ class ConfigurationParser:
                     if not os.path.exists(outputdir + f"/{child_page}"):
                         continue
 
-                    with open(outputdir + f"/{child_page}/PageInfo.json", "r") as f:
+                    with open(outputdir + f"/{child_page}/PageInfo.txt", "r") as f:
                         childpage_info = f.read()
 
                     children_info[child_page] = json.loads(childpage_info)
@@ -516,7 +516,7 @@ class ConfigurationParser:
                         child_page
                     ].pop("Page ID")
 
-                with open(outputdir + f"/{page}/PageInfo.json", "r") as f:
+                with open(outputdir + f"/{page}/PageInfo.txt", "r") as f:
                     page_info = f.read()
 
                 system_prompt = FatherQuery_template
@@ -588,15 +588,43 @@ class ConfigurationParser:
                         }
                     )
 
-        with open(LLMResult_dir + "/ConfigurationsComplete.json", "w") as f:
-            f.write(json.dumps(config_json))
-        # config_json = filter_configurations(config_json)
-
         from pydantic import BaseModel
         from openai import OpenAI
 
         class response(BaseModel):
             feature_IDs: list[int]
+
+        client = OpenAI()
+        completion = client.beta.chat.completions.parse(
+            model="gpt-4o",
+            messages=[
+                {
+                    "role": "system",
+                    "content": "Below are some JSON-formatted features (user functions/tasks) for an IoT app. You have following requirements: (1) Please deduplicate the tasks in the same page based on their semantics. If two tasks perform the same operation (or configure the same resource) and only differ in their configuration options (e.g., pair with/add device_a'' and add device_b'' is the same task), keep only one and try to retain the one with richer and more complete details like options (e.g., keep 'configure the light state to off' instead of 'light management'). \n **Output Format** \n Please provide only the final filtered Feature IDs.",
+                },
+                # {"role": "system", "content": "Below are some JSON-formatted testing tasks for an IoT app. You have following requirements: (1) Please deduplicate the tasks in the same page based on their semantics. If two tasks perform the same operation (or configure the same resource) and only differ in their configuration options (e.g., pair with/add device_a'' and add device_b'' is the same task), keep only one and try to retain the one with richer and more complete details like options (e.g., keep 'configure the light state to off' instead of 'light management'). (2) Prioritize tasks with more specific details or options by ranking them first in the response. (3) Then, remove tasks that only involve read semantic (not write to any resource): ['view', 'access', 'retrieve', 'obtain', 'read', 'inspect']."},
+                {
+                    "role": "user",
+                    "content": json.dumps(config_json),
+                },
+            ],
+            response_format=response,
+        )
+
+        event = completion.choices[0].message.parsed
+
+        filtered_configurations = [config_json[id] for id in event.feature_IDs]
+
+        for config in filtered_configurations:
+            try:
+                config["Page ID"] = config["Related operations"][0]["Page ID"]
+            except:
+                pass
+
+        with open(LLMResult_dir + "/ConfigurationsComplete.json", "w") as f:
+            _str = json.dumps(filtered_configurations)
+            _str = _str.replace("Feature ID", "Id").replace("Feature Content", "Tasks")
+            f.write(_str)
 
         client = OpenAI()
         completion = client.beta.chat.completions.parse(
@@ -618,6 +646,12 @@ class ConfigurationParser:
         event = completion.choices[0].message.parsed
 
         filtered_configurations = [config_json[id] for id in event.feature_IDs]
+
+        for config in filtered_configurations:
+            try:
+                config["Page ID"] = config["Related operations"][0]["Page ID"]
+            except:
+                pass
 
         # Configurations = sorted(Configurations, key=lambda x: len(x["Tasks"]), reverse=True)
 

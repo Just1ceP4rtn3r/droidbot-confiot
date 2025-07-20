@@ -769,53 +769,28 @@ class ConfigurationConfiotOracle(ConfiotOracle):
         # "Task...": [op_id, ..]
         configurations = {}
 
-        page_worklist = {}
+        if not os.path.exists(LLMResult_dir + f"/ConfigurationsComplete.json"):
+            return None
 
-        for node in ConfigurationParser(self.Agent).page_navigation_graph.nodes:
-            page_worklist[node.name] = node.level
+        with open(LLMResult_dir + f"/ConfigurationsComplete.json") as f:
+            tasks = json.load(f)
+            # 可能包含来自child pages的tasks
+            for t in tasks:
+                try:
+                    page_id = t["Page ID"]
+                    task_content = t["Tasks"]
 
-        # 根据node.level，从小到大排序
-        page_worklist = dict(
-            sorted(page_worklist.items(), key=lambda item: item[1], reverse=False)
-        )
-
-        completed_pages = set()
-        for page in page_worklist:
-            if not os.path.exists(LLMResult_dir + f"/{page}/Configurations.json"):
-                continue
-            if page in completed_pages:
-                continue
-            with open(LLMResult_dir + f"/{page}/Configurations.json") as f:
-                tasks = json.load(f)
-                # 可能包含来自child pages的tasks
-                for t in tasks:
-                    try:
-                        page_id = t["Page ID"]
-                        task_content = t["Tasks"]
-                        related_operations = []
-
-                        page_id = "Page-" + "".join(re.findall(r"\d", page_id))
-
-                        for o in t["Related operations"]:
-                            digits = re.findall(r"\d", o)
-                            related_operations.append(int("".join(digits)))
-                        if page_id not in configurations:
-                            configurations[page_id] = {}
-                        if (
-                            task_content == "None"
-                            or task_content == ""
-                            or not task_content
-                            or not related_operations
-                        ):
-                            continue
-                        configurations[page_id][task_content] = related_operations
-                        completed_pages.add(page_id)
-                    except:
-                        print(
-                            "[ERR]: wrong structure of the configuration file ",
-                            LLMResult_dir + f"{page}/Configurations.json",
-                        )
-                        continue
+                    page_id = "Page-" + "".join(re.findall(r"\d", page_id))
+                    if page_id not in configurations:
+                        configurations[page_id] = {}
+                    configurations[page_id][task_content] = t["Related operations"]
+                except Exception as e:
+                    print(
+                        "[ERR]: wrong structure of the configuration file ",
+                        LLMResult_dir + "/ConfigurationsComplete.json",
+                        e,
+                    )
+                    continue
         return configurations
 
     # Criteria: JSON
@@ -893,6 +868,10 @@ class ConfigurationConfiotOracle(ConfiotOracle):
             system_prompt = DuringUsage_system_template
             user_prompt = DuringUsage_user_template.replace("{{ROLE}}", Role)
             user_prompt = user_prompt.replace("{{CRITERIA}}", str(Criteria))
+            user_prompt = user_prompt.replace(
+                "{{EXECUTOR}}", "Administrators" if Role == "Guests" else "Guests"
+            )
+            # user_prompt = user_prompt.replace("{{CONFIG}}", str(Criteria))
             page_ui_changes_str = []
 
             for changed_page in UIChanges:
@@ -1032,7 +1011,9 @@ class ConfigurationConfiotOracle(ConfiotOracle):
             user_prompt = user_prompt.replace("{{ACTIVITY}}", activiy)
 
         res = query_Confiot_identification(
-            system_prompt=system_prompt, user_prompt=user_prompt
+            system_prompt=system_prompt,
+            user_prompt=user_prompt,
+            TestingPhase=TestingPhase,
         )
 
         #  gpt-4o
@@ -1040,9 +1021,19 @@ class ConfigurationConfiotOracle(ConfiotOracle):
             violations = []
             for r in res.violations:
                 violation = {
+                    "FinallJudgment": (
+                        False
+                        if r.Verification_Answer_bool == r.Counterexample_Answer_bool
+                        else True
+                    ),
                     "Violated criterion id": r.violated_criterion_id,
                     "configuration_resource": r.configuration_resource,
-                    "Reason": r.reason,
+                    "Verification_Question": r.Verification_Question,
+                    "Verification_Answer_bool": r.Verification_Answer_bool,
+                    "Verification_Answer": r.Verification_Answer,
+                    "Counterexample_Question": r.Counterexample_Question,
+                    "Counterexample_Answer_bool": r.Counterexample_Answer_bool,
+                    "Counterexample_Answer": r.Counterexample_Answer,
                     "Confidence_score": r.Confidence_score,
                     "Guess_steps": r.Guess_steps,
                 }
@@ -1051,14 +1042,19 @@ class ConfigurationConfiotOracle(ConfiotOracle):
             with open(outputdir + "/raw.txt", "w") as f:
                 f.write(system_prompt + user_prompt + "\n\n\n" + str(violations) + "\n")
 
-            if not os.path.exists(settings.violation_output + "/Activities.txt"):
-                with open(settings.violation_output + "/Activities.txt", "w") as f:
-                    for v in res.resource_update:
-                        f.write(v + "\n")
-            else:
-                with open(settings.violation_output + "/Activities.txt", "a") as f:
-                    for v in res.resource_update:
-                        f.write(v + "\n")
+            if TestingPhase == Phase.DuringUsage:
+                if not os.path.exists(settings.violation_output + "/Activities.txt"):
+                    with open(settings.violation_output + "/Activities.txt", "w") as f:
+                        for v in (
+                            res.Direct_Capability_Changes + res.Resource_State_Changes
+                        ):
+                            f.write(v + "\n")
+                else:
+                    with open(settings.violation_output + "/Activities.txt", "a") as f:
+                        for v in (
+                            res.Direct_Capability_Changes + res.Resource_State_Changes
+                        ):
+                            f.write(v + "\n")
         except:
             # deepseek or qwen
             try:
