@@ -55,7 +55,7 @@ def _Autodroid(task_id, page=None, task=None):
         script_path=None,
         event_interval=1,
         timeout=input_manager.DEFAULT_TIMEOUT,
-        event_count=3,
+        event_count=30,
         debug_mode=False,
         keep_app=True,
         keep_env=True,
