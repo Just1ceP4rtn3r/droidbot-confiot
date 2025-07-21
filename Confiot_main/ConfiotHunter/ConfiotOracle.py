@@ -16,7 +16,7 @@ from Confiot_main.ConfigurationParser.ConfigurationParser import ConfigurationPa
 from Confiot_main.settings import settings
 from Confiot_main.ConfiotHunter.TestingPhase import Phase
 from Confiot_main.ConfiotHunter.UIChanges import *
-from Confiot_main.utils.util import query_Confiot_identification
+from Confiot_main.utils.util import *
 
 from transformers import AutoTokenizer, AutoModelForSequenceClassification
 import requests
@@ -802,18 +802,21 @@ class ConfigurationConfiotOracle(ConfiotOracle):
         if not os.path.exists(outputdir):
             os.makedirs(outputdir)
 
-        AfterDelegation_system_template = ""
+        AfterDelegation_system_ask_questions_template = ""
         AfterDelegation_user_template = ""
         DuringUsage_system_template = ""
+
         DuringUsage_user_template = ""
         AfterRevocation_system_template = ""
         AfterRevocation_user_template = ""
         PageUIChange_template = ""
         BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+
         with open(
-            BASE_DIR + "/../prompt/IdentifyCapabilityConfiot/AfterDelegation_system.txt"
+            BASE_DIR
+            + "/../prompt/IdentifyCapabilityConfiot/AfterDelegation_system_ask_questions.txt"
         ) as f:
-            AfterDelegation_system_template = f.read()
+            AfterDelegation_system_ask_questions_template = f.read()
         with open(
             BASE_DIR + "/../prompt/IdentifyCapabilityConfiot/AfterDelegation_user.txt"
         ) as f:
@@ -845,22 +848,159 @@ class ConfigurationConfiotOracle(ConfiotOracle):
         user_prompt = ""
         # After Delegation
         if TestingPhase == Phase.AfterDelegation and UIChanges == -1:
-            system_prompt = AfterDelegation_system_template
-
             config_strs = []
             cid = 0
             for page in Configurations:
                 for c in Configurations[page]:
                     if c != "" and c != "None":
-                        config_strs.append(f"({cid}) " + c)
+                        config_strs.append(
+                            f"({cid}) "
+                            + c
+                            # + "    Operation Sequence try to finish this task: "
+                            # + str(Configurations[page][c])
+                        )
                         cid += 1
-
             user_prompt = AfterDelegation_user_template.replace(
                 "{{CONFIG}}", "\n".join(config_strs)
             )
             user_prompt = user_prompt.replace("{{ROLE}}", Role)
-
             user_prompt = user_prompt.replace("{{CRITERIA}}", str(Criteria))
+
+            verification_questions = []
+            counterexample_questions = []
+
+            for idx, config in enumerate(config_strs):
+                question = f"Does the capability `[{config}]` of role `[{Role}]` **necessarily** imply a violation of criterion `[Security Criteria]`?"
+                verification_questions.append(
+                    {"Question_ID": idx, "question": question}
+                )
+
+            # ask verification questions
+            system_prompt = AfterDelegation_system_ask_questions_template
+            verification_user_prompt = (
+                user_prompt
+                + """
+            * **Output format (Only respond violations that Answer_Yes_or_No = True)**
+                Question_ID: int # which question
+                Answer_Yes_or_No: bool # - Yes/True: Indicates that the initial analysis concludes the user's capability **necessarily** or **very likely** violates the security criterion. - No/False: Indicates no direct evidence was found to suggest the capability violates the criterion.
+                Reasoning_steps: list[str] # Why capability violate one of given criteria?
+                Related_criterion: str # set to "None" if no criterion is violated and the Answer_Yes_or_No is False
+
+            * **Answer following Verification Question (Argue FOR Violation):**
+                * **Question Format:** "Does the capability `[capability text]` of role `[User Role]` **necessarily** imply a violation of criterion `[criterion text]`?"
+                * **To answer, you must:** Fill in the questions one by one using the input Security Criteria for analysis. Pinpoint the specific words or phrases in both the capability and the criterion that create a direct conflict. Your reasoning should establish that the action allowed by the capability is the same action forbidden by the criterion.
+            """
+                + str(verification_questions)
+            )
+            LLMresponse_verification_answer = (
+                query_Confiot_identification_ask_questions(
+                    system_prompt=system_prompt,
+                    user_prompt=verification_user_prompt,
+                    TestingPhase=TestingPhase,
+                )
+            )
+            verification_answers = []
+            counterexample_answers = {}
+
+            candidate_violations = []
+            final_violations = []
+            for a in LLMresponse_verification_answer.Answers:
+                verification_answers.append(
+                    {
+                        "Question_ID": a.Question_ID,
+                        "Question": verification_questions[a.Question_ID],
+                        "Answer_Yes_or_No": a.Answer_Yes_or_No,
+                        "Reasoning_steps": a.Reasoning_steps,
+                        "Related_criterion": a.Related_criterion,
+                    }
+                )
+                if a.Answer_Yes_or_No:
+                    candidate_violations.append(
+                        {
+                            "Question_ID": a.Question_ID,
+                            "Question": verification_questions[a.Question_ID],
+                            "Answer_Yes_or_No": a.Answer_Yes_or_No,
+                            "Reasoning_steps": a.Reasoning_steps,
+                            "Related_criterion": a.Related_criterion,
+                        }
+                    )
+
+            with open(outputdir + "/VerificationQuestions.txt", "w") as f:
+                f.write(
+                    system_prompt
+                    + verification_user_prompt
+                    + "\n\n\n"
+                    + str(verification_answers)
+                    + "\n"
+                )
+
+            for v in candidate_violations:
+                config = config_strs[v["Question_ID"]]
+                question = f"Is it **possible** for the role `[{Role}]`'s capability `[{config}]` to exist **without** violating criterion `[{v['Related_criterion']}]`?"
+                counterexample_questions.append(
+                    {
+                        "Question_ID": v["Question_ID"],
+                        "question": question,
+                        "Violation_Reasoning_Process": v["Reasoning_steps"],
+                    }
+                )
+
+            system_prompt = AfterDelegation_system_ask_questions_template
+            counterexample_user_prompt = (
+                user_prompt
+                + """
+            * **Counterexample Question (Argue AGAINST Violation):**
+                * **Question Format:** "Is it **possible** for the role `[User Role]`'s capability `[capability text]` to exist **without** violating criterion `[criterion text]`?"
+                * **To answer, you must:** Reviewing the [Reasoning Process] for this Violation identification, especially considering uncertain language in the process (e.g., "could/maybe/..."). Actively search for alternative interpretations. Could the terms be ambiguous (e.g., "Device settings" is vague, could not consist over-priviledge configuration. Or privacy data "xxx log" is belong to `[User Role]` but not other users)? Could the capability's scope be narrower than the criterion's? Is there a plausible scenario where the two do not conflict?
+
+            * **Output format**
+                Question_ID: int # which question
+                Answer_Yes_or_No: bool # - Yes/True: Indicates that a plausible **counterexample** or alternative interpretation was found, allowing the capability to exist **without** violating the criterion.
+                Reasoning_steps: list[str] # if Answer_Yes_or_No=True: what counterexample you have found. if Answer_Yes_or_No=False: why you did not find any plausible counterexample.
+                Related_criterion: str
+            """
+                + str(counterexample_questions)
+            )
+            LLMresponse_counterexample_answer = (
+                query_Confiot_identification_ask_questions(
+                    system_prompt=system_prompt,
+                    user_prompt=counterexample_user_prompt,
+                    TestingPhase=TestingPhase,
+                )
+            )
+
+            for a in LLMresponse_counterexample_answer.Answers:
+                counterexample_answers[a.Question_ID] = {
+                    "Question_ID": a.Question_ID,
+                    "Answer_Yes_or_No": a.Answer_Yes_or_No,
+                    "Reasoning_steps": a.Reasoning_steps,
+                    "Related_criterion": a.Related_criterion,
+                }
+
+            with open(outputdir + "/CounterexampleQuestions.txt", "w") as f:
+                f.write(
+                    system_prompt
+                    + counterexample_user_prompt
+                    + "\n\n\n"
+                    + str(counterexample_answers)
+                    + "\n"
+                )
+
+            for v in candidate_violations:
+                if v["Question_ID"] in counterexample_answers:
+                    if not counterexample_answers[v["Question_ID"]]["Answer_Yes_or_No"]:
+                        violation = {
+                            "Question": v["Question"],
+                            "Violated_criterion": v["Related_criterion"],
+                            "Verification": v["Reasoning_steps"],
+                            "Counterexample": counterexample_answers[v["Question_ID"]][
+                                "Reasoning_steps"
+                            ],
+                        }
+                        final_violations.append(violation)
+            with open(outputdir + "/raw.txt", "w") as f:
+                json.dump(final_violations, f, indent=4, ensure_ascii=False)
+
         elif TestingPhase == Phase.DuringUsage:
             if len(UIChanges) == 0:
                 print("[DBG]: Skip because no UI changes")
@@ -933,6 +1073,82 @@ class ConfigurationConfiotOracle(ConfiotOracle):
             user_prompt = user_prompt.replace(
                 "{{UICHANGE}}", "\n".join(page_ui_changes_str)
             )
+            res = query_Confiot_identification(
+                system_prompt=system_prompt,
+                user_prompt=user_prompt,
+                TestingPhase=TestingPhase,
+            )
+
+            #  gpt-4o
+            try:
+                violations = []
+                for r in res.violations:
+                    violation = {
+                        "FinallJudgment": (
+                            False
+                            if r.Verification_Answer_bool
+                            == r.Counterexample_Answer_bool
+                            else True
+                        ),
+                        "Violated criterion id": r.violated_criterion_id,
+                        "configuration_resource": r.configuration_resource,
+                        "Verification_Question": r.Verification_Question,
+                        "Verification_Answer_bool": r.Verification_Answer_bool,
+                        "Verification_Answer": r.Verification_Answer,
+                        "Counterexample_Question": r.Counterexample_Question,
+                        "Counterexample_Answer_bool": r.Counterexample_Answer_bool,
+                        "Counterexample_Answer": r.Counterexample_Answer,
+                        "Confidence_score": r.Confidence_score,
+                        "Guess_steps": r.Guess_steps,
+                    }
+                    violations.append(violation)
+
+                with open(outputdir + "/raw.txt", "w") as f:
+                    f.write(
+                        system_prompt + user_prompt + "\n\n\n" + str(violations) + "\n"
+                    )
+
+                if TestingPhase == Phase.DuringUsage:
+                    if not os.path.exists(
+                        settings.violation_output + "/Activities.txt"
+                    ):
+                        with open(
+                            settings.violation_output + "/Activities.txt", "w"
+                        ) as f:
+                            for v in (
+                                res.Direct_Capability_Changes
+                                + res.Resource_State_Changes
+                            ):
+                                f.write(v + "\n")
+                    else:
+                        with open(
+                            settings.violation_output + "/Activities.txt", "a"
+                        ) as f:
+                            for v in (
+                                res.Direct_Capability_Changes
+                                + res.Resource_State_Changes
+                            ):
+                                f.write(v + "\n")
+            except:
+                # deepseek or qwen
+                try:
+                    with open(outputdir + "/raw.txt", "w") as f:
+                        f.write(system_prompt + user_prompt + "\n\n\n" + res + "\n")
+
+                    if not os.path.exists(
+                        settings.violation_output + "/Activities.txt"
+                    ):
+                        with open(
+                            settings.violation_output + "/Activities.txt", "w"
+                        ) as f:
+                            f.write(res)
+                    else:
+                        with open(
+                            settings.violation_output + "/Activities.txt", "a"
+                        ) as f:
+                            f.write(res)
+                except:
+                    pass
 
         elif TestingPhase == Phase.AfterRevocation:
             system_prompt = AfterRevocation_system_template
@@ -1010,62 +1226,79 @@ class ConfigurationConfiotOracle(ConfiotOracle):
 
             user_prompt = user_prompt.replace("{{ACTIVITY}}", activiy)
 
-        res = query_Confiot_identification(
-            system_prompt=system_prompt,
-            user_prompt=user_prompt,
-            TestingPhase=TestingPhase,
-        )
+            res = query_Confiot_identification(
+                system_prompt=system_prompt,
+                user_prompt=user_prompt,
+                TestingPhase=TestingPhase,
+            )
 
-        #  gpt-4o
-        try:
-            violations = []
-            for r in res.violations:
-                violation = {
-                    "FinallJudgment": (
-                        False
-                        if r.Verification_Answer_bool == r.Counterexample_Answer_bool
-                        else True
-                    ),
-                    "Violated criterion id": r.violated_criterion_id,
-                    "configuration_resource": r.configuration_resource,
-                    "Verification_Question": r.Verification_Question,
-                    "Verification_Answer_bool": r.Verification_Answer_bool,
-                    "Verification_Answer": r.Verification_Answer,
-                    "Counterexample_Question": r.Counterexample_Question,
-                    "Counterexample_Answer_bool": r.Counterexample_Answer_bool,
-                    "Counterexample_Answer": r.Counterexample_Answer,
-                    "Confidence_score": r.Confidence_score,
-                    "Guess_steps": r.Guess_steps,
-                }
-                violations.append(violation)
-
-            with open(outputdir + "/raw.txt", "w") as f:
-                f.write(system_prompt + user_prompt + "\n\n\n" + str(violations) + "\n")
-
-            if TestingPhase == Phase.DuringUsage:
-                if not os.path.exists(settings.violation_output + "/Activities.txt"):
-                    with open(settings.violation_output + "/Activities.txt", "w") as f:
-                        for v in (
-                            res.Direct_Capability_Changes + res.Resource_State_Changes
-                        ):
-                            f.write(v + "\n")
-                else:
-                    with open(settings.violation_output + "/Activities.txt", "a") as f:
-                        for v in (
-                            res.Direct_Capability_Changes + res.Resource_State_Changes
-                        ):
-                            f.write(v + "\n")
-        except:
-            # deepseek or qwen
+            #  gpt-4o
             try:
-                with open(outputdir + "/raw.txt", "w") as f:
-                    f.write(system_prompt + user_prompt + "\n\n\n" + res + "\n")
+                violations = []
+                for r in res.violations:
+                    violation = {
+                        "FinallJudgment": (
+                            False
+                            if r.Verification_Answer_bool
+                            == r.Counterexample_Answer_bool
+                            else True
+                        ),
+                        "Violated criterion id": r.violated_criterion_id,
+                        "configuration_resource": r.configuration_resource,
+                        "Verification_Question": r.Verification_Question,
+                        "Verification_Answer_bool": r.Verification_Answer_bool,
+                        "Verification_Answer": r.Verification_Answer,
+                        "Counterexample_Question": r.Counterexample_Question,
+                        "Counterexample_Answer_bool": r.Counterexample_Answer_bool,
+                        "Counterexample_Answer": r.Counterexample_Answer,
+                        "Confidence_score": r.Confidence_score,
+                        "Guess_steps": r.Guess_steps,
+                    }
+                    violations.append(violation)
 
-                if not os.path.exists(settings.violation_output + "/Activities.txt"):
-                    with open(settings.violation_output + "/Activities.txt", "w") as f:
-                        f.write(res)
-                else:
-                    with open(settings.violation_output + "/Activities.txt", "a") as f:
-                        f.write(res)
+                with open(outputdir + "/raw.txt", "w") as f:
+                    f.write(
+                        system_prompt + user_prompt + "\n\n\n" + str(violations) + "\n"
+                    )
+
+                if TestingPhase == Phase.DuringUsage:
+                    if not os.path.exists(
+                        settings.violation_output + "/Activities.txt"
+                    ):
+                        with open(
+                            settings.violation_output + "/Activities.txt", "w"
+                        ) as f:
+                            for v in (
+                                res.Direct_Capability_Changes
+                                + res.Resource_State_Changes
+                            ):
+                                f.write(v + "\n")
+                    else:
+                        with open(
+                            settings.violation_output + "/Activities.txt", "a"
+                        ) as f:
+                            for v in (
+                                res.Direct_Capability_Changes
+                                + res.Resource_State_Changes
+                            ):
+                                f.write(v + "\n")
             except:
-                pass
+                # deepseek or qwen
+                try:
+                    with open(outputdir + "/raw.txt", "w") as f:
+                        f.write(system_prompt + user_prompt + "\n\n\n" + res + "\n")
+
+                    if not os.path.exists(
+                        settings.violation_output + "/Activities.txt"
+                    ):
+                        with open(
+                            settings.violation_output + "/Activities.txt", "w"
+                        ) as f:
+                            f.write(res)
+                    else:
+                        with open(
+                            settings.violation_output + "/Activities.txt", "a"
+                        ) as f:
+                            f.write(res)
+                except:
+                    pass

@@ -975,34 +975,27 @@ def query_config_operation_mapping_qwen(system_prompt, user_prompt):
     return Configurations
 
 
-def query_Confiot_identification(system_prompt, user_prompt, TestingPhase, llm="xxx"):
+def query_Confiot_identification_prelimary(
+    system_prompt, user_prompt, TestingPhase, llm="xxx"
+):
     from pydantic import BaseModel
     from openai import OpenAI
 
-    class ViolationFormat(BaseModel):
-        violated_criterion_id: str
-        configuration_resource: str
-        Verification_Question: str
-        Verification_Answer_bool: bool
-        Verification_Answer: str
-        Counterexample_Question: str
-        Counterexample_Answer_bool: bool
-        Counterexample_Answer: str
-        Confidence_score: str
-        Guess_steps: list[str]
-
     class response_AfterDelegation(BaseModel):
-        violations: list[ViolationFormat]
+        User_Role: str
+        Capabilities: list[str]
+        Applicable_Security_Criteria: list[str]
 
     class response_DuringUsage(BaseModel):
-        violations: list[ViolationFormat]
+        User_Role: str
         Direct_Capability_Changes: list[str]
         Resource_State_Changes: list[str]
         Capability_Changes: list[str]
+        Applicable_Security_Criteria: list[str]
 
     from Confiot_main.ConfiotHunter.TestingPhase import Phase
 
-    if TestingPhase == Phase.AfterDelegation or TestingPhase == Phase.AfterRevocation:
+    if TestingPhase == Phase.AfterDelegation:
         client = OpenAI()
         completion = client.beta.chat.completions.parse(
             model="gpt-4o",
@@ -1031,7 +1024,141 @@ def query_Confiot_identification(system_prompt, user_prompt, TestingPhase, llm="
             response_format=response_DuringUsage,
         )
         event = completion.choices[0].message.parsed
+        return event
 
+
+def query_Confiot_identification_ask_questions(
+    system_prompt, user_prompt, TestingPhase, llm="xxx"
+):
+    from pydantic import BaseModel
+    from openai import OpenAI
+
+    class QuestionAnswer(BaseModel):
+        Question_ID: int
+        Answer_Yes_or_No: bool
+        Reasoning_steps: list[str]
+        Related_criterion: str
+
+    class response(BaseModel):
+        Answers: list[QuestionAnswer]
+
+    from Confiot_main.ConfiotHunter.TestingPhase import Phase
+
+    if TestingPhase == Phase.AfterDelegation:
+        client = OpenAI()
+        completion = client.beta.chat.completions.parse(
+            model="gpt-4o",
+            messages=[
+                {"role": "system", "content": system_prompt},
+                {
+                    "role": "user",
+                    "content": user_prompt,
+                },
+            ],
+            response_format=response,
+        )
+        event = completion.choices[0].message.parsed
+        return event
+    elif TestingPhase == Phase.DuringUsage:
+        client = OpenAI()
+        completion = client.beta.chat.completions.parse(
+            model="gpt-4o",
+            messages=[
+                {"role": "system", "content": system_prompt},
+                {
+                    "role": "user",
+                    "content": user_prompt,
+                },
+            ],
+            response_format=response,
+        )
+        event = completion.choices[0].message.parsed
+        return event
+
+
+def query_Confiot_identification(system_prompt, user_prompt, TestingPhase, llm="xxx"):
+    from pydantic import BaseModel
+    from openai import OpenAI
+
+    class ViolationFormat(BaseModel):
+        violated_criterion_id: str
+        configuration_resource: str
+        Verification_Question: str
+        Verification_Answer_bool: bool
+        Verification_Answer: str
+        Counterexample_Question: str
+        Counterexample_Answer_bool: bool
+        Counterexample_Answer: str
+        Confidence_score: str
+        Guess_steps: list[str]
+
+    from Confiot_main.ConfiotHunter.TestingPhase import Phase
+
+    if TestingPhase == Phase.AfterDelegation:
+
+        class response_AfterDelegation(BaseModel):
+            violations: list[ViolationFormat]
+
+        client = OpenAI()
+        completion = client.beta.chat.completions.parse(
+            model="gpt-4o",
+            messages=[
+                {"role": "system", "content": system_prompt},
+                {
+                    "role": "user",
+                    "content": user_prompt,
+                },
+            ],
+            response_format=response_AfterDelegation,
+        )
+        event = completion.choices[0].message.parsed
+        return event
+    elif TestingPhase == Phase.DuringUsage:
+
+        class response_DuringUsage(BaseModel):
+            violations: list[ViolationFormat]
+            Direct_Capability_Changes: list[str]
+            Resource_State_Changes: list[str]
+            Capability_Changes: list[str]
+
+        client = OpenAI()
+        completion = client.beta.chat.completions.parse(
+            model="gpt-4o",
+            messages=[
+                {"role": "system", "content": system_prompt},
+                {
+                    "role": "user",
+                    "content": user_prompt,
+                },
+            ],
+            response_format=response_DuringUsage,
+        )
+        event = completion.choices[0].message.parsed
+        return event
+
+    else:
+
+        class ViolationFormat_Revocation(BaseModel):
+            violated_criterion_id: str
+            configuration_resource: str
+            Guess_steps: list[str]
+
+        class response_AfterRevocation(BaseModel):
+            violations: list[ViolationFormat_Revocation]
+
+        client = OpenAI()
+        completion = client.beta.chat.completions.parse(
+            model="gpt-4o",
+            messages=[
+                {"role": "system", "content": system_prompt},
+                {
+                    "role": "user",
+                    "content": user_prompt,
+                },
+            ],
+            response_format=response_AfterRevocation,
+        )
+        event = completion.choices[0].message.parsed
         return event
 
 

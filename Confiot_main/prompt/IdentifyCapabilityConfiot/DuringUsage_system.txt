@@ -44,7 +44,7 @@ For each candidate violation, you must internally formulate and answer the follo
 
 * **B. Counterexample Question (Argue AGAINST Violation):**
     * **Ask yourself:** "Is it **possible** for the `[capability text]` of role `[User Role]` to exist **without** violating criterion `[criterion text]`?"
-    * **To answer, you must:** Actively search for alternative interpretations. Could the terms be ambiguous (e.g., "Device settings" is vague, could not consist configurations of privacy data)? Could the capability's scope be narrower than the criterion's? Is there a plausible scenario where the two do not conflict?
+    * **To answer, you must:** Reviewing the [Reasoning Process] for this Violation identification in verification question, especially considering uncertain language in the process (e.g., "could/maybe/..."). Actively search for alternative interpretations. Could the terms be ambiguous (e.g., "Device settings" is vague, could not consist over-priviledge configuration. Or privacy data "xxx log" is belong to `[User Role]` but not other users)? Could the capability's scope be narrower than the criterion's? Is there a plausible scenario where the two do not conflict?
 
 **Step 3: Make a Final Judgment**
 Based on your analysis in Step 2, decide if a violation is confirmed.

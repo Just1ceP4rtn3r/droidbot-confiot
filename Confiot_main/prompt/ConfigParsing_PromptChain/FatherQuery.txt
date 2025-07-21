@@ -57,8 +57,7 @@ class Operation(BaseModel):
 
 class FeatureFormat(BaseModel):
     """Represents a complete user feature."""
-    function: str       # The name of the feature, e.g., "User Login".
-
+    feature: str       # The name of the feature, e.g., "User Login".
     sequence: List[Operation]
     # An ordered list of operational steps.
     # Key: This list can contain operations from different pages
@@ -69,5 +68,5 @@ class FeatureFormat(BaseModel):
 class response(BaseModel):
     """Defines the final response format."""
     ContinuationFeatures: List[FeatureFormat]  # The new features that have been integrated in this analysis.
-		OtherFeatures: list[FeatureFormat] # Features in the INPUT that were not integrated in this analysis.
+	OtherFeatures: list[FeatureFormat] # Features in the INPUT that were not integrated in this analysis.
 

@@ -7,13 +7,13 @@
         },
         {
             "Id": "2",
-            "Role": "Administrators, Guests",
-            "Capabilities": "Should not view or modify privacy data of other user, consider: Credit Card Numbers、Bank Account、Payment History、Passwords and PINs、Biometric Data、Location History、Private Messages and Personal Files and Documents"
+            "Role": "Guests",
+            "Capabilities": "Should not changing device password (e.g., door locker, WiFi password)"
         },
         {
             "Id": "3",
             "Role": "Guests",
-            "Capabilities": "Should not modify WiFi password"
+            "Capabilities": "Should not manage network settings (e.g., WiFi, Bluetooth, etc.)"
         },
         {
             "Id": "4",
@@ -23,7 +23,12 @@
         {
             "Id": "5",
             "Role": "Guests",
-            "Capabilities": "Should not access or edit user access rights"
+            "Capabilities": "Should not enable/disable remote control of the device"
+        },
+        {
+            "Id": "6",
+            "Role": "Guests",
+            "Capabilities": "Should not disable device functionalities (e.g., smart smoke detector, plug, camera)"
         }
     ]
 }
