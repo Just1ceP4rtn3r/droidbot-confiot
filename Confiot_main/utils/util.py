@@ -520,12 +520,10 @@ def query_page_features(system_prompt, user_prompt, llm="xxx"):
     class Operation(BaseModel):
         page: str
         operation_id: int
-        operation: str
 
     class FeatureFormat(BaseModel):
         feature: str
         sequence: list[Operation]
-        reason: str
 
     class response(BaseModel):
         Features: list[FeatureFormat]
@@ -552,11 +550,10 @@ def query_page_features(system_prompt, user_prompt, llm="xxx"):
             "Sequence": [
                 {
                     "Page ID": o.page,
-                    "Operation": {"ID": o.operation_id, "Operation": o.operation},
+                    "Operation": {"ID": o.operation_id, "Operation": ""},
                 }
                 for o in r.sequence
             ],
-            "Reason": r.reason,
         }
         features.append(task)
 
@@ -604,13 +601,11 @@ def query_continuation_features(system_prompt, user_prompt, llm="xxx"):
     class Operation(BaseModel):
         page: str
         operation_id: int
-        operation: str
 
     class FeatureFormat(BaseModel):
         feature: str
         sequence: list[Operation]
-        realted_pages: list[str]
-        reason: str
+        why_sequence: str
 
     class response(BaseModel):
         ContinuationFeatures: list[FeatureFormat]
@@ -639,25 +634,26 @@ def query_continuation_features(system_prompt, user_prompt, llm="xxx"):
             "Sequence": [
                 {
                     "Page ID": o.page,
-                    "Operation": {"ID": o.operation_id, "Operation": o.operation},
+                    "Operation": {"ID": o.operation_id, "Operation": ""},
                 }
                 for o in r.sequence
             ],
-            "Reason": r.reason,
+            "WhySequence": r.why_sequence,
         }
         features.append(task)
 
     for r in event.OtherFeatures:
         task = {
+            "IsContinuationFeature": False,
             "Feature": r.feature,
             "Sequence": [
                 {
                     "Page ID": o.page,
-                    "Operation": {"ID": o.operation_id, "Operation": o.operation},
+                    "Operation": {"ID": o.operation_id, "Operation": ""},
                 }
                 for o in r.sequence
             ],
-            "Reason": r.reason,
+            "WhySequence": r.why_sequence,
         }
         features.append(task)
 
@@ -975,56 +971,56 @@ def query_config_operation_mapping_qwen(system_prompt, user_prompt):
     return Configurations
 
 
-def query_Confiot_identification_prelimary(
-    system_prompt, user_prompt, TestingPhase, llm="xxx"
-):
-    from pydantic import BaseModel
-    from openai import OpenAI
+# def query_Confiot_identification_prelimary(
+#     system_prompt, user_prompt, TestingPhase, llm="xxx"
+# ):
+#     from pydantic import BaseModel
+#     from openai import OpenAI
 
-    class response_AfterDelegation(BaseModel):
-        User_Role: str
-        Capabilities: list[str]
-        Applicable_Security_Criteria: list[str]
+#     class response_AfterDelegation(BaseModel):
+#         User_Role: str
+#         Capabilities: list[str]
+#         Applicable_Security_Criteria: list[str]
 
-    class response_DuringUsage(BaseModel):
-        User_Role: str
-        Direct_Capability_Changes: list[str]
-        Resource_State_Changes: list[str]
-        Capability_Changes: list[str]
-        Applicable_Security_Criteria: list[str]
+#     class response_DuringUsage(BaseModel):
+#         User_Role: str
+#         Direct_Capability_Changes: list[str]
+#         Resource_State_Changes: list[str]
+#         Capability_Changes: list[str]
+#         Applicable_Security_Criteria: list[str]
 
-    from Confiot_main.ConfiotHunter.TestingPhase import Phase
+#     from Confiot_main.ConfiotHunter.TestingPhase import Phase
 
-    if TestingPhase == Phase.AfterDelegation:
-        client = OpenAI()
-        completion = client.beta.chat.completions.parse(
-            model="gpt-4o",
-            messages=[
-                {"role": "system", "content": system_prompt},
-                {
-                    "role": "user",
-                    "content": user_prompt,
-                },
-            ],
-            response_format=response_AfterDelegation,
-        )
-        event = completion.choices[0].message.parsed
-        return event
-    elif TestingPhase == Phase.DuringUsage:
-        client = OpenAI()
-        completion = client.beta.chat.completions.parse(
-            model="gpt-4o",
-            messages=[
-                {"role": "system", "content": system_prompt},
-                {
-                    "role": "user",
-                    "content": user_prompt,
-                },
-            ],
-            response_format=response_DuringUsage,
-        )
-        event = completion.choices[0].message.parsed
-        return event
+#     if TestingPhase == Phase.AfterDelegation:
+#         client = OpenAI()
+#         completion = client.beta.chat.completions.parse(
+#             model="gpt-4o",
+#             messages=[
+#                 {"role": "system", "content": system_prompt},
+#                 {
+#                     "role": "user",
+#                     "content": user_prompt,
+#                 },
+#             ],
+#             response_format=response_AfterDelegation,
+#         )
+#         event = completion.choices[0].message.parsed
+#         return event
+#     elif TestingPhase == Phase.DuringUsage:
+#         client = OpenAI()
+#         completion = client.beta.chat.completions.parse(
+#             model="gpt-4o",
+#             messages=[
+#                 {"role": "system", "content": system_prompt},
+#                 {
+#                     "role": "user",
+#                     "content": user_prompt,
+#                 },
+#             ],
+#             response_format=response_DuringUsage,
+#         )
+#         event = completion.choices[0].message.parsed
+#         return event
 
 
 def query_Confiot_identification_ask_questions(

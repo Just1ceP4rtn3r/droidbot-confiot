@@ -47,7 +47,8 @@ class ConfigurationParser:
         self.save_operations_to_file(settings.Confiot_output)
 
         self.PAGEINFO = {}
-        self.page_dependency = set()
+        self.PAGEOPERATIONS = {}
+        # self.page_dependency = set()
 
         # LLM configuration mapping
         # {"page-1": {"configuration": [viewhash,...]}}
@@ -306,9 +307,11 @@ class ConfigurationParser:
 
                 page_info_json["Page ID"] = page
                 page_info_json["Plain Texts"] = plain_texts_str
-                page_info_json["Operation List"] = [
-                    {"ID": i, "Operation": o} for i, o in enumerate(operations_str)
-                ]
+                page_info_json["Operation List"] = []
+                self.PAGEOPERATIONS[page] = {}
+                for i, o in enumerate(operations_str):
+                    self.PAGEOPERATIONS[page][i] = o
+                    page_info_json["Operation List"].append({"ID": i, "Operation": o})
                 page_info_json["The operation lead to this page"] = context_str
 
                 self.PAGEINFO[page] = page_info_json
@@ -336,6 +339,12 @@ class ConfigurationParser:
             features = query_page_features(
                 system_prompt=system_prompt, user_prompt=user_prompt
             )
+
+            for f in features:
+                for op in f["Sequence"]:
+                    op["Operation"]["Operation"] = self.PAGEOPERATIONS[op["Page ID"]][
+                        op["Operation"]["ID"]
+                    ]
 
             self.PAGEINFO[page]["Summarized Features"] = features
 
@@ -537,6 +546,12 @@ class ConfigurationParser:
                 system_prompt=system_prompt, user_prompt=user_prompt
             )
 
+            for f in features:
+                for op in f["Sequence"]:
+                    op["Operation"]["Operation"] = self.PAGEOPERATIONS[op["Page ID"]][
+                        op["Operation"]["ID"]
+                    ]
+
             with open(outputdir + f"/{page}/Raw_bottom_up.txt", "w") as f:
                 f.write("################ Page: " + page + "################\n")
                 f.write(prompt + "\n")
@@ -544,7 +559,7 @@ class ConfigurationParser:
                 f.write(json.dumps(features) + "\n")
 
             with open(outputdir + f"/{page}/Features.json", "w") as f:
-                f.write(json.dumps(features))
+                f.write(json.dumps(features, indent=4))
 
     def query_LLM_for_configuration_mapping_based_on_page_graph(self, outputdir):
         self.query_LLM_for_page_summarization(outputdir)
@@ -585,6 +600,7 @@ class ConfigurationParser:
                             "Page ID": page,
                             "Feature Content": c["Feature"],
                             "Related operations": c["Sequence"],
+                            "WhySequence": c["WhySequence"],
                         }
                     )
 
@@ -622,7 +638,7 @@ class ConfigurationParser:
                 pass
 
         with open(LLMResult_dir + "/ConfigurationsComplete.json", "w") as f:
-            _str = json.dumps(filtered_configurations)
+            _str = json.dumps(filtered_configurations, indent=4)
             _str = _str.replace("Feature ID", "Id").replace("Feature Content", "Tasks")
             f.write(_str)
 
@@ -656,7 +672,7 @@ class ConfigurationParser:
         # Configurations = sorted(Configurations, key=lambda x: len(x["Tasks"]), reverse=True)
 
         with open(LLMResult_dir + "/ConfigurationsSummary.json", "w") as f:
-            _str = json.dumps(filtered_configurations)
+            _str = json.dumps(filtered_configurations, indent=4)
             _str = _str.replace("Feature ID", "Id").replace("Feature Content", "Tasks")
             f.write(_str)
 

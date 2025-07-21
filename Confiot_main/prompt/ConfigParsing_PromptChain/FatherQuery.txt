@@ -16,7 +16,7 @@ You are given a `ParentPage` and a list of `ChildFlows`. Each object in `ChildFl
 }
 **2. Child Flows **
 
-(List of potential child pages):
+(List of potential child pages in user prompt)
 
 
 **Instruction**
@@ -39,10 +39,15 @@ It is NOT a continuation if:
 
 * The child flow's purpose is unrelated to the user's intent on the parent page (e.g., Parent: "View Profile Details" -> Child: "Start writing a new email").
 
-Construct the Output: Based on your analysis, Please provide the following:
-"Logical Continuation features": The new features that have been integrated in this analysis.
+Construct the Output:
 
-"Other features": Features in the INPUT that were not integrated in this analysis.
+1. Based on your analysis, Please provide the following:
+"[Logical Continuation features]": The new features that have been integrated in this analysis.
+"[Other features]": Features in the INPUT that were not integrated in this analysis.
+
+2. [Operation Sequence] For each feature, in addition to providing a functional description in the output, you also need to cite operations from the pages to explain how combining these operations can execute the feature (Note: some pages may not have been discovered and therefore are not included in the input).
+
+3. [Why Sequence] Explain why this sequence of operations is necessary to complete the feature task. If the feature is about viewing or accessing a resource (e.g., logs, data, scheduled tasks and so on), you should pinpoint the `[resource]` and what exactly it has in the page (If not, reply: "But no specific `[resource](replace with feature-related resource)` was found on the current page."). Additionally, please also include in your response if the operations on the relevant pages cannot fully complete the feature or can only partially complete it.
 
 Note: If feature-a and feature-b are merged into a new feature, feature-new, then feature-a and feature-b must not appear in your response. Only feature-new should be retained.
 
@@ -53,7 +58,6 @@ class Operation(BaseModel):
     """Represents a single operational step."""
     page: str           # The name of the page where the operation occurs.
     operation_id: int   # A unique ID for the operation.
-    operation: str      # A description of the specific operation.
 
 class FeatureFormat(BaseModel):
     """Represents a complete user feature."""
@@ -62,8 +66,7 @@ class FeatureFormat(BaseModel):
     # An ordered list of operational steps.
     # Key: This list can contain operations from different pages
     # to form a complete, cross-page feature.
-    related_pages: List[str]       # page list of operations in the sequence
-    reason: str         # The reasoning for why these operations constitute a feature.
+    why_sequence: str
 
 class response(BaseModel):
     """Defines the final response format."""

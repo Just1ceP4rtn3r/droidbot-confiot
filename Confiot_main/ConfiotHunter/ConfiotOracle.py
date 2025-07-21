@@ -783,7 +783,7 @@ class ConfigurationConfiotOracle(ConfiotOracle):
                     page_id = "Page-" + "".join(re.findall(r"\d", page_id))
                     if page_id not in configurations:
                         configurations[page_id] = {}
-                    configurations[page_id][task_content] = t["Related operations"]
+                    configurations[page_id][task_content] = t["WhySequence"]
                 except Exception as e:
                     print(
                         "[ERR]: wrong structure of the configuration file ",
@@ -856,8 +856,8 @@ class ConfigurationConfiotOracle(ConfiotOracle):
                         config_strs.append(
                             f"({cid}) "
                             + c
-                            # + "    Operation Sequence try to finish this task: "
-                            # + str(Configurations[page][c])
+                            + "    Details: "
+                            + str(Configurations[page][c])
                         )
                         cid += 1
             user_prompt = AfterDelegation_user_template.replace(

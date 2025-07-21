@@ -11,8 +11,7 @@ A single UI screen can have multiple, unrelated functions (e.g., a "Settings" pa
 ```json
 {
   "function": "str",
-  "sequence": "list[operation]",
-  "reason": "str"
+  "sequence": "list[operation]"
 }
 ```
 
