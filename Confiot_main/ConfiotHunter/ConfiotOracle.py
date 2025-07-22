@@ -998,7 +998,7 @@ class ConfigurationConfiotOracle(ConfiotOracle):
                             ],
                         }
                         final_violations.append(violation)
-            with open(outputdir + "/raw.txt", "w") as f:
+            with open(outputdir + "/Violations.json", "w") as f:
                 json.dump(final_violations, f, indent=4, ensure_ascii=False)
 
         elif TestingPhase == Phase.DuringUsage:
@@ -1107,6 +1107,9 @@ class ConfigurationConfiotOracle(ConfiotOracle):
                     f.write(
                         system_prompt + user_prompt + "\n\n\n" + str(violations) + "\n"
                     )
+
+                with open(outputdir + "/Violations.json", "w") as f:
+                    json.dump(violations, f, indent=4, ensure_ascii=False)
 
                 if TestingPhase == Phase.DuringUsage:
                     if not os.path.exists(
@@ -1260,6 +1263,9 @@ class ConfigurationConfiotOracle(ConfiotOracle):
                     f.write(
                         system_prompt + user_prompt + "\n\n\n" + str(violations) + "\n"
                     )
+
+                with open(outputdir + "/Violations.json", "w") as f:
+                    json.dump(violations, f, indent=4, ensure_ascii=False)
 
                 if TestingPhase == Phase.DuringUsage:
                     if not os.path.exists(
