@@ -124,7 +124,7 @@ def run_Configuration_testing(options):
             settings(
                 options.host_device, options.host_app_path, options.host_droidbot_output
             )
-            _Autodroid(task_id=t["Id"])
+            _Autodroid(task_id=t["Id"], page=t["Page ID"], task=t["Tasks"])
             logger.info("Autodroid finished\n")
             logger.info("  ---------------------------------")
         except:
@@ -197,6 +197,69 @@ def run_Oracle(options):
     # )
 
 
+def run_Appcrawler(task):
+    from Confiot_main.globalvars import GlobalVars
+
+    from AutoDroid.droidbot import input_manager
+    from AutoDroid.droidbot import env_manager
+    from AutoDroid.droidbot.droidbot import DroidBot as AutoDroid
+    from AutoDroid.droidbot.input_event import KeyEvent, IntentEvent
+    import time
+
+    droidbot = AutoDroid(
+        app_path=settings.app_path,
+        device_serial=settings.device_serial,
+        task=task,
+        is_emulator=True,
+        output_dir=settings.droid_output,
+        env_policy=env_manager.POLICY_NONE,
+        policy_name=input_manager.POLICY_TASK,
+        script_path=None,
+        event_interval=1,
+        timeout=1200,
+        event_count=300000,
+        debug_mode=False,
+        keep_app=True,
+        keep_env=True,
+        grant_perm=True,
+        enable_accessibility_hard=True,
+        ignore_ad=True,
+    )
+
+    # droidbot = AutoDroid(
+    #     app_path=settings.app_path,
+    #     device_serial=settings.device_serial,
+    #     task=task,
+    #     is_emulator=True,
+    #     output_dir=settings.droid_output,
+    #     env_policy=env_manager.POLICY_NONE,
+    #     policy_name=input_manager.POLICY_TASK,
+    #     script_path=None,
+    #     event_interval=1,
+    #     timeout=1200,
+    #     event_count=3000,
+    #     debug_mode=False,
+    #     keep_app=True,
+    #     keep_env=True,
+    #     grant_perm=True,
+    #     enable_accessibility_hard=True,
+    #     ignore_ad=True,
+    # )
+
+    GlobalVars.step_outputfile = settings.droid_output + "/tmp.json"
+
+    droidbot.device.connect()
+    event = KeyEvent(name="HOME")
+
+    event.send(droidbot.device)
+
+    time.sleep(1)
+    event = IntentEvent(droidbot.app.get_start_intent())
+    event.send(droidbot.device)
+
+    droidbot.start()
+
+
 def main():
     """
     Main function to parse command line arguments.
@@ -231,6 +294,13 @@ def main():
         action="store_true",
         default=False,
         help="Enable the Oracle module.",
+    )
+    module_group.add_option(
+        "--Autodroid-crawler",
+        dest="autodroid_crawler",
+        action="store_true",
+        default=False,
+        help="Run crawler with Autodroid.",
     )
     parser.add_option_group(module_group)
 
@@ -373,6 +443,13 @@ def main():
         run_Configuration_testing(options)
     elif options.oracle:
         run_Oracle(options)
+    elif options.autodroid_crawler:
+        settings(
+            options.host_device, options.host_app_path, options.host_droidbot_output
+        )
+        run_Appcrawler(
+            "Explore the this app to identify and capture all unique pages related to {iHORN Multi-function gateway}. Always cancel the configuration. Focus exclusively on functionalities and settings. Avoid enter any advertisements and promotional materials content."
+        )
 
 
 if __name__ == "__main__":
