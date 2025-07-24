@@ -4,13 +4,26 @@ import subprocess
 import time
 
 from .input_event import EventLog
-from .input_policy import UtgBasedInputPolicy, UtgNaiveSearchPolicy, UtgGreedySearchPolicy, \
-                         UtgReplayPolicy, \
-                         ManualPolicy, TaskPolicy, \
-                         POLICY_NAIVE_DFS, POLICY_GREEDY_DFS, \
-                         POLICY_NAIVE_BFS, POLICY_GREEDY_BFS, \
-                         POLICY_REPLAY, POLICY_MEMORY_GUIDED, \
-                         POLICY_MANUAL, POLICY_MONKEY, POLICY_NONE, POLICY_TASK
+from .input_policy import (
+    UtgBasedInputPolicy,
+    UtgNaiveSearchPolicy,
+    UtgGreedySearchPolicy,
+    UtgReplayPolicy,
+    AutodroidCrawlerPolicy,
+    ManualPolicy,
+    TaskPolicy,
+    POLICY_NAIVE_DFS,
+    POLICY_GREEDY_DFS,
+    POLICY_NAIVE_BFS,
+    POLICY_GREEDY_BFS,
+    POLICY_REPLAY,
+    POLICY_MEMORY_GUIDED,
+    POLICY_MANUAL,
+    POLICY_MONKEY,
+    POLICY_NONE,
+    POLICY_TASK,
+    POLICY_AutodroidCrawlerPolicy,
+)
 
 DEFAULT_POLICY = POLICY_GREEDY_DFS
 DEFAULT_EVENT_INTERVAL = 1
@@ -27,19 +40,21 @@ class InputManager(object):
     This class manages all events to send during app running
     """
 
-    def __init__(self,
-                 device,
-                 app,
-                 task,
-                 policy_name,
-                 random_input,
-                 event_count,
-                 event_interval,
-                 script_path=None,
-                 profiling_method=None,
-                 master=None,
-                 replay_output=None,
-                 state=None):
+    def __init__(
+        self,
+        device,
+        app,
+        task,
+        policy_name,
+        random_input,
+        event_count,
+        event_interval,
+        script_path=None,
+        profiling_method=None,
+        master=None,
+        replay_output=None,
+        state=None,
+    ):
         """
         manage input event sent to the target device
         :param device: instance of Device
@@ -47,7 +62,7 @@ class InputManager(object):
         :param policy_name: policy of generating events, string
         :return:
         """
-        self.logger = logging.getLogger('InputEventManager')
+        self.logger = logging.getLogger("InputEventManager")
         self.enabled = True
 
         self.device = device
@@ -66,9 +81,10 @@ class InputManager(object):
         self.monkey = None
 
         if script_path is not None:
-            f = open(script_path, 'r')
+            f = open(script_path, "r")
             script_dict = json.load(f)
             from .input_script import DroidBotScript
+
             self.script = DroidBotScript(script_dict)
 
         self.policy = self.get_input_policy(device, app, master)
@@ -80,11 +96,16 @@ class InputManager(object):
         elif self.policy_name == POLICY_MONKEY:
             input_policy = None
         elif self.policy_name in [POLICY_NAIVE_DFS, POLICY_NAIVE_BFS]:
-            input_policy = UtgNaiveSearchPolicy(device, app, self.random_input, self.policy_name)
+            input_policy = UtgNaiveSearchPolicy(
+                device, app, self.random_input, self.policy_name
+            )
         elif self.policy_name in [POLICY_GREEDY_DFS, POLICY_GREEDY_BFS]:
-            input_policy = UtgGreedySearchPolicy(device, app, self.random_input, self.policy_name)
+            input_policy = UtgGreedySearchPolicy(
+                device, app, self.random_input, self.policy_name
+            )
         elif self.policy_name == POLICY_MEMORY_GUIDED:
             from .input_policy2 import MemoryGuidedPolicy
+
             input_policy = MemoryGuidedPolicy(device, app, self.random_input)
         elif self.policy_name == POLICY_REPLAY:
             input_policy = UtgReplayPolicy(device, app, self.replay_output)
@@ -92,8 +113,12 @@ class InputManager(object):
             input_policy = ManualPolicy(device, app)
         elif self.policy_name == POLICY_TASK:
             input_policy = TaskPolicy(device, app, self.random_input, task=self.task)
+        elif self.policy_name == POLICY_AutodroidCrawlerPolicy:
+            input_policy = AutodroidCrawlerPolicy(
+                device, app, self.random_input, task=self.task
+            )
         else:
-            self.logger.warning("No valid input policy specified. Using policy \"none\".")
+            self.logger.warning('No valid input policy specified. Using policy "none".')
             input_policy = None
         if isinstance(input_policy, UtgBasedInputPolicy):
             input_policy.script = self.script
@@ -135,14 +160,24 @@ class InputManager(object):
                     time.sleep(1)
             elif self.policy_name == POLICY_MONKEY:
                 throttle = self.event_interval * 1000
-                monkey_cmd = "adb -s %s shell monkey %s --ignore-crashes --ignore-security-exceptions" \
-                             " --throttle %d -v %d" % \
-                             (self.device.serial,
-                              "" if self.app.get_package_name() is None else "-p " + self.app.get_package_name(),
-                              throttle,
-                              self.event_count)
-                self.monkey = subprocess.Popen(monkey_cmd.split(), stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-                for monkey_out_line in iter(self.monkey.stdout.readline, ''):
+                monkey_cmd = (
+                    "adb -s %s shell monkey %s --ignore-crashes --ignore-security-exceptions"
+                    " --throttle %d -v %d"
+                    % (
+                        self.device.serial,
+                        (
+                            ""
+                            if self.app.get_package_name() is None
+                            else "-p " + self.app.get_package_name()
+                        ),
+                        throttle,
+                        self.event_count,
+                    )
+                )
+                self.monkey = subprocess.Popen(
+                    monkey_cmd.split(), stdout=subprocess.PIPE, stderr=subprocess.PIPE
+                )
+                for monkey_out_line in iter(self.monkey.stdout.readline, ""):
                     if not isinstance(monkey_out_line, str):
                         monkey_out_line = monkey_out_line.decode()
                     self.logger.info(monkey_out_line)
@@ -152,8 +187,10 @@ class InputManager(object):
             elif self.policy_name == POLICY_MANUAL:
                 self.device.start_app(self.app)
                 while self.enabled:
-                    keyboard_input = input("press ENTER to save current state, type q to exit...")
-                    if keyboard_input.startswith('q'):
+                    keyboard_input = input(
+                        "press ENTER to save current state, type q to exit..."
+                    )
+                    if keyboard_input.startswith("q"):
                         break
                     state = self.device.get_current_state()
                     if state is not None:

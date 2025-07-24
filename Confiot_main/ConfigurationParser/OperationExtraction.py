@@ -17,10 +17,16 @@ from Confiot_main.utils.LabelResolution import (
 
 class OperationExtractor:
 
-    def __init__(self, page_xml_file) -> None:
-        print("[DBG]: OperationExtractor, ", page_xml_file)
-        self.page = XMLParser(page_xml_file)
-        self.views = self.page.views
+    def __init__(self, page_xml_file="") -> None:
+
+        self.views = None
+        self.viewsId = {}
+
+        if page_xml_file:
+            print("[DBG]: OperationExtractor, ", page_xml_file)
+            self.page = XMLParser(page_xml_file)
+            self.views = self.page.views
+            self.viewsId = self.page.viewsId
 
         self.hashable_views = {}
         # {"state": {hashlib.sha256(str(operation).encode("utf-8")).hexdigest(): [(text_view, distance_vector),...]}}
@@ -29,16 +35,19 @@ class OperationExtractor:
 
     def get_view_text(self, view):
         d = ""
-        # if ("content_description" in view and view["content_description"] and
-        #         view["content_description"] != ''):
-        #     d = f"{view['content_description']}"
-
         if "text" in view and view["text"] and view["text"] != "":
             d = f"{view['text']}"
 
         if d == "" or not d:
-            return ""
-        d = cleantext.clean(d, extra_spaces=True, numbers=False, punct=True)
+            if (
+                "content_description" in view
+                and view["content_description"]
+                and view["content_description"] != ""
+            ):
+                d = f"{view['content_description']}"
+            else:
+                return ""
+        d = cleantext.clean(d, extra_spaces=True, numbers=False, punct=False)
 
         return d
 
@@ -187,7 +196,7 @@ class OperationExtractor:
                     is_related = calc_collision_vector(o_rec, t_rec)
 
                     if is_related == "PotentialLeftLabel":
-                        parent = self.page.viewsId[view["parent"]]
+                        parent = self.viewsId[view["parent"]]
                         parent_rec = Rectangle(
                             parent["bounds"][0][0],
                             parent["bounds"][0][1],
@@ -200,6 +209,7 @@ class OperationExtractor:
 
                         if is_related.get_magnitude() == -1:
                             is_related = Vector(Coordinate(0, 0.5), Coordinate(0, 0), 0)
+
 
                     if is_related:
                         if (
@@ -289,14 +299,17 @@ class OperationExtractor:
                     )
                     # 如果op_view 在 viewgroup_view内部，则保留op_view与当前label的绑定
                     if is_in_box(viewgroup_rec, op_rec):
-                        if other_op_hash not in self.operations:
-                            self.operations[other_op_hash] = []
-                        self.operations[other_op_hash].append(
-                            (
-                                self.hashable_views[label],
-                                potential_operations[other_op_hash],
-                            )
-                        )
+                        # if other_op_hash not in self.operations:
+                        #     self.operations[other_op_hash] = []
+                        # self.operations[other_op_hash].append(
+                        #     (
+                        #         self.hashable_views[label],
+                        #         potential_operations[other_op_hash],
+                        #     )
+                        # )
+                        most_related_operation_hash = other_op_hash
+                        break
+
 
             if most_related_operation_hash not in self.operations:
                 self.operations[most_related_operation_hash] = []
@@ -306,6 +319,7 @@ class OperationExtractor:
                     potential_operations[most_related_operation_hash],
                 )
             )
+
 
         # 3. 无人认领的label进行额外处理
         self.plain_labels = []
@@ -337,10 +351,10 @@ class OperationExtractor:
                 self.operations[view_hash], key=lambda x: x[1]
             )
         # [DEBUG] print label resolution
-        for view_hash in self.operations:
-            print("    + View: ", self.hashable_views[view_hash]["bounds"])
-            for label in self.operations[view_hash]:
-                view = label[0]
-                magnitude = label[1]
-                print("        - Text: ", view["text"], magnitude)
+        # for view_hash in self.operations:
+        #     print("    + View: ", self.hashable_views[view_hash]["bounds"])
+        #     for label in self.operations[view_hash]:
+        #         view = label[0]
+        #         magnitude = label[1]
+        #         print("        - Text: ", view["text"], magnitude)
         return self.operations, self.plain_labels, self.hashable_views

@@ -891,6 +891,7 @@ class DeviceState(object):
     #                     self.views[view_id]['checkable'] = False
     #                     break
 
+
     def get_described_actions(
         self,
         prefix="",
@@ -906,7 +907,7 @@ class DeviceState(object):
         enabled_view_ids = []
         for view_dict in self.views:
             # exclude navigation bar if exists
-            if self.__safe_dict_get(view_dict, "visible") and self.__safe_dict_get(
+            if self.__safe_dict_get(view_dict, "enabled") and self.__safe_dict_get(view_dict, "visible") and self.__safe_dict_get(
                 view_dict, "resource_id"
             ) not in [
                 "android:id/navigationBarBackground",
