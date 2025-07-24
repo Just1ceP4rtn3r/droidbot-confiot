@@ -1499,9 +1499,6 @@ class AutodroidCrawlerPolicy(UtgBasedInputPolicy):
             page_summary: str = Field(
                 description="Provide a concise feature list of the current page, e.g., 'This page's functions are: function1, function2, ...'"
             )
-            reason: str = Field(
-                description="Why you choose this action"
-            )
 
         try:
             # Initialize the OpenAI client (assumes OPENAI_API_KEY is set in the environment)
@@ -1768,7 +1765,7 @@ Respond with the element `idx`, the `action_type` (e.g., 'tap', 'input'), any `i
         # NEW: Print the full parsed response including the summary
         print(
             f"LLM Response (parsed): idx='{parsed_response.idx}', action_type='{parsed_response.action_type}', "
-            f"input_text='{parsed_response.input_text}', reason='{parsed_response.reason}'"
+            f"input_text='{parsed_response.input_text}'"
         )
 
         # 3. Process the structured response
@@ -1801,7 +1798,7 @@ Respond with the element `idx`, the `action_type` (e.g., 'tap', 'input'), any `i
         )
 
         # The "thought" now includes the LLM's summary.
-        thought = f"LLM chose action '{action_type}' on element {idx}. Reason: {parsed_response.reason}"
+        thought = f"LLM chose action '{action_type}' on element {idx}"
 
         if isinstance(selected_action, SetTextEvent):
             if input_text and input_text.upper() != "N/A":
