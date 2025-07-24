@@ -162,6 +162,8 @@ class ConfigurationParser:
             for op in operations:
                 op_view = hashable_views[op]
                 op_type = op_view["class"]
+                if op_view["checkable"]:
+                    op_type = "android.widget.Checkbox"
                 op_text = ",".join([tview[0]["text"] for tview in operations[op]])
                 op_action = None
                 if "select" in op_type.lower():

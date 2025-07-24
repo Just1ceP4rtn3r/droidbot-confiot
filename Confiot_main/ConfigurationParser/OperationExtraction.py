@@ -320,7 +320,7 @@ class OperationExtractor:
                 )
             )
 
-
+        from Confiot_main.settings import settings
         # 3. 无人认领的label进行额外处理
         self.plain_labels = []
         for label in Textual_views:
@@ -329,7 +329,6 @@ class OperationExtractor:
                 not in self.labels
             ):
                 # 判断当前label是否在screen center top
-                from Confiot_main.settings import settings
 
                 screen_center = (settings.screen_xy[0] // 2, settings.screen_xy[1] // 2)
                 if (
@@ -345,6 +344,15 @@ class OperationExtractor:
                         label["is_title"] = True
                 self.plain_labels.append(label)
 
+
+        # 添加没有任何文本的imagebutton
+        # for h in self.hashable_views:
+        #     view = self.hashable_views[h]
+        #     if (
+        #         h not in self.operations and "ImageButon" in view["class"] and not (view["bounds"][1][0] < settings.screen_xy[0]/10 and view["bounds"][1][1] < settings.screen_xy[1]/10)
+        #     ):
+        #         self.operations[h] = [(view,-1),]
+
         # 根据self.operations[view_hash]的magnitude进行排序
         for view_hash in self.operations:
             self.operations[view_hash] = sorted(
@@ -352,7 +360,7 @@ class OperationExtractor:
             )
         # [DEBUG] print label resolution
         # for view_hash in self.operations:
-        #     print("    + View: ", self.hashable_views[view_hash]["bounds"])
+        #     print("    + View: ", self.hashable_views[view_hash]["bounds"],  self.hashable_views[view_hash]["class"])
         #     for label in self.operations[view_hash]:
         #         view = label[0]
         #         magnitude = label[1]

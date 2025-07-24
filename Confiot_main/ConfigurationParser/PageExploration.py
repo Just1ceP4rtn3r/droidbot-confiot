@@ -481,7 +481,7 @@ class PageExplorer:
     ):
         event_steps = []
         self.Agent.device_stop_app(autodroid=autodroid)
-        # self.Agent.device.start_app(self.Agent.app)
+        self.Agent.device.start_app(self.Agent.app)
         time.sleep(2)
 
         # 在当前page，需要做的操作

@@ -217,7 +217,7 @@ def run_Appcrawler(task):
         script_path=None,
         event_interval=1,
         timeout=1200,
-        event_count=200,
+        event_count=100,
         debug_mode=False,
         keep_app=True,
         keep_env=True,
@@ -249,13 +249,14 @@ def run_Appcrawler(task):
     GlobalVars.step_outputfile = settings.droid_output + "/tmp.json"
 
     droidbot.device.connect()
-    event = KeyEvent(name="HOME")
+    event = IntentEvent(droidbot.app.get_stop_intent())
 
     event.send(droidbot.device)
 
     time.sleep(1)
     event = IntentEvent(droidbot.app.get_start_intent())
     event.send(droidbot.device)
+    time.sleep(3)
 
     droidbot.start()
 
@@ -374,6 +375,12 @@ def main():
         help="Specify an HTTP proxy (e.g., http://user:pass@host:port).",
     )
 
+    parser.add_option(
+        "--device-name",
+        dest="device_name",
+        help="The device name in App (e.g., Tuya smartplug)",
+    )
+
     (options, args) = parser.parse_args()
 
     # --- Validate Arguments ---
@@ -448,7 +455,7 @@ def main():
             options.host_device, options.host_app_path, options.host_droidbot_output
         )
         run_Appcrawler(
-            "Explore the this app to identify and capture all unique pages related to {iHORN Multi-function gateway}. Always cancel the configuration. Focus exclusively on functionalities and settings. Avoid enter any advertisements and promotional materials content."
+            f"Explore the this app to identify and capture all unique pages related to device [{options.device_name}]. Always cancel the configuration. Focus exclusively on functionalities and settings. Avoid enter any advertisements and promotional materials content."
         )
 
 

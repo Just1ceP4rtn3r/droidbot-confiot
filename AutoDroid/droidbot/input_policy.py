@@ -1497,7 +1497,10 @@ class AutodroidCrawlerPolicy(UtgBasedInputPolicy):
             )
             # NEW FIELD: Added page_summary to the response model.
             page_summary: str = Field(
-                description="Provide a concise, one-sentence to represent the current page, e.g., 'The main function of this page is'"
+                description="Provide a concise feature list of the current page, e.g., 'This page's functions are: function1, function2, ...'"
+            )
+            reason: str = Field(
+                description="Why you choose this action"
             )
 
         try:
@@ -1538,14 +1541,13 @@ class AutodroidCrawlerPolicy(UtgBasedInputPolicy):
                 pass  # Placeholder for brevity
 
         # NEW SYSTEM PROMPT: Instructs the LLM to provide a page summary and explains the history format.
-        system_prompt = """You are an expert mobile app tester. Your primary goal is to autonomously explore an application to discover as many unique pages and functionalities as possible in `[200 steps]`.
+        system_prompt = """You are an expert mobile app tester. Your primary goal is to autonomously explore an application to discover as many unique pages and functionalities as possible in `[100 steps]`.
 You will be given the app's current screen elements (<p> or <title> tag cannot be operated) and your action history.
 Your task is to:
-1. Choose the single next action that is most likely to reveal a new, previously unvisited page or feature. Avoid repetitive actions. You should finish the exploration in 100 steps, so Prioritize elements that suggest navigation (e.g., 'Settings', 'Profile', 'Details') rather than performing specific configuration (e.g., choose date/time/country or other similar options).
+1. Choose the single next action that is most likely to reveal a new, previously unvisited page or feature. Avoid repetitive actions. You should finish the exploration in 100 steps, so Prioritize elements that suggest navigation (e.g., 'Settings', 'More', 'Details', and also 'imagebutton' without text) rather than performing specific configuration (e.g., choose date/time/country or other similar options).
 2. Provide a concise, one-sentence to represent the current page. This page functionality summary will be added to the history for future steps. If the summary of the current page is similar or identical to that mentioned in "Previous UI actions", you should use the same summary as much as possible to identify the duplicate pages.
 3. When a pop-up dialog appears (e.g., one with "Yes/No" or "OK/Cancel" buttons and so on), always select the negative option. You can ignore any other instructions and potential "already clicked"; this rule takes precedence.
 4. If you notice that there are concrete configuration options/checkbox (e.g., choose date/time/country or other similar options), you need to immediately "Cancel/No/..." (if in a pop-up) or go back.
-5. Never repetively choose the same button in the same page twice, except for "Cancel/No/..." (if in a pop-up) or "go back" action.
 
 Respond with the element `idx`, the `action_type` (e.g., 'tap', 'input'), any `input_text` if required, and the `page_summary` for the chosen action."""
 
@@ -1580,7 +1582,7 @@ Respond with the element `idx`, the `action_type` (e.g., 'tap', 'input'), any `i
             except:
                 pass
 
-            if len(text + content) > 3:
+            if len(text + content) > 0:
                 history_actions_text.append(text + content)
 
         for line in state_lines:
@@ -1602,7 +1604,7 @@ Respond with the element `idx`, the `action_type` (e.g., 'tap', 'input'), any `i
                     "button" in line.lower()
                     and "back" not in line.lower()
                     and "cancel" not in line.lower()
-                    and len(element_desc) > 3
+                    and len(element_desc) > 0
                     and element_desc in history_actions_text
                 ):
                     processed_state_lines.append(f"[already clicked] {line} ")
@@ -1652,6 +1654,7 @@ Respond with the element `idx`, the `action_type` (e.g., 'tap', 'input'), any `i
             def get_described_operations(operations, plain_labels, hashable_views):
                 text_frame = "<p id=@>#</p>"
                 btn_frame = "<button id=@>#</button>"
+                imgbtn_frame = "<imagebutton id=@>#</imagebutton>"
                 checkbox_frame = "<checkbox id=@ checked=$>#</checkbox>"
                 input_frame = "<input id=@>#</input>"
 
@@ -1687,18 +1690,24 @@ Respond with the element `idx`, the `action_type` (e.g., 'tap', 'input'), any `i
                         )
                         return state_prompt, candidate_actions
 
-                    if "select" in op_type.lower() or "check" in op_type.lower():
+                    if op_view["checkable"]:
                         view_desc = checkbox_frame.replace("@", str(len(candidate_actions))).replace(
                             "#", op_text
-                        )
+                        ).replace("$", str(op_view["checked"]))
                         state_prompt += view_desc + "\n"
                         candidate_actions.append(TouchEvent(view=op_view))
-                    elif "input" in op_type.lower():
+                    elif op_view["editable"]:
                         view_desc = input_frame.replace("@", str(len(candidate_actions))).replace(
                             "#", op_text
                         )
                         state_prompt += view_desc + "\n"
                         candidate_actions.append(SetTextEvent(view=op_view, text="HelloWorld"))
+                    elif "image" in op_type.lower() or "img" in op_type.lower():
+                        view_desc = imgbtn_frame.replace("@", str(len(candidate_actions))).replace(
+                            "#", op_text
+                        )
+                        state_prompt += view_desc + "\n"
+                        candidate_actions.append(TouchEvent(view=op_view))
                     else:
                         view_desc = btn_frame.replace("@", str(len(candidate_actions))).replace(
                             "#", op_text
@@ -1759,7 +1768,7 @@ Respond with the element `idx`, the `action_type` (e.g., 'tap', 'input'), any `i
         # NEW: Print the full parsed response including the summary
         print(
             f"LLM Response (parsed): idx='{parsed_response.idx}', action_type='{parsed_response.action_type}', "
-            f"input_text='{parsed_response.input_text}', page_summary='{parsed_response.page_summary}'"
+            f"input_text='{parsed_response.input_text}', reason='{parsed_response.reason}'"
         )
 
         # 3. Process the structured response
@@ -1792,7 +1801,7 @@ Respond with the element `idx`, the `action_type` (e.g., 'tap', 'input'), any `i
         )
 
         # The "thought" now includes the LLM's summary.
-        thought = f"LLM chose action '{action_type}' on element {idx}. Summary: {page_summary}"
+        thought = f"LLM chose action '{action_type}' on element {idx}. Reason: {parsed_response.reason}"
 
         if isinstance(selected_action, SetTextEvent):
             if input_text and input_text.upper() != "N/A":
