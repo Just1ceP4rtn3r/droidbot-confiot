@@ -1543,8 +1543,11 @@ You will be given the app's current screen elements (<p> or <title> tag cannot b
 Your task is to:
 1. Choose the single next action that is most likely to reveal a new, previously unvisited page or feature. Avoid repetitive actions. You should finish the exploration in 100 steps, so Prioritize elements that suggest navigation (e.g., 'Settings', 'More', 'Details', and also 'imagebutton' without text) rather than performing specific configuration (e.g., choose date/time/country or other similar options).
 2. Provide a concise, one-sentence to represent the current page. This page functionality summary will be added to the history for future steps. If the summary of the current page is similar or identical to that mentioned in "Previous UI actions", you should use the same summary as much as possible to identify the duplicate pages.
-3. When a pop-up dialog appears (e.g., one with "Yes/No" or "OK/Cancel" buttons and so on), always select the negative option. You can ignore any other instructions and potential "already clicked"; this rule takes precedence.
-4. If you notice that there are concrete configuration options/checkbox (e.g., choose date/time/country or other similar options), you need to immediately "Cancel/No/..." (if in a pop-up) or go back.
+
+Execution Strategy:
+1. When a pop-up dialog appears (e.g., one with "Yes/No" or "OK/Cancel" buttons and so on), always select the negative option. You can ignore any other instructions and potential "already clicked"; this rule takes precedence.
+2. If you get stuck in a loop (e.g., repeatedly visiting same pages), and even "go back" cannot break it, you need to select other buttons on the page (you can click "already clicked" buttons in this case).
+
 
 Respond with the element `idx`, the `action_type` (e.g., 'tap', 'input'), any `input_text` if required, and the `page_summary` for the chosen action."""
 
