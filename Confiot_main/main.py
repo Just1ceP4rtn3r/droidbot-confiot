@@ -208,7 +208,7 @@ def run_Oracle(options):
     # )
 
 
-def run_Appcrawler(task):
+def run_Appcrawler(task, steplimit=100):
     from Confiot_main.globalvars import GlobalVars
 
     from Appcrawler.droidbot import input_manager
@@ -228,7 +228,7 @@ def run_Appcrawler(task):
         script_path=None,
         event_interval=1,
         timeout=1200,
-        event_count=100,
+        event_count=steplimit,
         debug_mode=False,
         keep_app=True,
         keep_env=True,
@@ -316,6 +316,7 @@ def main():
     )
     parser.add_option_group(module_group)
 
+
     # --- User Provided Options ---
     # parser.add_option(
     #     "-A",
@@ -352,6 +353,12 @@ def main():
         help="[A] The output path for droidbot.",
     )
     parser.add_option_group(host_group)
+
+    parser.add_option(
+        "--crawler-steplimit",
+        dest="steplimit",
+        help="How many operation steps does the app crawler execute before it stops exploring.",
+    )
 
     # --- Guest Agent Configuration Group ---
     # Parameters specific to the Guest agent (-a)
@@ -480,7 +487,7 @@ def main():
             options.host_device, options.host_app_path, options.host_droidbot_output
         )
         run_Appcrawler(
-            f"Explore the this app to identify and capture all unique pages related to device [{options.device_name}]. Always cancel the configuration. Focus exclusively on functionalities and settings. Avoid enter any advertisements and promotional materials content."
+            f"Explore the this app to identify and capture all unique pages related to device [{options.device_name}]. Always cancel the configuration. Focus exclusively on functionalities and settings. Avoid enter any advertisements and promotional materials content.", options.steplimit
         )
 
 
