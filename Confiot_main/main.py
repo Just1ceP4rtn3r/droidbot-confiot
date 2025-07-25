@@ -435,17 +435,23 @@ def main():
 
     # start configuration parser module
     if options.task_parser:
-        settings(
-            options.host_device, options.host_app_path, options.host_droidbot_output
-        )
-        logger.debug(settings.Confiot_output)
-        run_Configuration_parser(options)
+        try:
+            settings(
+                options.host_device, options.host_app_path, options.host_droidbot_output
+            )
+            logger.debug(settings.Confiot_output)
+            run_Configuration_parser(options)
+        except:
+            pass
 
-        settings(
-            options.guest_device, options.guest_app_path, options.guest_droidbot_output
-        )
-        logger.debug(settings.Confiot_output)
-        run_Configuration_parser(options)
+        try:
+            settings(
+                options.guest_device, options.guest_app_path, options.guest_droidbot_output
+            )
+            logger.debug(settings.Confiot_output)
+            run_Configuration_parser(options)
+        except:
+            pass
     elif options.testing:
         run_Configuration_testing(options)
     elif options.oracle:
