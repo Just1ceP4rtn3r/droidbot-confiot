@@ -224,9 +224,9 @@ class PageExplorer:
 
     # step-2: 解析pages的navigation关系，生成page_navigation_graph
     def extract_navigations(self):
-
         if self.Agent.utg_graph is None:
             return
+
 
         for page in self.pages:
             desc = [s for s in self.pages[page]]
@@ -277,6 +277,30 @@ class PageExplorer:
                         )
                         self.page_navigation_graph.add_edge(edge)
                         self.page_navigation_graph.start_node = start_page
+
+
+        if(not self.page_navigation_graph.start_node):
+            utg_first_state = None
+            for node in self.Agent.utg_graph.utg_nodes:
+                label = node["label"]
+                if "<FIRST>" in label:
+                    utg_first_state = node["state_str"]
+                    break
+            start_page = "000"
+            target_page = self.state_in_which_page[utg_first_state]
+            n = Node(start_page, description=start_page, state=None)
+            self.page_navigation_graph.nodes_dict[start_page] = n
+            self.page_navigation_graph.add_node(n)
+
+            event = IntentEvent(self.Agent.app.get_start_intent())
+            self.Agent.events[event.get_event_str(state=None)] = event.to_dict()
+            edge = Edge(
+                self.page_navigation_graph.nodes_dict[start_page],
+                self.page_navigation_graph.nodes_dict[target_page],
+                event.get_event_str(state=None),
+            )
+            self.page_navigation_graph.add_edge(edge)
+            self.page_navigation_graph.start_node = start_page
 
         self.page_navigation_graph.set_node_level()
         UITree.draw(self.page_navigation_graph, settings.Confiot_output)
@@ -433,6 +457,9 @@ class PageExplorer:
 
                 event_dict = self.Agent.events[event_str]
                 event = InputEvent.from_dict(event_dict)
+
+            if(not event):
+                print(f"[ERR]: invalid event: {event_str, event_dict}")
 
             last_event_str = event_str
             wait_time = 3

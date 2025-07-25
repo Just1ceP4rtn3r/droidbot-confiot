@@ -200,10 +200,10 @@ def run_Oracle(options):
 def run_Appcrawler(task):
     from Confiot_main.globalvars import GlobalVars
 
-    from AutoDroid.droidbot import input_manager
-    from AutoDroid.droidbot import env_manager
-    from AutoDroid.droidbot.droidbot import DroidBot as AutoDroid
-    from AutoDroid.droidbot.input_event import KeyEvent, IntentEvent
+    from Appcrawler.droidbot import input_manager
+    from Appcrawler.droidbot import env_manager
+    from Appcrawler.droidbot.droidbot import DroidBot as AutoDroid
+    from Appcrawler.droidbot.input_event import KeyEvent, IntentEvent
     import time
 
     droidbot = AutoDroid(

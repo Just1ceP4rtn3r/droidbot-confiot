@@ -309,10 +309,8 @@ def test_Configuration_parser():
 
     CP = ConfigurationParser(Agent)
 
-    CP.query_LLM_for_configuration_mapping_based_on_page_graph(
-        settings.LLMConfiguration_output
-    )
-    CP.save_configurations(settings.LLMConfiguration_output)
+    CP.PE.test_device_page_replay("/tmp", "Page-25")
+
 
     Agent.device.disconnect()
 
@@ -635,12 +633,12 @@ if __name__ == "__main__":
     # test_Enumerate_pages()
 
     s = settings(
-        "192.168.2.207:5555",
+        "192.168.2.176:5555",
         "/root/documents/Output/Huawei/iHORN_gateway/NDSS26/Huawei.apk",
-        r"/tmp",
+        r"/root/documents/Output/Huawei/iHORN_gateway/NDSS26/host/result",
     )
 
-    test_get_UIstate()
+    test_Configuration_parser()
     # test_replay_revoke("/tmp/test.json")
 
     # s = settings(

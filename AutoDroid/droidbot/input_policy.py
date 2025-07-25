@@ -1614,7 +1614,7 @@ Respond with the element `idx`, the `action_type` (e.g., 'tap', 'input'), any `i
                     and len(element_desc) > 0
                     and element_desc in history_actions_text
                 ):
-                    processed_state_lines.append(f"{line} [potentially already clicked]")
+                    processed_state_lines.append(f"{line} [potential already clicked]")
                 else:
                     processed_state_lines.append(line)
             except:
