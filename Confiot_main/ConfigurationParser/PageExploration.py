@@ -170,54 +170,57 @@ class PageExplorer:
     # step-1: 识别pages
     def parse_struture_unique_pages(self):
         for state in self.Agent.state_contents:
-            # signature用于预先粗略比较，两个state是否相似
-            state_content_free_signature = self.get_state_signature(
-                self.Agent.state_contents[state]
-            )
-            # for view in self.Agent.state_contents[state]:
-            #     if (not view["visible"]):
-            #         continue
-            #     # # [TODO]: droidot bug，当页面包含一个diagram，diagram后的views没有被记录
-            #     # if (len(self.Agent.state_contents[state]) < 20):
-            #     #     content_free_signature = f"[class]{view['class']}[resource_id]{view['resource_id']}[text]{str(view['text'])}"
-            #     #     state_content_free_signature.append(content_free_signature)
-            #     # else:
-            #     content_free_signature = f"[class]{view['class']}[resource_id]{view['resource_id']}"
-            #     state_content_free_signature.append(content_free_signature)
-
-            # state_layout用于执行zss distance计算，比较耗时
-            tree, tree_size = self.get_zss_tree(self.Agent.state_contents[state])
-            state_layout = (tree, tree_size)
-            page_similarities = {}
-            max_similar_page = ""
-            for page in self.pages:
-                page_similarities[page] = self.calc_state_similarity_with_page(
-                    state_content_free_signature, state_layout, self.pages[page]
+            try:
+                # signature用于预先粗略比较，两个state是否相似
+                state_content_free_signature = self.get_state_signature(
+                    self.Agent.state_contents[state]
                 )
+                # for view in self.Agent.state_contents[state]:
+                #     if (not view["visible"]):
+                #         continue
+                #     # # [TODO]: droidot bug，当页面包含一个diagram，diagram后的views没有被记录
+                #     # if (len(self.Agent.state_contents[state]) < 20):
+                #     #     content_free_signature = f"[class]{view['class']}[resource_id]{view['resource_id']}[text]{str(view['text'])}"
+                #     #     state_content_free_signature.append(content_free_signature)
+                #     # else:
+                #     content_free_signature = f"[class]{view['class']}[resource_id]{view['resource_id']}"
+                #     state_content_free_signature.append(content_free_signature)
 
-            if page_similarities:
-                max_similar_page = max(page_similarities, key=page_similarities.get)
+                # state_layout用于执行zss distance计算，比较耗时
+                tree, tree_size = self.get_zss_tree(self.Agent.state_contents[state])
+                state_layout = (tree, tree_size)
+                page_similarities = {}
+                max_similar_page = ""
+                for page in self.pages:
+                    page_similarities[page] = self.calc_state_similarity_with_page(
+                        state_content_free_signature, state_layout, self.pages[page]
+                    )
 
-                # if (page_similarities[max_similar_page] > 0.8 and page_similarities[max_similar_page] < 0.9):
-                #     print(state, self.pages[max_similar_page])
+                if page_similarities:
+                    max_similar_page = max(page_similarities, key=page_similarities.get)
 
-            if not max_similar_page or page_similarities[max_similar_page] < 0.8:
-                # 创建一个新page
-                page_name = f"Page-{len(self.pages)}"
-                self.pages[page_name] = {}
-                self.pages[page_name][state] = state_content_free_signature
-                self.state_in_which_page[state] = page_name
+                    # if (page_similarities[max_similar_page] > 0.8 and page_similarities[max_similar_page] < 0.9):
+                    #     print(state, self.pages[max_similar_page])
 
-                screenshot = self.Agent.utg_graph.nodes_dict[state].screenshot
-                if screenshot and os.path.exists(screenshot):
-                    import shutil
+                if not max_similar_page or page_similarities[max_similar_page] < 0.8:
+                    # 创建一个新page
+                    page_name = f"Page-{len(self.pages)}"
+                    self.pages[page_name] = {}
+                    self.pages[page_name][state] = state_content_free_signature
+                    self.state_in_which_page[state] = page_name
 
-                    shutil.copy(screenshot, settings.Pages + f"/{page_name}.jpg")
+                    screenshot = self.Agent.utg_graph.nodes_dict[state].screenshot
+                    if screenshot and os.path.exists(screenshot):
+                        import shutil
 
-            else:
-                # 将state加入最相似的page
-                self.pages[max_similar_page][state] = state_content_free_signature
-                self.state_in_which_page[state] = max_similar_page
+                        shutil.copy(screenshot, settings.Pages + f"/{page_name}.jpg")
+
+                else:
+                    # 将state加入最相似的page
+                    self.pages[max_similar_page][state] = state_content_free_signature
+                    self.state_in_which_page[state] = max_similar_page
+            except Exception as e:
+                print(f"[ERR]: {e}")
 
     # step-2: 解析pages的navigation关系，生成page_navigation_graph
     def extract_navigations(self):

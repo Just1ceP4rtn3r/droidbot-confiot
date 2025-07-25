@@ -1604,10 +1604,17 @@ Respond with the element `idx`, the `action_type` (e.g., 'tap', 'input'), any `i
                     "button" in line.lower()
                     and "back" not in line.lower()
                     and "cancel" not in line.lower()
+                    and "yes" not in line.lower()
+                    and "no" not in line.lower()
+                    and "ok" not in line.lower()
+                    and ",ok" not in line.lower()
+                    and "ok," not in line.lower()
+                    and "确定" not in line.lower()
+                    and "取消" not in line.lower()
                     and len(element_desc) > 0
                     and element_desc in history_actions_text
                 ):
-                    processed_state_lines.append(f"[already clicked] {line} ")
+                    processed_state_lines.append(f"{line} [potentially already clicked]")
                 else:
                     processed_state_lines.append(line)
             except:
@@ -1682,6 +1689,8 @@ Respond with the element `idx`, the `action_type` (e.g., 'tap', 'input'), any `i
                         or "yes" in lowertext
                         or "confirm" in lowertext
                         or "ok" == lowertext
+                        or ",ok" in lowertext
+                        or "ok," in lowertext
                         or "确定" in lowertext
                         or "取消" in lowertext
                     ):

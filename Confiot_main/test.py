@@ -567,10 +567,81 @@ def test_privacy_data():
         ["host"],
     )
 
+def test_get_UIstate():
+    from Confiot_main.globalvars import GlobalVars
+
+    from AutoDroid.droidbot import input_manager
+    from AutoDroid.droidbot import env_manager
+    from AutoDroid.droidbot.droidbot import DroidBot as AutoDroid
+    from AutoDroid.droidbot.input_event import KeyEvent, IntentEvent
+    import time
+
+    droidbot = AutoDroid(
+        app_path=settings.app_path,
+        device_serial=settings.device_serial,
+        task="xxx",
+        is_emulator=True,
+        output_dir=settings.droid_output,
+        env_policy=env_manager.POLICY_NONE,
+        policy_name=input_manager.POLICY_AutodroidCrawlerPolicy,
+        script_path=None,
+        event_interval=1,
+        timeout=1200,
+        event_count=100,
+        debug_mode=False,
+        keep_app=True,
+        keep_env=True,
+        grant_perm=True,
+        enable_accessibility_hard=True,
+        ignore_ad=True,
+    )
+
+    # droidbot = AutoDroid(
+    #     app_path=settings.app_path,
+    #     device_serial=settings.device_serial,
+    #     task=task,
+    #     is_emulator=True,
+    #     output_dir=settings.droid_output,
+    #     env_policy=env_manager.POLICY_NONE,
+    #     policy_name=input_manager.POLICY_TASK,
+    #     script_path=None,
+    #     event_interval=1,
+    #     timeout=1200,
+    #     event_count=3000,
+    #     debug_mode=False,
+    #     keep_app=True,
+    #     keep_env=True,
+    #     grant_perm=True,
+    #     enable_accessibility_hard=True,
+    #     ignore_ad=True,
+    # )
+
+    GlobalVars.step_outputfile = settings.droid_output + "/tmp.json"
+
+    droidbot.device.connect()
+    event = KeyEvent(name="HOME")
+
+    event.send(droidbot.device)
+
+    time.sleep(1)
+    event = IntentEvent(droidbot.app.get_start_intent())
+    event.send(droidbot.device)
+    time.sleep(3)
+
+    droidbot.start()
+
 
 if __name__ == "__main__":
     # test_Enumerate_pages()
-    test_replay_revoke("/tmp/test.json")
+
+    s = settings(
+        "192.168.2.207:5555",
+        "/root/documents/Output/Huawei/iHORN_gateway/NDSS26/Huawei.apk",
+        r"/tmp",
+    )
+
+    test_get_UIstate()
+    # test_replay_revoke("/tmp/test.json")
 
     # s = settings(
     #     "192.168.2.176:5555",
