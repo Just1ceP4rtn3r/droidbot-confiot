@@ -13,20 +13,15 @@
         {
             "Id": "3",
             "Role": "Guests",
-            "Capabilities": "Should not manage network settings (e.g., WiFi, Bluetooth, etc.)"
+            "Capabilities": "Should not add/delete the device to/from the device list or smart home"
         },
         {
             "Id": "4",
             "Role": "Guests",
-            "Capabilities": "Should not add/delete the device to/from the device list or smart home"
-        },
-        {
-            "Id": "5",
-            "Role": "Guests",
             "Capabilities": "Should not enable/disable remote control of the device"
         },
         {
-            "Id": "6",
+            "Id": "5",
             "Role": "Guests",
             "Capabilities": "Should not disable device functionalities (e.g., smart smoke detector, plug, camera)"
         }

@@ -220,7 +220,7 @@ class PageExplorer:
                     self.pages[max_similar_page][state] = state_content_free_signature
                     self.state_in_which_page[state] = max_similar_page
             except Exception as e:
-                print(f"[ERR]: {e}")
+                pass
 
     # step-2: 解析pages的navigation关系，生成page_navigation_graph
     def extract_navigations(self):

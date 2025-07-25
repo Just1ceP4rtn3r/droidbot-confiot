@@ -48,7 +48,7 @@ class Confiot:
 
     def __init__(self) -> None:
         self.device: Device = None
-        self.app: App = None
+        self.app: App = App(app_path=settings.app_path, output_dir=settings.Confiot_output)
         self.utg_graph: DirectedGraph = None
         self.uiTree: UITree = None
         # [{"Id": config_id, "Path": config_path, "Tasks": task, "Resources": related_resources, "state":state_str}]

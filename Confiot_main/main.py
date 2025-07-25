@@ -32,7 +32,7 @@ def _Autodroid(task_id, page=None, task=None):
     #     "/root/documents/Output/mihome/mihome-aqarahub-usenix25/mihome.apk",
     #     r"/root/documents/Output/mihome/mihome-aqarahub-usenix25/host/result",
     # )
-    if not page or not task:
+    if not task:
         Tasks = {}
         with open(
             settings.LLMConfiguration_output + "/ConfigurationsSummary.json", "r"
@@ -74,13 +74,14 @@ def _Autodroid(task_id, page=None, task=None):
     PE.parse_struture_unique_pages()
     PE.extract_navigations()
 
-    GlobalVars.event_dict_steps = PE.test_device_page_replay(
-        settings.UIHierarchy_comparation_output + "/tmp/", page, autodroid=True
-    )
+    if page:
+        GlobalVars.event_dict_steps = PE.test_device_page_replay(
+            settings.UIHierarchy_comparation_output + "/tmp/", page, autodroid=True
+        )
 
-    GlobalVars.step_outputfile = (
-        settings.autodroid_output + f"/Task-{str(task_id)}.json"
-    )
+        GlobalVars.step_outputfile = (
+            settings.autodroid_output + f"/Task-{str(task_id)}.json"
+        )
 
     droidbot.start()
 
@@ -115,6 +116,16 @@ def run_Configuration_testing(options):
 
     logger.info("--- Configuration Tasks in Testing ---")
     logger.info(Tasks)
+
+    if options.home_name:
+        Tasks.append(
+            {
+                "Id": "REVOKE",
+                "Page ID": None,
+                "Tasks": f"Exit the {options.home_name} in home management",
+                "Related operations": [],
+            }
+        )
 
     for t in Tasks:
         try:
@@ -381,6 +392,12 @@ def main():
         help="The device name in App (e.g., Tuya smartplug)",
     )
 
+    parser.add_option(
+        "--Revocation",
+        dest="home_name",
+        help="The device in which/whose home (e.g., 133xxxxx's home)",
+    )
+
     (options, args) = parser.parse_args()
 
     # --- Validate Arguments ---
@@ -446,7 +463,9 @@ def main():
 
         try:
             settings(
-                options.guest_device, options.guest_app_path, options.guest_droidbot_output
+                options.guest_device,
+                options.guest_app_path,
+                options.guest_droidbot_output,
             )
             logger.debug(settings.Confiot_output)
             run_Configuration_parser(options)
