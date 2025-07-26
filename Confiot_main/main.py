@@ -19,7 +19,7 @@ from Confiot_main.ConfiotHunter.ConfiotOracle import (
     ConfigurationConfiotOracle,
 )
 
-
+@logger.catch
 def _Autodroid(task_id, page=None, task=None):
     from Confiot_main.globalvars import GlobalVars
 
@@ -138,8 +138,8 @@ def run_Configuration_testing(options):
             _Autodroid(task_id=t["Id"], page=t["Page ID"], task=t["Tasks"])
             logger.info("Autodroid finished\n")
             logger.info("  ---------------------------------")
-        except:
-            pass
+        except Exception as e:
+            logger.error(e)
 
         logger.info(f"Try to capture the UI changes in {options.host_device}")
         settings(

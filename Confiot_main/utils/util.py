@@ -180,11 +180,11 @@ class DirectedGraph:
 
         while queue:
             current_node, path = queue.popleft()
-            if current_node == node_2:
+            if current_node.name == node_2.name:
                 return path + [current_node]
 
-            if current_node not in visited:
-                visited.add(current_node)
+            if current_node.name not in visited:
+                visited.add(current_node.name)
                 neighbors = self.get_neighbors(current_node)
                 for neighbor in neighbors:
                     queue.append((neighbor, path + [current_node]))

@@ -1236,6 +1236,50 @@ class TaskPolicy(UtgBasedInputPolicy):
             view_desc = view_desc.replace(" class='&'", "")
         return view_desc
 
+
+    def _query_llm_for_action(self, system_prompt, user_prompt, llm="gpt-4o"):
+        """
+        Queries the LLM for the next action using structured output parsing.
+        """
+        from pydantic import BaseModel, Field
+        from openai import OpenAI
+
+        # Define the structure of the expected response from the LLM
+        class LLMResponse(BaseModel):
+            id: int = Field(
+                description="The numeric index 'id' of the element to interact with. Should be a string, e.g., '3'."
+            )
+            action_type: str = Field(
+                description="The type of action to perform. Either 'tap' or 'input'."
+            )
+            input_text: str = Field(
+                description="The text to input for an 'input' action. Use 'N/A' if the action is 'tap'."
+            )
+            finished: bool = Field(
+                description="Based on the analyses, is the task already finished?"
+            )
+            # NEW FIELD: Added page_summary to the response model.
+            Reason: str = Field(
+                description="Completing this task on a smartphone usually involves what steps, and why the the operation in your answer is included in this steps"
+            )
+
+        try:
+            # Initialize the OpenAI client (assumes OPENAI_API_KEY is set in the environment)
+            client = OpenAI()
+            completion = client.beta.chat.completions.parse(
+                model=llm,
+                messages=[
+                    {"role": "system", "content": system_prompt},
+                    {"role": "user", "content": user_prompt},
+                ],
+                response_format=LLMResponse,
+            )
+            # Return the parsed data object
+            return completion.choices[0].message.parsed
+        except Exception as e:
+            self.logger.error(f"Error querying LLM with structured output: {e}")
+            return None
+
     def _get_action_from_views_actions(
         self,
         action_history,
@@ -1249,9 +1293,105 @@ class TaskPolicy(UtgBasedInputPolicy):
         get action choice from LLM based on a list of views and corresponding actions
         """
         if current_state:
-            state_prompt, candidate_actions, _, _ = (
-                current_state.get_described_actions()
+            # state_prompt, candidate_actions, _, _ = (
+            #     current_state.get_described_actions()
+            # )
+
+            sys.path.append(BASE_DIR + "/../../")
+            from Confiot_main.ConfigurationParser.OperationExtraction import (
+                OperationExtractor,
             )
+
+            def get_described_operations(operations, plain_labels, hashable_views):
+                text_frame = "<p id=@>#</p>"
+                btn_frame = "<button id=@ $>#</button>"
+                imgbtn_frame = "<imagebutton id=@ $>#</imagebutton>"
+                checkbox_frame = "<checkbox id=@ checked=$>#</checkbox>"
+                input_frame = "<input id=@>#</input>"
+
+                state_prompt = ""
+                # event list
+                candidate_actions = []
+
+                for label_view in plain_labels:
+                    view_desc = text_frame.replace("@", str(len(candidate_actions))).replace(
+                        "#", label_view["text"]
+                    )
+                    state_prompt += view_desc + "\n"
+                    candidate_actions.append(TouchEvent(view=label_view))
+
+                for op in operations:
+                    op_view = hashable_views[op]
+                    op_type = op_view["class"]
+                    op_text = ",".join([tview[0]["text"] for tview in operations[op]])
+
+                    lowertext = op_text.lower()
+                    # popup dialog
+                    if (
+                        "cancel" in lowertext
+                        or "apply" in lowertext
+                        or "yes" in lowertext
+                        or "confirm" in lowertext
+                        or "ok" == lowertext
+                        or ",ok" in lowertext
+                        or "ok," in lowertext
+                        or "确定" in lowertext
+                        or "取消" in lowertext
+                    ):
+                        state_prompt, candidate_actions, _, _ = (
+                            current_state.get_described_actions()
+                        )
+                        return state_prompt, candidate_actions
+
+                    if op_view["checkable"]:
+                        view_desc = checkbox_frame.replace("@", str(len(candidate_actions))).replace(
+                            "#", op_text
+                        ).replace("$", str(op_view["checked"]))
+                        state_prompt += view_desc + "\n"
+                        candidate_actions.append(TouchEvent(view=op_view))
+                    elif op_view["editable"]:
+                        view_desc = input_frame.replace("@", str(len(candidate_actions))).replace(
+                            "#", op_text
+                        )
+                        state_prompt += view_desc + "\n"
+                        candidate_actions.append(SetTextEvent(view=op_view, text="HelloWorld"))
+                    elif "image" in op_type.lower() or "img" in op_type.lower():
+                        if(not op_view["enabled"]):
+                            view_desc = imgbtn_frame.replace("$", "disabled").replace("@", str(len(candidate_actions))).replace(
+                                "#", op_text
+                            )
+                        else:
+                            view_desc = imgbtn_frame.replace(" $", "").replace("@", str(len(candidate_actions))).replace(
+                                "#", op_text
+                            )
+                        state_prompt += view_desc + "\n"
+                        candidate_actions.append(TouchEvent(view=op_view))
+                    else:
+                        if(not op_view["enabled"]):
+                            view_desc = btn_frame.replace("$", "disabled").replace("@", str(len(candidate_actions))).replace(
+                                "#", op_text
+                            )
+                        else:
+                            view_desc = btn_frame.replace(" $", "").replace("@", str(len(candidate_actions))).replace(
+                                "#", op_text
+                            )
+                        state_prompt += view_desc + "\n"
+                        candidate_actions.append(TouchEvent(view=op_view))
+
+                state_prompt += f"<button id={len(candidate_actions)}>go back</button>"
+                candidate_actions.append(KeyEvent(name="BACK"))
+
+                return state_prompt, candidate_actions
+
+
+            OE = OperationExtractor()
+            OE.views = copy.deepcopy(current_state.views)
+            for v in OE.views:
+                OE.viewsId[v["temp_id"]] = v
+            operations, plain_labels, hashable_views = OE.extract_operations()
+            state_prompt, candidate_actions = get_described_operations(operations, plain_labels, hashable_views)
+
+
             state_str = current_state.state_str
             prompt = self._make_prompt(
                 state_prompt,
@@ -1281,9 +1421,19 @@ class TaskPolicy(UtgBasedInputPolicy):
         print(
             "********************************** end of prompt **********************************"
         )
-        response = tools.query_gpt(prompt)
 
-        print(f"response: {response}")
+        parsed_response = self._query_llm_for_action(prompt, "")
+
+        if parsed_response is None:
+            self.logger.warning(
+                "LLM query failed. No action will be taken in this step."
+            )
+            return None, None, None, None
+
+        print(
+            f"LLM Response (parsed): idx='{parsed_response.id}', action_type='{parsed_response.action_type}', "
+            f"input_text='{parsed_response.input_text}'"
+        )
 
         file_name = (
             self.device.output_dir
@@ -1291,9 +1441,11 @@ class TaskPolicy(UtgBasedInputPolicy):
             + self.task.replace('"', "_").replace("'", "_")[:10]
             + ".yaml"
         )  # str(str(time.time()).replace('.', ''))
-        idx, action_type, input_text = tools.extract_action(response)
+        idx = parsed_response.id
+        input_text = parsed_response.input_text
+        finished = parsed_response.finished
 
-        if idx == -1:
+        if finished:
             return FINISHED, None, None, None
 
         selected_action = candidate_actions[idx]
@@ -1302,9 +1454,7 @@ class TaskPolicy(UtgBasedInputPolicy):
             ui_state_desc=state_prompt, view_id=idx
         )
         try:
-            thought = re.findall("involves these steps: (.*)?\.\n", response)[
-                0
-            ]  # tools.get_thought(response)
+            thought = parsed_response.Reason  # tools.get_thought(response)
         except:
             thought = ""
 

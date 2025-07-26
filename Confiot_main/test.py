@@ -304,12 +304,18 @@ def test_Configuration_parser():
         get_ConfigResourceMapper_from_file,
     )
 
+    # Agent = Confiot()
+    # Agent.device_connect()
+
+    # CP = ConfigurationParser(Agent)
+
+    # CP.PE.test_device_page_replay("/tmp", "Page-0")
+
     Agent = Confiot()
+
+    # 执行Task-0, ...
     Agent.device_connect()
-
-    CP = ConfigurationParser(Agent)
-
-    CP.PE.test_device_page_replay("/tmp", "Page-25")
+    ConfigurationParser(Agent).app_pages_exploration(f"test")
 
 
     Agent.device.disconnect()
@@ -633,9 +639,9 @@ if __name__ == "__main__":
     # test_Enumerate_pages()
 
     s = settings(
-        "192.168.2.176:5555",
-        "/root/documents/Output/Huawei/iHORN_gateway/NDSS26/Huawei.apk",
-        r"/root/documents/Output/Huawei/iHORN_gateway/NDSS26/host/result",
+        "192.168.2.207:5555",
+        "/root/documents/Output/Huawei/iHORN_gateway/Huawei.apk",
+        r"/root/documents/Output/Huawei/iHORN_temperature_sensor/NDSS26/guest/result",
     )
 
     test_Configuration_parser()

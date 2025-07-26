@@ -292,7 +292,8 @@ class PageExplorer:
             self.page_navigation_graph.nodes_dict[start_page] = n
             self.page_navigation_graph.add_node(n)
 
-            event = IntentEvent(self.Agent.app.get_start_intent())
+            app = App(self.Agent.app.app_path)
+            event = IntentEvent(app.get_start_intent())
             self.Agent.events[event.get_event_str(state=None)] = event.to_dict()
             edge = Edge(
                 self.page_navigation_graph.nodes_dict[start_page],

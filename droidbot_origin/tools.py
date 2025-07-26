@@ -221,7 +221,7 @@ def make_prompt(task, ui_desc, history):
     task_prompt = "Task: "
     history_prompt = "Previous UI actions: "
     interface_prompt = "Current UI state: "
-    question_prompt = "Your answer should always use the following format:\n1. Completing this task on a smartphone usually involves these steps: <?>.\n2. Analyse the relations between the task and the previous UI actions and current UI state: <?>.\n3. Based on the analyses, is the task already finished? <Y/N>. The next step should be <?/None>.\n4. Can the task be proceeded with the current UI state? <Y/N>. Fill in the blank about next interaction: - id=<id/-1 for finished> - action=<tap/input> - input text=<text or N/A>"
+    question_prompt = "Your answer should always use the following format:\n1. Completing this task on a smartphone usually involves these steps: <?>.\n2. Analyse the relations between the task and the previous UI actions and current UI state: <?>.\n3. Based on the analyses, is the task already finished? <Y/N>. The next step should be <?/None>.\n4. Can the task be proceeded with the current UI state? Fill in the blank about next interaction: - id=<id/-1 for finished> - action=<tap/input> - input text=<text or N/A>"
     return introduction_prompt + '\n' + task_prompt + task + '\n' + history_prompt + '\n' + history + '\n' + interface_prompt + '\n' + ui_desc + '\n' + question_prompt
 
 
