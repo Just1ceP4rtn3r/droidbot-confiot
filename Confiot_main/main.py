@@ -19,6 +19,7 @@ from Confiot_main.ConfiotHunter.ConfiotOracle import (
     ConfigurationConfiotOracle,
 )
 
+
 @logger.catch
 def _Autodroid(task_id, page=None, task=None):
     from Confiot_main.globalvars import GlobalVars
@@ -155,9 +156,14 @@ def run_Configuration_testing(options):
 
 
 def run_Oracle(options):
-    settings(
-        options.guest_device, options.guest_app_path, options.guest_droidbot_output
-    )
+    if options.guest_device:
+        settings(
+            options.guest_device, options.guest_app_path, options.guest_droidbot_output
+        )
+    else:
+        settings(
+            options.host_device, options.host_app_path, options.host_droidbot_output
+        )
 
     task_replay_steps_file = os.listdir(settings.UIHierarchy_comparation_output)
     task_ids = [
@@ -315,7 +321,6 @@ def main():
         help="Run crawler with Autodroid.",
     )
     parser.add_option_group(module_group)
-
 
     # --- User Provided Options ---
     # parser.add_option(
@@ -487,7 +492,8 @@ def main():
             options.host_device, options.host_app_path, options.host_droidbot_output
         )
         run_Appcrawler(
-            f"Explore the this app to identify and capture all unique pages related to device [{options.device_name}]. Always cancel the configuration. Focus exclusively on functionalities and settings. Avoid enter any advertisements and promotional materials content.", options.steplimit
+            f"Explore the this app to identify and capture all unique pages related to device [{options.device_name}]. Always cancel the configuration. Focus exclusively on functionalities and settings. Avoid enter any advertisements and promotional materials content.",
+            int(options.steplimit),
         )
 
 

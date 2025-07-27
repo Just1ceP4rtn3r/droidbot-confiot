@@ -1314,11 +1314,23 @@ class TaskPolicy(UtgBasedInputPolicy):
                 candidate_actions = []
 
                 for label_view in plain_labels:
-                    view_desc = text_frame.replace("@", str(len(candidate_actions))).replace(
-                        "#", label_view["text"]
-                    )
-                    state_prompt += view_desc + "\n"
-                    candidate_actions.append(TouchEvent(view=label_view))
+                    if ("widget.Button" in label_view["class"]):
+                        if (not label_view["enabled"]):
+                            view_desc = btn_frame.replace("$", "disabled").replace("@", str(len(candidate_actions))).replace(
+                                "#", label_view["text"]
+                            )
+                        else:
+                            view_desc = btn_frame.replace(" $", "").replace("@", str(len(candidate_actions))).replace(
+                                "#", label_view["text"]
+                            )
+                        state_prompt += view_desc + "\n"
+                        candidate_actions.append(TouchEvent(view=label_view))
+                    else:
+                        view_desc = text_frame.replace("@", str(len(candidate_actions))).replace(
+                            "#", label_view["text"]
+                        )
+                        state_prompt += view_desc + "\n"
+                        candidate_actions.append(TouchEvent(view=label_view))
 
                 for op in operations:
                     op_view = hashable_views[op]
