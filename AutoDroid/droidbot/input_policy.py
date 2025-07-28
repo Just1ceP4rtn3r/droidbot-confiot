@@ -1149,7 +1149,7 @@ class TaskPolicy(UtgBasedInputPolicy):
         state_str,
         view_text=None,
         thought_history=None,
-        use_thoughts=True,
+        use_thoughts=False,
     ):
         if self.use_memory:
             # if isinstance(state_str, list):
@@ -1177,6 +1177,7 @@ class TaskPolicy(UtgBasedInputPolicy):
 
         if use_thoughts:
             history_with_thought = []
+
             for idx in range(len(action_history)):
                 history_with_thought.append(
                     action_history[idx] + "\n    Reason: " + thought_history[idx]
@@ -1303,11 +1304,11 @@ class TaskPolicy(UtgBasedInputPolicy):
             )
 
             def get_described_operations(operations, plain_labels, hashable_views):
-                text_frame = "<p id=@>#</p>"
-                btn_frame = "<button id=@ $>#</button>"
-                imgbtn_frame = "<imagebutton id=@ $>#</imagebutton>"
-                checkbox_frame = "<checkbox id=@ checked=$>#</checkbox>"
-                input_frame = "<input id=@>#</input>"
+                text_frame = "<p id=@>#</p bounds=!!>"
+                btn_frame = "<button id=@ $>#</button bounds=!!>"
+                imgbtn_frame = "<imagebutton id=@ $>#</imagebutton bounds=!!>"
+                checkbox_frame = "<checkbox id=@ checked=$>#</checkbox bounds=!!>"
+                input_frame = "<input id=@>#</input bounds=!!>"
 
                 state_prompt = ""
                 # event list
@@ -1318,17 +1319,17 @@ class TaskPolicy(UtgBasedInputPolicy):
                         if (not label_view["enabled"]):
                             view_desc = btn_frame.replace("$", "disabled").replace("@", str(len(candidate_actions))).replace(
                                 "#", label_view["text"]
-                            )
+                            ).replace("!!", str(label_view["bounds"]))
                         else:
                             view_desc = btn_frame.replace(" $", "").replace("@", str(len(candidate_actions))).replace(
                                 "#", label_view["text"]
-                            )
+                            ).replace("!!", str(label_view["bounds"]))
                         state_prompt += view_desc + "\n"
                         candidate_actions.append(TouchEvent(view=label_view))
                     else:
                         view_desc = text_frame.replace("@", str(len(candidate_actions))).replace(
                             "#", label_view["text"]
-                        )
+                        ).replace("!!", str(label_view["bounds"]))
                         state_prompt += view_desc + "\n"
                         candidate_actions.append(TouchEvent(view=label_view))
 
@@ -1340,12 +1341,7 @@ class TaskPolicy(UtgBasedInputPolicy):
                     lowertext = op_text.lower()
                     # popup dialog
                     if (
-                        "cancel" in lowertext
-                        or "apply" in lowertext
-                        or "yes" in lowertext
-                        or "confirm" in lowertext
-                        or "ok" == lowertext
-                        or ",ok" in lowertext
+                        ",ok" in lowertext
                         or "ok," in lowertext
                         or "确定" in lowertext
                         or "取消" in lowertext
@@ -1358,35 +1354,35 @@ class TaskPolicy(UtgBasedInputPolicy):
                     if op_view["checkable"]:
                         view_desc = checkbox_frame.replace("@", str(len(candidate_actions))).replace(
                             "#", op_text
-                        ).replace("$", str(op_view["checked"]))
+                        ).replace("$", str(op_view["checked"])).replace("!!", str(op_view["bounds"]))
                         state_prompt += view_desc + "\n"
                         candidate_actions.append(TouchEvent(view=op_view))
                     elif op_view["editable"]:
                         view_desc = input_frame.replace("@", str(len(candidate_actions))).replace(
                             "#", op_text
-                        )
+                        ).replace("!!", str(op_view["bounds"]))
                         state_prompt += view_desc + "\n"
                         candidate_actions.append(SetTextEvent(view=op_view, text="HelloWorld"))
                     elif "image" in op_type.lower() or "img" in op_type.lower():
                         if(not op_view["enabled"]):
                             view_desc = imgbtn_frame.replace("$", "disabled").replace("@", str(len(candidate_actions))).replace(
                                 "#", op_text
-                            )
+                            ).replace("!!", str(op_view["bounds"]))
                         else:
                             view_desc = imgbtn_frame.replace(" $", "").replace("@", str(len(candidate_actions))).replace(
                                 "#", op_text
-                            )
+                            ).replace("!!", str(op_view["bounds"]))
                         state_prompt += view_desc + "\n"
                         candidate_actions.append(TouchEvent(view=op_view))
                     else:
                         if(not op_view["enabled"]):
                             view_desc = btn_frame.replace("$", "disabled").replace("@", str(len(candidate_actions))).replace(
                                 "#", op_text
-                            )
+                            ).replace("!!", str(op_view["bounds"]))
                         else:
                             view_desc = btn_frame.replace(" $", "").replace("@", str(len(candidate_actions))).replace(
                                 "#", op_text
-                            )
+                            ).replace("!!", str(op_view["bounds"]))
                         state_prompt += view_desc + "\n"
                         candidate_actions.append(TouchEvent(view=op_view))
 
@@ -1400,7 +1396,7 @@ class TaskPolicy(UtgBasedInputPolicy):
             OE.views = copy.deepcopy(current_state.views)
             for v in OE.views:
                 OE.viewsId[v["temp_id"]] = v
-            operations, plain_labels, hashable_views = OE.extract_operations()
+            operations, plain_labels, hashable_views = OE.extract_operations(Autodroid=True)
             state_prompt, candidate_actions = get_described_operations(operations, plain_labels, hashable_views)
 
 
@@ -1456,6 +1452,16 @@ class TaskPolicy(UtgBasedInputPolicy):
         idx = parsed_response.id
         input_text = parsed_response.input_text
         finished = parsed_response.finished
+
+        with open(f"{self.device.output_dir}/isfinished.json", "w") as f:
+            my_custom_dict = {
+                "id": parsed_response.id,  # 从 parsed_response 对象获取 id
+                "action_type": parsed_response.action_type, # 从 parsed_response 对象获取 action_type
+                "input_text": parsed_response.input_text, # 从 parsed_response 对象获取 input_text
+                "finished": parsed_response.finished, # 从 parsed_response 对象获取 finished
+                "summary_reason": parsed_response.Reason, # 从 parsed_response 对象获取 Reason
+            }
+            json.dump(my_custom_dict, f, indent=4)
 
         if finished:
             return FINISHED, None, None, None
