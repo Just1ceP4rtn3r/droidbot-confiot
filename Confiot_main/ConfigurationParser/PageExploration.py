@@ -59,17 +59,32 @@ class PageExplorer:
         return intersection / union
 
     def get_state_signature(self, state_views):
-        state1_signature = {"resourceid": [], "bound": [], "text": []}
+        """
+        为 state 生成签名，其中每个唯一的 resourceid 只会被记录一次。
+        """
+        state_signature = {"resourceid": [], "bound": [], "text": []}
+        # 使用一个集合来追踪已经见过的 resourceid，以实现去重
+        seen_resource_ids = set()
+
         for view in state_views:
             if not view["visible"]:
                 continue
-            state1_signature["resourceid"].append(
-                f"[class]{view['class']}[resource_id]{view['resource_id']}"
-            )
-            state1_signature["bound"].append(f"[bounds]{view['bounds']}")
-            if view["text"]:
-                state1_signature["text"].append(f"[text]{view['text']}")
-        return state1_signature
+
+            # 构造唯一的 resourceid 字符串
+            resource_id_str = f"[class]{view['class']}[resource_id]{view['resource_id']}"
+
+            # 检查这个 resourceid 是否已经处理过
+            if resource_id_str not in seen_resource_ids:
+                # 如果是第一次见到，则添加所有相关信息
+                state_signature["resourceid"].append(resource_id_str)
+                state_signature["bound"].append(f"[bounds]{view['bounds']}")
+                if view["text"]:
+                    state_signature["text"].append(f"[text]{view['text']}")
+
+                # 将这个 resourceid 添加到集合中，标记为已处理
+                seen_resource_ids.add(resource_id_str)
+
+        return state_signature
 
     def calc_state_jaccard_similarity(self, state1, state2):
         resourceid_similarity = 0
@@ -570,6 +585,10 @@ class PageExplorer:
                 )
                 complete_pages.append(target_page)
             else:
+                self.Agent.device_get_UIElement(
+                    store_path=outputdir, store_file=f"{target_page}.xml"
+                )
+                complete_pages.append(target_page)
                 # [TODO]: 如果是一个新的page，或跳转到别的page了（page navigation存在问题）
                 print("[ERR]: Failed: ", target_page)
                 # input()
@@ -612,9 +631,10 @@ class PageExplorer:
         if page_similarities:
             max_similar_page = max(page_similarities, key=page_similarities.get)
 
-        if not max_similar_page or page_similarities[max_similar_page] < 0.6:
+        if not max_similar_page or page_similarities[max_similar_page] < 0.49:
             # 创建一个新page
-            print("[DBG]: Found a new page!")
+            # print(max_similar_page, page_similarities[max_similar_page])
+            # print("[DBG]: Found a new page!")
             return None
         else:
             # 将state加入最相似的page

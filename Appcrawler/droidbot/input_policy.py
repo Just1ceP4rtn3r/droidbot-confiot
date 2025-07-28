@@ -1548,7 +1548,6 @@ Execution Strategy:
 1. When a pop-up dialog appears (e.g., one with "Yes/No" or "OK/Cancel" buttons and so on), always select the negative option (or Choose the positive option if the pop-up has no negative response). You can ignore any other instructions and potential "already clicked"; this rule takes precedence.
 2. If you get stuck in a loop (e.g., repeatedly visiting same pages), and even "go back" cannot break it, you need to select other buttons on the page (you can click "already clicked" buttons in this case).
 
-
 Respond with the element `idx`, the `action_type` (e.g., 'tap', 'input'), any `input_text` if required, and the `page_summary` for the chosen action."""
 
         # NEW HISTORY FORMATTING: Formats the action history to include both the action and its summary.
@@ -1684,12 +1683,7 @@ Respond with the element `idx`, the `action_type` (e.g., 'tap', 'input'), any `i
                     lowertext = op_text.lower()
                     # popup dialog
                     if (
-                        "cancel" in lowertext
-                        or "apply" in lowertext
-                        or "yes" in lowertext
-                        or "confirm" in lowertext
-                        or "ok" == lowertext
-                        or ",ok" in lowertext
+                        ",ok" in lowertext
                         or "ok," in lowertext
                         or "确定" in lowertext
                         or "取消" in lowertext
@@ -1734,7 +1728,7 @@ Respond with the element `idx`, the `action_type` (e.g., 'tap', 'input'), any `i
             OE.views = copy.deepcopy(current_state.views)
             for v in OE.views:
                 OE.viewsId[v["temp_id"]] = v
-            operations, plain_labels, hashable_views = OE.extract_operations()
+            operations, plain_labels, hashable_views = OE.extract_operations(Autodroid=True)
             state_prompt, candidate_actions = get_described_operations(operations, plain_labels, hashable_views)
 
             # print(state_prompt)

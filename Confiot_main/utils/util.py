@@ -1073,7 +1073,7 @@ def query_Confiot_identification_ask_questions(
 
 
 def query_Confiot_identification(system_prompt, user_prompt, TestingPhase, llm="xxx"):
-    from pydantic import BaseModel
+    from pydantic import BaseModel, Field
     from openai import OpenAI
 
     class ViolationFormat(BaseModel):
@@ -1113,8 +1113,12 @@ def query_Confiot_identification(system_prompt, user_prompt, TestingPhase, llm="
 
         class response_DuringUsage(BaseModel):
             violations: list[ViolationFormat]
-            Direct_Capability_Changes: list[str]
-            Resource_State_Changes: list[str]
+            Direct_Capability_Changes: str = Field(
+                description="Please responds: When the configuration `[{{CONFIG}}]` executed, what capabilities the user gain/loss"
+            )
+            Resource_State_Changes: str = Field(
+                description="Please responds: When the configuration `[{{CONFIG}}]` executed, what resource created/deleted"
+            )
             Capability_Changes: list[str]
 
         client = OpenAI()

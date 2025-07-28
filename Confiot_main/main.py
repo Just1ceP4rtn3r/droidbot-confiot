@@ -3,6 +3,7 @@ import os
 import sys
 import re
 import json
+import time
 from loguru import logger
 
 
@@ -27,6 +28,7 @@ def _Autodroid(task_id, page=None, task=None):
     from AutoDroid.droidbot import input_manager
     from AutoDroid.droidbot import env_manager
     from AutoDroid.droidbot.droidbot import DroidBot as AutoDroid
+    from AutoDroid.droidbot.input_event import KeyEvent, IntentEvent
 
     # s = settings(
     #     "172.20.10.10:5555",
@@ -83,6 +85,19 @@ def _Autodroid(task_id, page=None, task=None):
         GlobalVars.step_outputfile = (
             settings.autodroid_output + f"/Task-{str(task_id)}.json"
         )
+    else:
+        GlobalVars.step_outputfile = settings.droid_output + "/tmp.json"
+
+        droidbot.device.connect()
+        event = IntentEvent(droidbot.app.get_stop_intent())
+
+        event.send(droidbot.device)
+
+        time.sleep(1)
+        event = IntentEvent(droidbot.app.get_start_intent())
+        event.send(droidbot.device)
+        time.sleep(3)
+
 
     droidbot.start()
 
@@ -107,16 +122,13 @@ def run_Configuration_parser(options):
 
 
 def run_Configuration_testing(options):
-
+    input()
     settings(options.host_device, options.host_app_path, options.host_droidbot_output)
     Tasks = {}
     with open(
         settings.LLMConfiguration_output + "/ConfigurationsSummary.json", "r"
     ) as f:
         Tasks = json.load(f)
-
-    logger.info("--- Configuration Tasks in Testing ---")
-    logger.info(Tasks)
 
     if options.home_name:
         Tasks.append(
@@ -128,7 +140,13 @@ def run_Configuration_testing(options):
             }
         )
 
+    logger.info("--- Configuration Tasks in Testing ---")
+    logger.info(Tasks)
+
+
     for t in Tasks:
+        task_content = t["Tasks"]
+        autodroid_result = {}
         try:
             logger.info(
                 f"Try to complete the configuration {t['Id']} with Autodroid on device {options.host_device}"
@@ -137,22 +155,75 @@ def run_Configuration_testing(options):
                 options.host_device, options.host_app_path, options.host_droidbot_output
             )
             _Autodroid(task_id=t["Id"], page=t["Page ID"], task=t["Tasks"])
+
+            autodroid_dir = settings.droid_output + "/Autodroid/"
+            if os.path.exists(f"{autodroid_dir}/isfinished.json"):
+                with open(
+                    f"{autodroid_dir}/isfinished.json", "r", encoding="utf-8"
+                ) as f:
+                    autodroid_result = json.load(f)
+                if "finished" not in autodroid_result:
+                    autodroid_result["finished"] = False
+
+            autodroid_result["state_views"] = {}
+            states_path = f"{autodroid_dir}/states/"
+            states_json = os.listdir(states_path)
+            for j in states_json:
+                if "screen" in j:
+                    continue
+                with open(states_path + j, "r") as f:
+                    try:
+                        s = json.load(f)
+                        state_str = s["state_str"]
+                        if state_str != "":
+                            autodroid_result["state_views"][state_str] = s["views"]
+                    except Exception as e:
+                        print(f"[ERR]: Failed to parse the state file `{j}`\n" + str(e))
+
             logger.info("Autodroid finished\n")
             logger.info("  ---------------------------------")
         except Exception as e:
             logger.error(e)
+            continue
 
-        logger.info(f"Try to capture the UI changes in {options.host_device}")
-        settings(
-            options.guest_device, options.guest_app_path, options.guest_droidbot_output
-        )
-        Agent = Confiot()
+        autodroid_result["worklist_pages"] = set()
+        if autodroid_result["finished"]:
+            logger.info(f"Try to capture the UI changes in {options.host_device}")
+            settings(
+                options.guest_device,
+                options.guest_app_path,
+                options.guest_droidbot_output,
+            )
+            Agent = Confiot()
 
-        # 执行Task-0, ...
-        Agent.device_connect()
-        ConfigurationParser(Agent).app_pages_exploration(f"Task-{str(t['Id'])}")
+            # 执行Task-0, ...
+            Agent.device_connect()
+            CP = ConfigurationParser(Agent)
 
-        Agent.device.disconnect()
+            # 在guest app中识别相应的page
+            for state in autodroid_result["state_views"]:
+                tmp_views = autodroid_result["state_views"][state]
+                _page = CP.PE.identify_current_page(tmp_views)
+                if _page:
+                    if _page in CP.pages:
+                        autodroid_result["worklist_pages"].add(_page)
+
+            logger.info(f"Related Pages: {autodroid_result['worklist_pages']}")
+            CP.app_pages_exploration(f"Task-{str(t['Id'])}")
+            # if t["Id"] == "REVOKE":
+            #     CP.app_pages_exploration(f"Task-{str(t['Id'])}")
+            # else:
+            #     for page in autodroid_result["worklist_pages"]:
+            #         outputdir = (
+            #             settings.UIHierarchy_comparation_output + f"/Task-{str(t['Id'])}"
+            #         )
+            #         if not os.path.exists(outputdir + f"/{page}.xml"):
+            #             CP.PE.test_device_page_replay(outputdir, page)
+
+            with open(settings.UIHierarchy_comparation_output + f"/Task-{str(t['Id'])}/Task.txt", "w") as f:
+                f.write(task_content)
+
+            Agent.device.disconnect()
 
 
 def run_Oracle(options):
@@ -182,12 +253,22 @@ def run_Oracle(options):
     Agent = Confiot()
     oracle = ConfigurationConfiotOracle(Agent)
     Criteria = oracle.LoadCriterias()
-    Configurations = oracle.LoadConfigurations(
+    UserCapabilities = oracle.LoadConfigurations(
         settings.Confiot_output + "/LLM_ConfigParsing"
     )
     last_task = None
     for task in task_ids:
         UIChanges = oracle.LoadUIChanges(last_task, task)
+        task_content = ""
+
+        if os.path.exists(settings.violation_output + "/" + oracle.proceed_configuration + "/"):
+            logger.info("Relevant violation results already exist: " + settings.violation_output + "/" + oracle.proceed_configuration + "/")
+            last_task = task
+            continue
+
+        if os.path.exists(settings.UIHierarchy_comparation_output + f"/{task}/Task.txt"):
+            with open(settings.UIHierarchy_comparation_output + f"/{task}/Task.txt", "r") as f:
+                task_content = f.read()
 
         if not last_task:
             phase = Phase.AfterDelegation
@@ -198,10 +279,11 @@ def run_Oracle(options):
         oracle.IdentifyConfiot(
             phase,
             Criteria,
-            Configurations,
+            UserCapabilities,
             UIChanges,
             "Administrators" if options.role else "Guests",
             settings.violation_output + "/" + oracle.proceed_configuration + "/",
+            task_content=task_content
         )
         last_task = task
 
@@ -221,7 +303,6 @@ def run_Appcrawler(task, steplimit=100):
     from Appcrawler.droidbot import env_manager
     from Appcrawler.droidbot.droidbot import DroidBot as AutoDroid
     from Appcrawler.droidbot.input_event import KeyEvent, IntentEvent
-    import time
 
     droidbot = AutoDroid(
         app_path=settings.app_path,

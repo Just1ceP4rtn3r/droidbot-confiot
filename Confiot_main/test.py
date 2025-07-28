@@ -315,7 +315,7 @@ def test_Configuration_parser():
 
     # 执行Task-0, ...
     Agent.device_connect()
-    ConfigurationParser(Agent).app_pages_exploration(f"test")
+    ConfigurationParser(Agent).app_pages_exploration(f"Task-REVOKE")
 
 
     Agent.device.disconnect()
@@ -639,9 +639,9 @@ if __name__ == "__main__":
     # test_Enumerate_pages()
 
     s = settings(
-        "192.168.2.207:5555",
+        "192.168.2.176:5555",
         "/root/documents/Output/Huawei/iHORN_gateway/Huawei.apk",
-        r"/root/documents/Output/Huawei/iHORN_temperature_sensor/NDSS26/guest/result",
+        r"/root/documents/Output/Huawei/YANKON_smart_bulb/NDSS26/host/result/",
     )
 
     test_Configuration_parser()

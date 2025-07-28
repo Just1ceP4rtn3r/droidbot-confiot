@@ -757,9 +757,9 @@ class ConfigurationConfiotOracle(ConfiotOracle):
             ).identify_change_type()
 
         _tmp = UIChanges.copy()
-        for page in _tmp:
-            if UIChanges[page] == []:
-                UIChanges.pop(page)
+        # for page in _tmp:
+        #     if UIChanges[page] == []:
+        #         UIChanges.pop(page)
         return UIChanges
 
     # [TODO]: 添加对于LLM configuration种Dependency的解析
@@ -797,7 +797,7 @@ class ConfigurationConfiotOracle(ConfiotOracle):
     # Configurations: {"Page-0": {"Task Content": [op_id, ...]}}
     # UIChanges: {"Page-0": [ConfiotHunter.SpecificUIChange, ...]}
     def IdentifyConfiot(
-        self, TestingPhase, Criteria, Configurations, UIChanges, Role, outputdir
+        self, TestingPhase, Criteria, Configurations, UIChanges, Role, outputdir, task_content=""
     ):
         if not os.path.exists(outputdir):
             os.makedirs(outputdir)
@@ -1002,16 +1002,16 @@ class ConfigurationConfiotOracle(ConfiotOracle):
                 json.dump(final_violations, f, indent=4, ensure_ascii=False)
 
         elif TestingPhase == Phase.DuringUsage:
-            if len(UIChanges) == 0:
-                print("[DBG]: Skip because no UI changes")
-                return
+            # if len(UIChanges) == 0:
+            #     print("[DBG]: Skip because no UI changes")
+            #     return
             system_prompt = DuringUsage_system_template
             user_prompt = DuringUsage_user_template.replace("{{ROLE}}", Role)
             user_prompt = user_prompt.replace("{{CRITERIA}}", str(Criteria))
             user_prompt = user_prompt.replace(
                 "{{EXECUTOR}}", "Administrators" if Role == "Guests" else "Guests"
             )
-            # user_prompt = user_prompt.replace("{{CONFIG}}", str(Criteria))
+            user_prompt = user_prompt.replace("{{CONFIG}}", str(task_content))
             page_ui_changes_str = []
 
             for changed_page in UIChanges:
@@ -1067,6 +1067,9 @@ class ConfigurationConfiotOracle(ConfiotOracle):
                         + "\n"
                     )
 
+                if not _change_details_str:
+                    _change_details_str = "NO UI CHANGES in this page"
+
                 _prompt = _prompt.replace("{{PAGEUICHANGE}}", _change_details_str)
                 page_ui_changes_str.append(_prompt)
 
@@ -1118,20 +1121,16 @@ class ConfigurationConfiotOracle(ConfiotOracle):
                         with open(
                             settings.violation_output + "/Activities.txt", "w"
                         ) as f:
-                            for v in (
-                                res.Direct_Capability_Changes
-                                + res.Resource_State_Changes
-                            ):
-                                f.write(v + "\n")
+                            f.write(f"[Configuration executed]: {str(task_content)}\n")
+                            f.write(f"    [Direct Capability Changes]: {res.Direct_Capability_Changes}" + "\n"
+                                + f"    [Resource Changes]: {res.Resource_State_Changes}" + "\n")
                     else:
                         with open(
                             settings.violation_output + "/Activities.txt", "a"
                         ) as f:
-                            for v in (
-                                res.Direct_Capability_Changes
-                                + res.Resource_State_Changes
-                            ):
-                                f.write(v + "\n")
+                            f.write(f"[Configuration executed]: {str(task_content)}\n")
+                            f.write(f"    [Direct Capability Changes]: {res.Direct_Capability_Changes}" + "\n"
+                                + f"    [Resource Changes]: {res.Resource_State_Changes}" + "\n")
             except:
                 # deepseek or qwen
                 try:
@@ -1240,21 +1239,8 @@ class ConfigurationConfiotOracle(ConfiotOracle):
                 violations = []
                 for r in res.violations:
                     violation = {
-                        "FinallJudgment": (
-                            False
-                            if r.Verification_Answer_bool
-                            == r.Counterexample_Answer_bool
-                            else True
-                        ),
                         "Violated criterion id": r.violated_criterion_id,
                         "configuration_resource": r.configuration_resource,
-                        "Verification_Question": r.Verification_Question,
-                        "Verification_Answer_bool": r.Verification_Answer_bool,
-                        "Verification_Answer": r.Verification_Answer,
-                        "Counterexample_Question": r.Counterexample_Question,
-                        "Counterexample_Answer_bool": r.Counterexample_Answer_bool,
-                        "Counterexample_Answer": r.Counterexample_Answer,
-                        "Confidence_score": r.Confidence_score,
                         "Guess_steps": r.Guess_steps,
                     }
                     violations.append(violation)
@@ -1267,27 +1253,6 @@ class ConfigurationConfiotOracle(ConfiotOracle):
                 with open(outputdir + "/Violations.json", "w") as f:
                     json.dump(violations, f, indent=4, ensure_ascii=False)
 
-                if TestingPhase == Phase.DuringUsage:
-                    if not os.path.exists(
-                        settings.violation_output + "/Activities.txt"
-                    ):
-                        with open(
-                            settings.violation_output + "/Activities.txt", "w"
-                        ) as f:
-                            for v in (
-                                res.Direct_Capability_Changes
-                                + res.Resource_State_Changes
-                            ):
-                                f.write(v + "\n")
-                    else:
-                        with open(
-                            settings.violation_output + "/Activities.txt", "a"
-                        ) as f:
-                            for v in (
-                                res.Direct_Capability_Changes
-                                + res.Resource_State_Changes
-                            ):
-                                f.write(v + "\n")
             except:
                 # deepseek or qwen
                 try:

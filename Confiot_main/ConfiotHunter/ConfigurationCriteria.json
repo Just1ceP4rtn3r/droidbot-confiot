@@ -1,6 +1,11 @@
 {
     "Criteria": [
         {
+            "Id": "6",
+            "Role": "Administrators, Guests",
+            "Capabilities": "When other users create automation rules (including scenes, routines, schedules, trigger-action or IFTTT), other users should be able to view the new rules on the app page. If no automation-rule-related UI changes in the given pages, it should be considered as a violation."
+        },
+        {
             "Id": "1",
             "Role": "Administrators, Guests",
             "Capabilities": "Should be able to view the list of all current users"

@@ -855,7 +855,7 @@ class DeviceState(object):
     def get_described_actions(self,
                               prefix='',
                               remove_time_and_ip=False,
-                              merge_buttons=True,
+                              merge_buttons=False,
                               add_edit_box=True,
                               add_check_box=True,
                               add_pure_text=True):
