@@ -62,6 +62,23 @@ class ConfigurationParser:
         if not os.path.exists(
             settings.UIHierarchy_comparation_output + f"/{configuration}/"
         ):
+            os.makedirs(settings.UIHierarchy_comparation_output + f"/{configuration}/")
+            if configuration == "000":
+                import xml.etree.ElementTree as ET
+                for page in self.PE.pages:
+                    views = self.Agent.state_contents[list(self.PE.pages[page].keys())[0]]
+                    output_file = settings.UIHierarchy_comparation_output + f"/{configuration}/{page}.xml"
+                    root = ET.Element("Hierarchy")
+
+                    for item in views:
+                        entry = ET.SubElement(root, "Node")
+                        for key, value in item.items():
+                            ET.SubElement(entry, key).text = str(value)
+                    tree = ET.ElementTree(root)
+                    tree.write(output_file)
+                return
+
+
             self.device_state_replay(
                 settings.UIHierarchy_comparation_output + f"/{configuration}/"
             )

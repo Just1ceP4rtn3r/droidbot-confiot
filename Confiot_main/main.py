@@ -101,7 +101,7 @@ def _Autodroid(task_id, page=None, task=None):
 
     droidbot.start()
 
-
+@logger.catch
 def run_Configuration_parser(options):
     Agent = Confiot()
     try:
@@ -551,8 +551,8 @@ def main():
             )
             logger.debug(settings.Confiot_output)
             run_Configuration_parser(options)
-        except:
-            pass
+        except Exception as e:
+            logger.error(e)
 
         try:
             settings(
@@ -562,8 +562,8 @@ def main():
             )
             logger.debug(settings.Confiot_output)
             run_Configuration_parser(options)
-        except:
-            pass
+        except Exception as e:
+            logger.error(e)
     elif options.testing:
         run_Configuration_testing(options)
     elif options.oracle:
