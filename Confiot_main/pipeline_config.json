@@ -1,0 +1,11 @@
+{
+  "apps": [
+    {
+      "app_name": "sifely_smart_lock",
+      "host_device": "17291JECB10652",
+      "guest_device": "17281JECB06200",
+      "apk_file": "com.sifely.smartlockapp.apk",
+      "crawler_steplimit": 50
+    }
+  ]
+}

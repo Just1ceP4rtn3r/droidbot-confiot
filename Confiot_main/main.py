@@ -246,8 +246,295 @@ Infer Policy with the feasibility of the configurations
 
     Feasibilities_json = json.dumps(Feasibilities)
 
+<<<<<<< Updated upstream
     with open(settings.Feasibility_comparation_output + "/Feasibilities.txt", 'w') as f:
         f.write(Feasibilities_json)
+=======
+
+def run_Appcrawler(task, steplimit=100):
+    from Confiot_main.globalvars import GlobalVars
+
+    from Appcrawler.droidbot import input_manager
+    from Appcrawler.droidbot import env_manager
+    from Appcrawler.droidbot.droidbot import DroidBot as AutoDroid
+    from Appcrawler.droidbot.input_event import KeyEvent, IntentEvent
+    import time
+
+    droidbot = AutoDroid(
+        app_path=settings.app_path,
+        device_serial=settings.device_serial,
+        task=task,
+        is_emulator=True,
+        output_dir=settings.droid_output,
+        env_policy=env_manager.POLICY_NONE,
+        policy_name=input_manager.POLICY_AutodroidCrawlerPolicy,
+        script_path=None,
+        event_interval=1,
+        timeout=1200,
+        event_count=steplimit,
+        debug_mode=False,
+        keep_app=True,
+        keep_env=True,
+        grant_perm=True,
+        enable_accessibility_hard=True,
+        ignore_ad=True,
+    )
+
+    # droidbot = AutoDroid(
+    #     app_path=settings.app_path,
+    #     device_serial=settings.device_serial,
+    #     task=task,
+    #     is_emulator=True,
+    #     output_dir=settings.droid_output,
+    #     env_policy=env_manager.POLICY_NONE,
+    #     policy_name=input_manager.POLICY_TASK,
+    #     script_path=None,
+    #     event_interval=1,
+    #     timeout=1200,
+    #     event_count=3000,
+    #     debug_mode=False,
+    #     keep_app=True,
+    #     keep_env=True,
+    #     grant_perm=True,
+    #     enable_accessibility_hard=True,
+    #     ignore_ad=True,
+    # )
+
+    GlobalVars.step_outputfile = settings.droid_output + "/tmp.json"
+
+    droidbot.device.connect()
+    event = IntentEvent(droidbot.app.get_stop_intent())
+
+    event.send(droidbot.device)
+
+    time.sleep(1)
+    event = IntentEvent(droidbot.app.get_start_intent())
+    event.send(droidbot.device)
+    time.sleep(3)
+
+    droidbot.start()
+
+
+def main():
+    """
+    Main function to parse command line arguments.
+    """
+    # Define usage message for the script
+    usage = "usage: %prog [options]"
+    # Create an OptionParser object
+    parser = optparse.OptionParser(usage=usage)
+
+    # --- Added Work Module Options ---
+    # Create a group for better readability in help message
+    module_group = optparse.OptionGroup(
+        parser, "Work Modules", "Options to enable specific work modules."
+    )
+    module_group.add_option(
+        "--task-parser",
+        dest="task_parser",
+        action="store_true",
+        default=False,
+        help="Enable the TaskParser module.",
+    )
+    module_group.add_option(
+        "--testing",
+        dest="testing",
+        action="store_true",
+        default=False,
+        help="Enable the Testing module.",
+    )
+    module_group.add_option(
+        "--oracle",
+        dest="oracle",
+        action="store_true",
+        default=False,
+        help="Enable the Oracle module.",
+    )
+    module_group.add_option(
+        "--Autodroid-crawler",
+        dest="autodroid_crawler",
+        action="store_true",
+        default=False,
+        help="Run crawler with Autodroid.",
+    )
+    parser.add_option_group(module_group)
+
+
+    # --- User Provided Options ---
+    # parser.add_option(
+    #     "-A",
+    #     dest="is_host",
+    #     action="store_true",
+    #     default=False,
+    #     help="The agent that make configurations",
+    # )
+
+    # parser.add_option(
+    #     "-a",
+    #     dest="is_guest",
+    #     action="store_true",
+    #     default=False,
+    #     help="The agent that capture UI changes",
+    # )
+
+    # --- Host Agent Configuration Group ---
+    # Parameters specific to the Host agent (-A)
+    host_group = optparse.OptionGroup(parser, "The agent that make configurations")
+    host_group.add_option(
+        "--A-app-path",
+        dest="host_app_path",
+        help="[A] The apk path of the target application.",
+    )
+    host_group.add_option(
+        "--A-device",
+        dest="host_device",
+        help="[A] The device serial (e.g., emulator-5554).",
+    )
+    host_group.add_option(
+        "--A-droidbot-output",
+        dest="host_droidbot_output",
+        help="[A] The output path for droidbot.",
+    )
+    parser.add_option_group(host_group)
+
+    parser.add_option(
+        "--crawler-steplimit",
+        dest="steplimit",
+        type="int",
+        default=100,
+        help="How many operation steps does the app crawler execute before it stops exploring.",
+    )
+
+    # --- Guest Agent Configuration Group ---
+    # Parameters specific to the Guest agent (-a)
+    guest_group = optparse.OptionGroup(parser, "The agent that capture UI changes")
+    guest_group.add_option(
+        "-R",
+        dest="role",
+        action="store_true",
+        default=False,
+        help="The role of the agent [a]: Set: Administrators, Unset: Guests",
+    )
+    guest_group.add_option(
+        "--a-app-path",
+        dest="guest_app_path",
+        help="[a] The apk path of the target application.",
+    )
+    guest_group.add_option(
+        "--a-device",
+        dest="guest_device",
+        help="[a] The device serial (e.g., emulator-5554).",
+    )
+    guest_group.add_option(
+        "--a-droidbot-output",
+        dest="guest_droidbot_output",
+        help="[a] The output path for droidbot.",
+    )
+    parser.add_option_group(guest_group)
+
+    parser.add_option(
+        "--proxy",
+        dest="proxy",
+        help="Specify an HTTP proxy (e.g., http://user:pass@host:port).",
+    )
+
+    parser.add_option(
+        "--device-name",
+        dest="device_name",
+        help="The device name in App (e.g., Tuya smartplug)",
+    )
+
+    parser.add_option(
+        "--Revocation",
+        dest="home_name",
+        help="The device in which/whose home (e.g., 133xxxxx's home)",
+    )
+
+    (options, args) = parser.parse_args()
+
+    # --- Validate Arguments ---
+    # Check if a role is selected
+    # if not options.is_host and not options.is_guest:
+    #     logger.error("Error: You must specify a role. Use -A for Host or -a for Guest.")
+    #     parser.logger.info_help()
+    #     sys.exit(1)
+
+    # # Check for mutually exclusive roles
+    # if options.is_host and options.is_guest:
+    #     logger.error(
+    #         "Error: -A (Host) and -a (Guest) are mutually exclusive. Please choose one."
+    #     )
+    #     parser.logger.info_help()
+    #     sys.exit(1)
+
+    # Validate arguments for the selected role
+    # if not options.host_app_path:
+    #     logger.error("Error: --A-app-path is required when running as Host agent (-A).")
+    #     parser.logger.info_help()
+    #     sys.exit(1)
+
+    # if not options.guest_app_path:
+    #     logger.error(
+    #         "Error: --a-app-path is required when running as Guest agent (-a)."
+    #     )
+    #     parser.logger.info_help()
+    #     sys.exit(1)
+
+    # --- Example Usage ---
+    logger.info("--- Parsed Configuration ---")
+    logger.info(f"  Host App Path: {options.host_app_path}")
+    logger.info(f"  Host Device: {options.host_device}")
+    logger.info(f"  Host Droidbot Output: {options.host_droidbot_output}")
+    logger.info(f"  Guest App Path: {options.guest_app_path}")
+    logger.info(f"  Guest Device: {options.guest_device}")
+    logger.info(f"  Guest Droidbot Output: {options.guest_droidbot_output}")
+
+    logger.info("--- General & Module Settings ---")
+    logger.info(f"  Proxy: {options.proxy}")
+    if options.task_parser:
+        logger.info("  TaskParser Module Enabled")
+    if options.testing:
+        logger.info("  Testing Module Enabled")
+    if options.oracle:
+        logger.info("  Oracle Module Enabled")
+    logger.info("  ---------------------------------")
+
+    if options.proxy:
+        os.environ["https_proxy"] = options.proxy
+
+    # start configuration parser module
+    if options.task_parser:
+        try:
+            settings(
+                options.host_device, options.host_app_path, options.host_droidbot_output
+            )
+            logger.debug(settings.Confiot_output)
+            run_Configuration_parser(options)
+        except:
+            pass
+
+        try:
+            settings(
+                options.guest_device,
+                options.guest_app_path,
+                options.guest_droidbot_output,
+            )
+            logger.debug(settings.Confiot_output)
+            run_Configuration_parser(options)
+        except:
+            pass
+    elif options.testing:
+        run_Configuration_testing(options)
+    elif options.oracle:
+        run_Oracle(options)
+    elif options.autodroid_crawler:
+        settings(
+            options.host_device, options.host_app_path, options.host_droidbot_output
+        )
+        run_Appcrawler(
+            f"Explore the this app to identify and capture all unique pages related to device [{options.device_name}]. Always cancel the configuration. Focus exclusively on functionalities and settings. Avoid enter any advertisements and promotional materials content.", options.steplimit
+        )
+>>>>>>> Stashed changes
 
 
 if __name__ == "__main__":

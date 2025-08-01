@@ -1,0 +1,17 @@
+xmldiff==2.6.3
+Pillow==10.1.0
+numpy
+tree-sitter
+tree-sitter-javascript
+graphviz
+nltk
+cleantext
+openai
+loguru==0.7.3
+uiautomator2==2.16.23
+scikit-learn
+beautifulsoup4
+zss
+transformers
+torch
+androguard==4.1.3
