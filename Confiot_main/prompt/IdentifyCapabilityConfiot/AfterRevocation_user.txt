@@ -1,0 +1,8 @@
+### Previous Guest activities
+{{ACTIVITY}}
+
+
+### UI Changes in Administrator's app after the guest being removed from home (if empty, means no UI change happened)
+
+
+{{UICHANGE}}

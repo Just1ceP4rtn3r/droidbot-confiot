@@ -1,1 +1,0 @@
-{"Host": {"Device usage log (sleep data)": "View", "Device metadata (device name)": "View"}, "Guest": {"Device usage log (sleep data)": "View", "Device metadata (device name)": "View"}}

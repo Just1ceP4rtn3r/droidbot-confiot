@@ -1,0 +1,7 @@
+The Page ID is: "{{PAGE}}"
+The operation lead to this page is: "{{CONTEXT}}"
+The plain texts in this page is:
+{{TEXT}}
+The operation list in this page is:
+{{LIST}}
+

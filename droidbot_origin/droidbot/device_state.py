@@ -278,13 +278,11 @@ class DeviceState(object):
         if view_text is None or len(view_text) > 50:
             view_text = "None"
 
-        signature = "[class]%s[resource_id]%s[text]%s[%s,%s,%s]" % \
-                    (DeviceState.__safe_dict_get(view_dict, 'class', "None"),
-                     DeviceState.__safe_dict_get(view_dict, 'resource_id', "None"),
-                     view_text,
-                     DeviceState.__key_if_true(view_dict, 'enabled'),
-                     DeviceState.__key_if_true(view_dict, 'checked'),
-                     DeviceState.__key_if_true(view_dict, 'selected'))
+        signature = "[class]%s[resource_id]%s[text]%s[%s,%s,%s]" % (DeviceState.__safe_dict_get(
+            view_dict, 'class', "None"), DeviceState.__safe_dict_get(
+                view_dict, 'resource_id', "None"), view_text, DeviceState.__key_if_true(
+                    view_dict, 'enabled'), DeviceState.__key_if_true(
+                        view_dict, 'checked'), DeviceState.__key_if_true(view_dict, 'selected'))
         view_dict['signature'] = signature
         return signature
 
@@ -297,9 +295,8 @@ class DeviceState(object):
         """
         if 'content_free_signature' in view_dict:
             return view_dict['content_free_signature']
-        content_free_signature = "[class]%s[resource_id]%s" % \
-                                 (DeviceState.__safe_dict_get(view_dict, 'class', "None"),
-                                  DeviceState.__safe_dict_get(view_dict, 'resource_id', "None"))
+        content_free_signature = "[class]%s[resource_id]%s" % (DeviceState.__safe_dict_get(
+            view_dict, 'class', "None"), DeviceState.__safe_dict_get(view_dict, 'resource_id', "None"))
         view_dict['content_free_signature'] = content_free_signature
         return content_free_signature
 
@@ -320,8 +317,8 @@ class DeviceState(object):
         for child_id in self.get_all_children(view_dict):
             child_strs.append(DeviceState.__get_view_signature(self.views[child_id]))
         child_strs.sort()
-        view_str = "Activity:%s\nSelf:%s\nParents:%s\nChildren:%s" % \
-                   (self.foreground_activity, view_signature, "//".join(parent_strs), "||".join(child_strs))
+        view_str = "Activity:%s\nSelf:%s\nParents:%s\nChildren:%s" % (self.foreground_activity, view_signature,
+                                                                      "//".join(parent_strs), "||".join(child_strs))
         import hashlib
         view_str = hashlib.md5(view_str.encode('utf-8')).hexdigest()
         view_dict['view_str'] = view_str
@@ -422,7 +419,7 @@ class DeviceState(object):
         children = set(children)
         for child in children:
             children_of_child = self.get_all_children(self.views[child])
-            children.union(children_of_child)
+            children = children.union(children_of_child)
         return children
 
     def get_app_activity_depth(self, app):
@@ -495,7 +492,7 @@ class DeviceState(object):
 
             # print(bounds)
             if (bounds and self.check_nearby_rectangles(rectangle=bounds, target_rectangle=back_baseline, threshold=50)):
-                print("[DBG]: Found back button:", bounds)
+                # print("[DBG]: Found back button:", bounds)
                 continue
 
             # [TODO-backbutton]: 这里是为了排除back按钮，但是这个back按钮的resource_id是动态的，所以这里需要改进
@@ -505,15 +502,6 @@ class DeviceState(object):
             if (bounds and self.check_nearby_rectangles(rectangle=bounds, target_rectangle=precise_back_baseline, threshold=1)):
                 print("[DBG]: Found precise matching back button:", bounds)
                 continue
-
-            # # syncxxx: 过滤同一位置的按钮
-            # if (self.foreground_activity not in settings.bounds_map):
-            #     settings.bounds_map[self.foreground_activity] = {}
-            # if (bounds and bounds_str in settings.bounds_map[self.foreground_activity]):
-            #     if (settings.bounds_map[self.foreground_activity][bounds_str] > settings.bounds_limit):
-            #         continue
-            # elif (bounds):
-            #     settings.bounds_map[self.foreground_activity][bounds_str] = 0
 
             # exclude navigation bar if exists
             # if self.__safe_dict_get(view_dict, 'enabled') and \
@@ -525,10 +513,10 @@ class DeviceState(object):
             #     enabled_view_ids.append(view_dict['temp_id'])
 
             # syncxxx: 允许点击visible为false的按钮
-            if self.__safe_dict_get(view_dict, 'resource_id') not in \
-               ['android:id/navigationBarBackground',
-                'android:id/statusBarBackground',
-                ]:
+            if self.__safe_dict_get(view_dict, 'resource_id') not in [
+                    'android:id/navigationBarBackground',
+                    'android:id/statusBarBackground',
+            ]:
                 enabled_view_ids.append(view_dict['temp_id'])
 
         # enabled_view_ids.reverse()
@@ -554,7 +542,10 @@ class DeviceState(object):
 
         for view_id in enabled_view_ids:
             if self.__safe_dict_get(self.views[view_id], 'long_clickable'):
-                possible_events.append(LongTouchEvent(view=self.views[view_id]))
+                possible_events.append(TouchEvent(view=self.views[view_id]))
+                touch_exclude_view_ids.add(view_id)
+                touch_exclude_view_ids.union(self.get_all_children(self.views[view_id]))
+                # possible_events.append(LongTouchEvent(view=self.views[view_id]))
 
         for view_id in enabled_view_ids:
             if self.__safe_dict_get(self.views[view_id], 'editable'):
@@ -624,10 +615,8 @@ class DeviceState(object):
         enabled_view_ids = []
         for view_dict in self.views:
             # exclude navigation bar if exists
-            if self.__safe_dict_get(view_dict, 'visible') and \
-                self.__safe_dict_get(view_dict, 'resource_id') not in \
-               ['android:id/navigationBarBackground',
-                'android:id/statusBarBackground']:
+            if self.__safe_dict_get(view_dict, 'visible') and self.__safe_dict_get(
+                    view_dict, 'resource_id') not in ['android:id/navigationBarBackground', 'android:id/statusBarBackground']:
                 enabled_view_ids.append(view_dict['temp_id'])
 
         text_frame = "<p id=@ class='&'>#</p>"
@@ -784,10 +773,9 @@ class DeviceState(object):
         texts, content_descriptions = [], []
         for childid in children_ids:
 
-            if not self.__safe_dict_get(self.views[childid], 'visible') or \
-                self.__safe_dict_get(self.views[childid], 'resource_id') in \
-               ['android:id/navigationBarBackground',
-                'android:id/statusBarBackground']:
+            if not self.__safe_dict_get(self.views[childid], 'visible') or self.__safe_dict_get(
+                    self.views[childid],
+                    'resource_id') in ['android:id/navigationBarBackground', 'android:id/statusBarBackground']:
                 # if the successor is not visible, then ignore it!
                 continue
 
@@ -877,10 +865,8 @@ class DeviceState(object):
         enabled_view_ids = []
         for view_dict in self.views:
             # exclude navigation bar if exists
-            if self.__safe_dict_get(view_dict, 'visible') and \
-                self.__safe_dict_get(view_dict, 'resource_id') not in \
-               ['android:id/navigationBarBackground',
-                'android:id/statusBarBackground']:
+            if self.__safe_dict_get(view_dict, 'visible') and self.__safe_dict_get(
+                    view_dict, 'resource_id') not in ['android:id/navigationBarBackground', 'android:id/statusBarBackground']:
                 enabled_view_ids.append(view_dict['temp_id'])
 
         text_frame = "<p id=@ text='&'>#</p>"
@@ -1137,10 +1123,8 @@ class DeviceState(object):
     def view_scrollable(self, view_dict):
         visible = False
         # exclude navigation bar if exists
-        if self.__safe_dict_get(view_dict, 'visible') and \
-            self.__safe_dict_get(view_dict, 'resource_id') not in \
-            ['android:id/navigationBarBackground',
-            'android:id/statusBarBackground']:
+        if self.__safe_dict_get(view_dict, 'visible') and self.__safe_dict_get(
+                view_dict, 'resource_id') not in ['android:id/navigationBarBackground', 'android:id/statusBarBackground']:
             visible = True
         if not visible:
             return False
@@ -1169,10 +1153,12 @@ class DeviceState(object):
             return string
         import re
         if not remove_candidates:
-            remove_candidates = ['hr', 'min', 'sec', 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sept', 'Oct', 'Nov', 'Dec'\
-                                 'January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December',
-                                 'Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday',
-                                 'Sun', 'Mon', 'Tues', 'Wed', 'Thur', 'Fri', 'Sat']  # '[0-9]+',
+            remove_candidates = [
+                'hr', 'min', 'sec', 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sept', 'Oct', 'Nov', 'Dec'
+                'January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November',
+                'December', 'Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sun', 'Mon', 'Tues',
+                'Wed', 'Thur', 'Fri', 'Sat'
+            ]  # '[0-9]+',
         for remove_candidate in remove_candidates:
             string = re.sub(remove_candidate, '', string)
         if ':' in string or '::' in string or '%' in string:  # ip address, hour, storage usage
@@ -1189,10 +1175,8 @@ class DeviceState(object):
         enabled_view_ids = []
         for view_dict in self.views:
             # exclude navigation bar if exists
-            if self.__safe_dict_get(view_dict, 'visible') and \
-                self.__safe_dict_get(view_dict, 'resource_id') not in \
-               ['android:id/navigationBarBackground',
-                'android:id/statusBarBackground']:
+            if self.__safe_dict_get(view_dict, 'visible') and self.__safe_dict_get(
+                    view_dict, 'resource_id') not in ['android:id/navigationBarBackground', 'android:id/statusBarBackground']:
                 enabled_view_ids.append(view_dict['temp_id'])
 
         text_frame = "<p id=@ class='&'>#</p>"
@@ -1276,11 +1260,9 @@ class DeviceState(object):
         enabled_view_ids = []
         for view_dict in self.views:
             # exclude navigation bar if exists
-            if self.__safe_dict_get(view_dict, 'visible') and \
-                self.__safe_dict_get(view_dict, 'resource_id') not in \
-               ['android:id/navigationBarBackground',
-                'android:id/statusBarBackground'] \
-                    and "systemui" not in self.__safe_dict_get(view_dict, 'resource_id'): # syncxxx:防止按手机系统bar
+            if self.__safe_dict_get(view_dict, 'visible') and self.__safe_dict_get(view_dict, 'resource_id') not in [
+                    'android:id/navigationBarBackground', 'android:id/statusBarBackground'
+            ] and "systemui" not in self.__safe_dict_get(view_dict, 'resource_id'):  # syncxxx:防止按手机系统bar
                 enabled_view_ids.append(view_dict['temp_id'])
         for view_id in enabled_view_ids:
             view = self.views[view_id]

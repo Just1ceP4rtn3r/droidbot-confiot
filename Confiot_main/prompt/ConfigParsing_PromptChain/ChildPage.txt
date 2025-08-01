@@ -1,0 +1,13 @@
+# One of child pages
+
+When the operation ``{{CONTEXT}}`` in the current page is executed,
+The navigation leads to the following page:
+'''
+{{PAGEINFO}}
+'''
+This information **might indicate** that the following configuration tasks can be completed on the child page, with the corresponding reason being:
+'''
+{{RESPONSE}}
+'''
+
+Note that the configuration tasks related to this child page are possible incorrect. You can provide the corrected configuration tasks in your response in json also.

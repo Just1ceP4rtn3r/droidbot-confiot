@@ -98,9 +98,9 @@ class InputEvent(object):
         event_type = event_dict['event_type']
         if event_type == KEY_KeyEvent:
             return KeyEvent(event_dict=event_dict)
-        elif event_type == KEY_TouchEvent:
+        elif event_type == KEY_TouchEvent or event_type == "click":
             return TouchEvent(event_dict=event_dict)
-        elif event_type == KEY_LongTouchEvent:
+        elif event_type == KEY_LongTouchEvent or event_type == "long_click":
             return LongTouchEvent(event_dict=event_dict)
         elif event_type == KEY_SelectEvent or event_type == KEY_UnselectEvent:
             return SelectEvent(event_dict=event_dict)

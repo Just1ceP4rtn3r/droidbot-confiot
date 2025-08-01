@@ -1,0 +1,109 @@
+{
+    "views": {
+      "smart_image": {
+        "in_coordinates": [
+            [367,2052],[712,2178]
+          ],
+          "out_coordinates": [
+            [367,2052],[712,2178],[367,2052],[712,2178]
+          ]
+      },
+      "automation_card": {
+        "resource_id": ".*id/sort_action_item",
+        "class": ".*RelativeLayout"
+      },
+      "add_image": {
+        "content_desc": "Add device",
+        "class": ".*ImageView"
+      },
+      "add_btn": {
+        "content_desc": "Add scene",
+        "class": ".*ImageView"
+      },
+      "createScene_text": {
+          "text": "Create a smart scene",
+          "class": ".*TextView"
+      }
+    },
+    "states": {
+        "goto_scenes": {
+            "activity": ".*SmartHomeMainActivity",
+            "views": [
+                "smart_image", "add_image"
+            ]
+        },
+        "goto_card": {
+            "activity": ".*SmartHomeMainActivity",
+            "views": [
+                "automation_card", "add_btn"
+            ]
+        },
+        "goto_createScene": {
+            "activity": ".*SmartHomeMainActivity",
+            "views": [
+                "createScene_text"
+            ]
+        }
+    },
+    "operations": {
+      "click_scenes": [
+          {
+              "event_type": "touch",
+              "target_view": "smart_image"
+          }
+      ],
+      "click_automation": [
+          {
+              "event_type": "touch",
+              "target_view": "automation_card"
+          }
+      ],
+      "click_add": [
+          {
+              "event_type": "touch",
+              "target_view": "add_image"
+          }
+      ],
+      "click_add_scene": [
+          {
+              "event_type": "touch",
+              "target_view": "add_btn"
+          }
+      ],
+      "click_add_a_scene": [
+          {
+              "event_type": "touch",
+              "target_view": "createScene_text"
+          }
+      ]
+    },
+    "main": {
+        "goto_scenes": [
+            {
+              "op_id": "click_scenes",
+              "prob": 0.3
+            },
+            {
+              "op_id": "click_add",
+              "prob": 0.3
+            }
+        ],
+        "goto_card": [
+          {
+              "op_id": "click_automation",
+              "prob": 0.3
+          },
+          {
+            "op_id": "click_add_scene",
+            "prob": 0.3
+            }
+        ],
+        "goto_createScene": [
+          {
+            "op_id": "click_add_a_scene",
+            "prob": 0.5
+          }  
+        ]
+    }
+  }
+  

@@ -4,8 +4,23 @@ import logging
 import random
 from abc import abstractmethod
 
-from .input_event import InputEvent, KeyEvent, IntentEvent, TouchEvent, ManualEvent, SetTextEvent, KillAppEvent
+from .input_event import (
+    InputEvent,
+    KeyEvent,
+    IntentEvent,
+    TouchEvent,
+    ManualEvent,
+    SetTextEvent,
+    KillAppEvent,
+)
 from .utg import UTG
+
+import os
+
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+sys.path.append(BASE_DIR + "/../../")
+from Confiot_main.settings import settings
+from droidbot.device_state import DeviceState
 
 # Max number of restarts
 MAX_NUM_RESTARTS = 5
@@ -83,6 +98,7 @@ class InputPolicy(object):
             except Exception as e:
                 self.logger.warning("exception during sending events: %s" % e)
                 import traceback
+
                 traceback.print_exc()
                 continue
             self.action_count += 1
@@ -142,6 +158,7 @@ class UtgBasedInputPolicy(InputPolicy):
         self.current_state = self.device.get_current_state()
         if self.current_state is None:
             import time
+
             time.sleep(5)
             return KeyEvent(name="BACK")
 
@@ -149,7 +166,9 @@ class UtgBasedInputPolicy(InputPolicy):
 
         # update last view trees for humanoid
         if self.device.humanoid is not None:
-            self.humanoid_view_trees = self.humanoid_view_trees + [self.current_state.view_tree]
+            self.humanoid_view_trees = self.humanoid_view_trees + [
+                self.current_state.view_tree
+            ]
             if len(self.humanoid_view_trees) > 4:
                 self.humanoid_view_trees = self.humanoid_view_trees[1:]
 
@@ -157,7 +176,9 @@ class UtgBasedInputPolicy(InputPolicy):
 
         # if the previous operation is not finished, continue
         if len(self.script_events) > self.script_event_idx:
-            event = self.script_events[self.script_event_idx].get_transformed_event(self)
+            event = self.script_events[self.script_event_idx].get_transformed_event(
+                self
+            )
             self.script_event_idx += 1
 
         # First try matching a state defined in the script
@@ -183,6 +204,8 @@ class UtgBasedInputPolicy(InputPolicy):
         return event
 
     def __update_utg(self):
+        if self.current_state.state_str not in settings.new_states:
+            settings.new_states.append(self.current_state.state_str)
         self.utg.add_transition(self.last_event, self.last_state, self.current_state)
 
     @abstractmethod
@@ -212,7 +235,18 @@ class UtgNaiveSearchPolicy(UtgBasedInputPolicy):
         self.last_state = None
 
         self.preferred_buttons = [
-            "yes", "ok", "activate", "detail", "more", "access", "allow", "check", "agree", "try", "go", "next"
+            "yes",
+            "ok",
+            "activate",
+            "detail",
+            "more",
+            "access",
+            "allow",
+            "check",
+            "agree",
+            "try",
+            "go",
+            "next",
         ]
 
     def generate_event_based_on_utg(self):
@@ -222,7 +256,9 @@ class UtgNaiveSearchPolicy(UtgBasedInputPolicy):
           last_event_flag, last_touched_view, last_state, exploited_views, state_transitions
         @return: InputEvent
         """
-        self.save_state_transition(self.last_event_str, self.last_state, self.current_state)
+        self.save_state_transition(
+            self.last_event_str, self.last_state, self.current_state
+        )
 
         if self.device.is_foreground(self.app):
             # the app is in foreground, clear last_event_flag
@@ -237,7 +273,9 @@ class UtgNaiveSearchPolicy(UtgBasedInputPolicy):
             if self.last_event_flag.endswith(EVENT_FLAG_START_APP):
                 # It seems the app stuck at some state, and cannot be started
                 # just pass to let viewclient deal with this case
-                self.logger.info("The app had been restarted %d times.", number_of_starts)
+                self.logger.info(
+                    "The app had been restarted %d times.", number_of_starts
+                )
                 self.logger.info("Trying to restart app...")
                 pass
             else:
@@ -257,9 +295,9 @@ class UtgNaiveSearchPolicy(UtgBasedInputPolicy):
             self.last_event_str = EVENT_FLAG_STOP_APP
             return IntentEvent(stop_app_intent)
 
-        view_to_touch_str = view_to_touch['view_str']
-        if view_to_touch_str.startswith('BACK'):
-            result = KeyEvent('BACK')
+        view_to_touch_str = view_to_touch["view_str"]
+        if view_to_touch_str.startswith("BACK"):
+            result = KeyEvent("BACK")
         else:
             result = TouchEvent(view=view_to_touch)
 
@@ -276,14 +314,17 @@ class UtgNaiveSearchPolicy(UtgBasedInputPolicy):
         """
         views = []
         for view in state.views:
-            if view['enabled'] and len(view['children']) == 0:
+            if view["enabled"] and len(view["children"]) == 0:
                 views.append(view)
 
         if self.random_input:
             random.shuffle(views)
 
         # add a "BACK" view, consider go back first/last according to search policy
-        mock_view_back = {'view_str': 'BACK_%s' % state.foreground_activity, 'text': 'BACK_%s' % state.foreground_activity}
+        mock_view_back = {
+            "view_str": "BACK_%s" % state.foreground_activity,
+            "text": "BACK_%s" % state.foreground_activity,
+        }
         if self.search_method == POLICY_NAIVE_DFS:
             views.append(mock_view_back)
         elif self.search_method == POLICY_NAIVE_BFS:
@@ -291,17 +332,20 @@ class UtgNaiveSearchPolicy(UtgBasedInputPolicy):
 
         # first try to find a preferable view
         for view in views:
-            view_text = view['text'] if view['text'] is not None else ''
+            view_text = view["text"] if view["text"] is not None else ""
             view_text = view_text.lower().strip()
-            if view_text in self.preferred_buttons \
-                    and (state.foreground_activity, view['view_str']) not in self.explored_views:
-                self.logger.info("selected an preferred view: %s" % view['view_str'])
+            if (
+                view_text in self.preferred_buttons
+                and (state.foreground_activity, view["view_str"])
+                not in self.explored_views
+            ):
+                self.logger.info("selected an preferred view: %s" % view["view_str"])
                 return view
 
         # try to find a un-clicked view
         for view in views:
-            if (state.foreground_activity, view['view_str']) not in self.explored_views:
-                self.logger.info("selected an un-clicked view: %s" % view['view_str'])
+            if (state.foreground_activity, view["view_str"]) not in self.explored_views:
+                self.logger.info("selected an un-clicked view: %s" % view["view_str"])
                 return view
 
         # if all enabled views have been clicked, try jump to another activity by clicking one of state transitions
@@ -309,8 +353,8 @@ class UtgNaiveSearchPolicy(UtgBasedInputPolicy):
             random.shuffle(views)
         transition_views = {transition[0] for transition in self.state_transitions}
         for view in views:
-            if view['view_str'] in transition_views:
-                self.logger.info("selected a transition view: %s" % view['view_str'])
+            if view["view_str"] in transition_views:
+                self.logger.info("selected a transition view: %s" % view["view_str"])
                 return view
 
         # no window transition found, just return a random view
@@ -359,7 +403,18 @@ class UtgGreedySearchPolicy(UtgBasedInputPolicy):
         self.search_method = search_method
 
         self.preferred_buttons = [
-            "yes", "ok", "activate", "detail", "more", "access", "allow", "check", "agree", "try", "go", "next"
+            "yes",
+            "ok",
+            "activate",
+            "detail",
+            "more",
+            "access",
+            "allow",
+            "check",
+            "agree",
+            "try",
+            "go",
+            "next",
         ]
 
         self.__nav_target = None
@@ -370,6 +425,154 @@ class UtgGreedySearchPolicy(UtgBasedInputPolicy):
         self.__missed_states = set()
         self.__random_explore = False
 
+    # syncxxx-2024-12-30, 基于BFS， sort events 使得爬虫更快地到达new pages
+    # 1. back button, 权重最低
+    # 2. 识别LIST layout, 重复的日期、时间、星期、月份等，权重降低
+    from typing import List
+
+    def ConfioT_sort_events(
+        self, possible_events: List[InputEvent]
+    ) -> List[InputEvent]:
+        sorted_events = []
+        # {temp_id : (event, weight: 0-10)}
+        weighted_events = {}
+
+        views = self.current_state.views
+        # 初始化weighted_events
+        no_view_event_id = 888
+        for e in possible_events:
+            # 如果e.view存在
+            if hasattr(e, "view"):
+                id = e.view["temp_id"]
+                if "ScrollView" in e.view["class"]:
+                    sorted_events.append(e)
+                    continue
+                # size = e.view["size"]
+                # length,width = size.split("*")
+                weighted_events[id] = (e, 10)
+            else:
+                weighted_events[no_view_event_id] = (e, 10)
+                no_view_event_id += 1
+
+        # 记录events相关的view、parent view、grandparent view
+        event_views = {}
+        for id in weighted_events:
+            e = weighted_events[id][0]
+            if hasattr(e, "view"):
+                id = e.view["temp_id"]
+                current_view = e.view
+                parent_view = None
+                grandpa_view = None
+                if current_view["parent"] != -1:
+                    parent_view = views[current_view["parent"]]
+                    # assert (parent_view["temp_id"] == current_view["parent"])
+                if (
+                    parent_view is not None
+                    and parent_view["parent"] != -1
+                    and "group" in parent_view["class"].lower()
+                ):
+                    grandpa_view = views[parent_view["parent"]]
+
+                event_views[id] = {
+                    "view": current_view,
+                    "parent_view": parent_view,
+                    "grandpa_view": grandpa_view,
+                }
+
+        ###############################
+        # LIST Layout分析
+        ###############################
+        def calc_size_repeat(view_list):
+            # key: "63*63_class.button"
+            potential_LIST = {}
+            for v in view_list:
+                size = v["size"]
+                cl = v["class"]
+                length, width = size.split("*")
+                length = int(length) // 10 * 10
+                width = int(width) // 10 * 10
+
+                key = f"{length}*{width}" + "_" + cl
+                if key in potential_LIST:
+                    if v["temp_id"] not in potential_LIST[key]:
+                        potential_LIST[key].append(v["temp_id"])
+                else:
+                    potential_LIST[key] = [v["temp_id"]]
+            return potential_LIST
+
+        completed_views = set()
+        # 当前view的LIST分析
+        LIST_1 = calc_size_repeat([event_views[id]["view"] for id in event_views])
+
+        for k in LIST_1:
+            L = LIST_1[k]
+            L_size = len(L)
+            if L_size >= 6:
+                clicked = False
+                for id in L:
+                    weighted_events[id] = (weighted_events[id][0], -1)
+                    if self.utg.is_event_explored(
+                        event=weighted_events[id][0], state=self.current_state
+                    ):
+                        clicked = True
+                    completed_views.add(id)
+                if not clicked:
+                    weighted_events[L[0]] = (weighted_events[L[0]][0], 1)
+
+            # 可能并非重复的项，例如：Home, profile, store等nav bar...
+            elif L_size >= 2:
+                for id in L:
+                    weighted_events[id] = (weighted_events[id][0], 10 - (L_size))
+                    completed_views.add(id)
+
+        parent_views = []
+        parent_ids = []
+        for id in event_views:
+            if id in completed_views:
+                continue
+            parent = event_views[id]["parent_view"]
+            if parent is not None and parent["temp_id"] not in parent_ids:
+                parent_views.append(parent)
+                parent_ids.append(parent["temp_id"])
+        # parent view的LIST分析
+        LIST_2 = calc_size_repeat(parent_views)
+        for k in LIST_2:
+            L = LIST_2[k]
+            L_size = len(L)
+            if L_size >= 6:
+                child_ids = {}
+                for id in L:
+                    child_ids[id] = []
+                    for child_id in event_views:
+                        if child_id in completed_views:
+                            continue
+                        if event_views[child_id]["parent_view"]["temp_id"] == id:
+                            child_ids[id].append(child_id)
+
+                lens = {}
+                for id in L:
+                    length = len(child_ids[id])
+                    if length not in lens:
+                        lens[length] = []
+                    lens[length].append(id)
+                # 以key的大小排序
+                lens = sorted(lens.items(), key=lambda x: x[0], reverse=True)
+                if lens[0] >= 6:
+                    parent_ids = lens[0][1]
+                    for id in parent_ids:
+                        for cid in child_ids[id]:
+                            weighted_events[cid] = (weighted_events[cid][0], -1)
+                            completed_views.add(id)
+                    for cid in child_ids[parent_ids[0]]:
+                        weighted_events[cid] = (weighted_events[cid][0], 1)
+
+        # 将weighted_events按照weight排序, 如果weight =-1， 则删除
+        tmp_events = sorted(
+            weighted_events.items(), key=lambda x: x[1][1], reverse=True
+        )
+        sorted_events = [x[1][0] for x in tmp_events if x[1][1] != -1] + sorted_events
+        return sorted_events
+
     def generate_event_based_on_utg(self):
         """
         generate an event based on current UTG
@@ -377,6 +580,7 @@ class UtgGreedySearchPolicy(UtgBasedInputPolicy):
         """
         current_state = self.current_state
         self.logger.info("Current state: %s" % current_state.state_str)
+
         if current_state.state_str in self.__missed_states:
             self.__missed_states.remove(current_state.state_str)
 
@@ -392,10 +596,13 @@ class UtgGreedySearchPolicy(UtgBasedInputPolicy):
             # 3) nothing
             #    a normal start. clear self.__num_restarts.
 
-            if self.__event_trace.endswith(EVENT_FLAG_START_APP + EVENT_FLAG_STOP_APP) \
-                    or self.__event_trace.endswith(EVENT_FLAG_START_APP):
+            if self.__event_trace.endswith(
+                EVENT_FLAG_START_APP + EVENT_FLAG_STOP_APP
+            ) or self.__event_trace.endswith(EVENT_FLAG_START_APP):
                 self.__num_restarts += 1
-                self.logger.info("The app had been restarted %d times.", self.__num_restarts)
+                self.logger.info(
+                    "The app had been restarted %d times.", self.__num_restarts
+                )
             else:
                 self.__num_restarts = 0
 
@@ -409,6 +616,7 @@ class UtgGreedySearchPolicy(UtgBasedInputPolicy):
                 else:
                     # Start the app
                     import time
+
                     self.__event_trace += EVENT_FLAG_START_APP
                     self.logger.info("Trying to start the app...")
                     return IntentEvent(intent=start_app_intent)
@@ -435,7 +643,7 @@ class UtgGreedySearchPolicy(UtgBasedInputPolicy):
         act = current_state.foreground_activity
         act = act.lower()
 
-        if ("webview" in act):
+        if "webview" in act:
             possible_events = []
         else:
             # Get all possible input events
@@ -443,6 +651,8 @@ class UtgGreedySearchPolicy(UtgBasedInputPolicy):
 
         if self.random_input:
             random.shuffle(possible_events)
+
+        possible_events = self.ConfioT_sort_events(possible_events)
 
         if self.search_method == POLICY_GREEDY_DFS:
             possible_events.append(KeyEvent(name="BACK"))
@@ -460,44 +670,106 @@ class UtgGreedySearchPolicy(UtgBasedInputPolicy):
                 self.logger.info("Trying an unexplored event.")
                 self.__event_trace += EVENT_FLAG_EXPLORE
                 # syncxxx: 过滤同一位置的按钮
-                import sys, os
-                BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-                sys.path.append(BASE_DIR + "/../../")
-                from Confiot_main.settings import settings
-                from droidbot.device_state import DeviceState
-                if (current_state.foreground_activity not in settings.bounds_map):
+
+                if current_state.foreground_activity not in settings.bounds_map:
                     settings.bounds_map[current_state.foreground_activity] = {}
-                if (hasattr(input_event, "view") and "bounds" in input_event.view and "parent" in input_event.view):
+                if (
+                    hasattr(input_event, "view")
+                    and "bounds" in input_event.view
+                    and "parent" in input_event.view
+                ):
                     bounds = input_event.view["bounds"]
-                    bounds_str = str(bounds[0][0]) + str(bounds[0][1]) + str(bounds[1][0]) + str(bounds[1][1]) + str(
-                        input_event.view["parent"])
+                    bounds_str = (
+                        str(bounds[0][0])
+                        + str(bounds[0][1])
+                        + str(bounds[1][0])
+                        + str(bounds[1][1])
+                        + str(input_event.view["parent"])
+                    )
 
                     # if (bounds[0][0] == 961):
                     #     print("[DBG]: ", bounds_str, input_event.view["temp_id"])
-                    if (bounds_str in settings.bounds_map[current_state.foreground_activity]):
-                        settings.bounds_map[current_state.foreground_activity][bounds_str] += 1
-                        if (settings.bounds_map[current_state.foreground_activity][bounds_str] > settings.bounds_limit):
+                    if (
+                        bounds_str
+                        in settings.bounds_map[current_state.foreground_activity]
+                    ):
+                        settings.bounds_map[current_state.foreground_activity][
+                            bounds_str
+                        ] += 1
+                        if (
+                            settings.bounds_map[current_state.foreground_activity][
+                                bounds_str
+                            ]
+                            > settings.bounds_limit
+                        ):
                             continue
                     else:
-                        settings.bounds_map[current_state.foreground_activity][bounds_str] = 1
+                        settings.bounds_map[current_state.foreground_activity][
+                            bounds_str
+                        ] = 1
 
-                if (hasattr(input_event, "view") and "parent" in input_event.view):
-                    parent = input_event.view["parent"]
-                    if (parent in settings.parent_map):
-                        settings.parent_map[parent] += 1
-                        if (settings.parent_map[parent] > settings.parent_limit):
-                            continue
-                    else:
-                        settings.parent_map[parent] = 1
+                # if (hasattr(input_event, "view") and "parent" in input_event.view):
+                #     parent = input_event.view["parent"]
+                #     if (parent in settings.parent_map):
+                #         settings.parent_map[parent] += 1
+                #         if (settings.parent_map[parent] > settings.parent_limit):
+                #             continue
+                #     else:
+                #         settings.parent_map[parent] = 1
+                # if (hasattr(input_event, "name") and input_event.name == "BACK"):
+                #     if (current_state.state_str in settings.back_map):
+                #         settings.back_map[current_state.state_str] += 1
+                #         if (settings.back_map[current_state.state_str] > settings.back_limit):
+                #             target_state = self.__get_nav_target(current_state)
+                #             self.utg.explored_state_strs.add(target_state.state_str)
+                #             continue
+                #     else:
+                #         settings.back_map[current_state.state_str] = 1
 
                 return input_event
 
+        self.utg.explored_state_strs.add(current_state.state_str)
         target_state = self.__get_nav_target(current_state)
         if target_state:
-            navigation_steps = self.utg.get_navigation_steps(from_state=current_state, to_state=target_state)
+            navigation_steps = self.utg.get_navigation_steps(
+                from_state=current_state, to_state=target_state
+            )
             if navigation_steps and len(navigation_steps) > 0:
-                self.logger.info("Navigating to %s, %d steps left." % (target_state.state_str, len(navigation_steps)))
+                self.logger.info(
+                    "Navigating to %s, %d steps left."
+                    % (target_state.state_str, len(navigation_steps))
+                )
                 self.__event_trace += EVENT_FLAG_NAVIGATE
+
+                # syncxxx, 防止此policy与script冲突， 反复地进出home_state
+                input_event = navigation_steps[0][1]
+                if hasattr(input_event, "name") and input_event.name == "BACK":
+                    if current_state.state_str in settings.back_map:
+                        settings.back_map[current_state.state_str] += 1
+                        if (
+                            settings.back_map[current_state.state_str]
+                            > settings.back_limit
+                        ):
+                            self.utg.explored_state_strs.add(target_state.state_str)
+                            self.__nav_target = None
+                            target_state = self.__get_nav_target(current_state)
+                            if target_state:
+                                navigation_steps = self.utg.get_navigation_steps(
+                                    from_state=current_state, to_state=target_state
+                                )
+                                if navigation_steps and len(navigation_steps) > 0:
+                                    self.logger.info(
+                                        "Navigating to %s, %d steps left."
+                                        % (
+                                            target_state.state_str,
+                                            len(navigation_steps),
+                                        )
+                                    )
+                                    self.__event_trace += EVENT_FLAG_NAVIGATE
+                                    return navigation_steps[0][1]
+                    else:
+                        settings.back_map[current_state.state_str] = 1
+
                 return navigation_steps[0][1]
 
         if self.__random_explore:
@@ -521,7 +793,10 @@ class UtgGreedySearchPolicy(UtgBasedInputPolicy):
             "history_view_trees": self.humanoid_view_trees,
             "history_events": [x.__dict__ for x in self.humanoid_events],
             "possible_events": [x.__dict__ for x in possible_events],
-            "screen_res": [self.device.display_info["width"], self.device.display_info["height"]]
+            "screen_res": [
+                self.device.display_info["width"],
+                self.device.display_info["height"],
+            ],
         }
         result = json.loads(proxy.predict(json.dumps(request_json)))
         new_idx = result["indices"]
@@ -542,7 +817,9 @@ class UtgGreedySearchPolicy(UtgBasedInputPolicy):
     def __get_nav_target(self, current_state):
         # If last event is a navigation event
         if self.__nav_target and self.__event_trace.endswith(EVENT_FLAG_NAVIGATE):
-            navigation_steps = self.utg.get_navigation_steps(from_state=current_state, to_state=self.__nav_target)
+            navigation_steps = self.utg.get_navigation_steps(
+                from_state=current_state, to_state=self.__nav_target
+            )
             if navigation_steps and 0 < len(navigation_steps) <= self.__nav_num_steps:
                 # If last navigation was successful, use current nav target
                 self.__nav_num_steps = len(navigation_steps)
@@ -555,6 +832,22 @@ class UtgGreedySearchPolicy(UtgBasedInputPolicy):
         if self.random_input:
             random.shuffle(reachable_states)
 
+        # syncxxx: 按照加入的先后顺序
+        sorted_reachable_states = {}
+        states = {}
+        for state in reachable_states:
+            sorted_reachable_states[state.state_str] = settings.new_states.index(
+                state.state_str
+            )
+            states[state.state_str] = state
+
+        sorted_reachable_states = sorted(
+            sorted_reachable_states.items(), key=lambda x: x[1], reverse=False
+        )
+        reachable_states = []
+        for s in sorted_reachable_states:
+            reachable_states.append(states[s[0]])
+
         for state in reachable_states:
             # Only consider foreground states
             if state.get_app_activity_depth(self.app) != 0:
@@ -566,7 +859,9 @@ class UtgGreedySearchPolicy(UtgBasedInputPolicy):
             if self.utg.is_state_explored(state):
                 continue
             self.__nav_target = state
-            navigation_steps = self.utg.get_navigation_steps(from_state=current_state, to_state=self.__nav_target)
+            navigation_steps = self.utg.get_navigation_steps(
+                from_state=current_state, to_state=self.__nav_target
+            )
             # syncxxx
             if navigation_steps and len(navigation_steps) > 0:
                 self.__nav_num_steps = len(navigation_steps)
@@ -590,8 +885,15 @@ class UtgReplayPolicy(InputPolicy):
         self.replay_output = replay_output
 
         import os
+
         event_dir = os.path.join(replay_output, "events")
-        self.event_paths = sorted([os.path.join(event_dir, x) for x in next(os.walk(event_dir))[2] if x.endswith(".json")])
+        self.event_paths = sorted(
+            [
+                os.path.join(event_dir, x)
+                for x in next(os.walk(event_dir))[2]
+                if x.endswith(".json")
+            ]
+        )
         # skip HOME and start app intent
         self.device = device
         self.app = app
@@ -608,8 +910,11 @@ class UtgReplayPolicy(InputPolicy):
         @return: InputEvent
         """
         import time
-        while self.event_idx < len(self.event_paths) and \
-              self.num_replay_tries < MAX_REPLY_TRIES:
+
+        while (
+            self.event_idx < len(self.event_paths)
+            and self.num_replay_tries < MAX_REPLY_TRIES
+        ):
             self.num_replay_tries += 1
             current_state = self.device.get_current_state()
             if current_state is None:
@@ -651,6 +956,7 @@ class UtgReplayPolicy(InputPolicy):
             time.sleep(5)
 
         # raise InputInterruptedException("No more record can be replayed.")
+
     def __update_utg(self):
         self.utg.add_transition(self.last_event, self.last_state, self.current_state)
 

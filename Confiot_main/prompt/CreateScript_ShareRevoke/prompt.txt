@@ -1,0 +1,147 @@
+**Objective:**
+
+Your task is to process a series of operations on Android UI elements. For each operation, you will be given the action to perform and the target `view` object. Your sole responsibility is to format this information into a specific JSON structure.
+
+**Input:**
+
+The input will consist of two parts for each operation:
+
+1.  **`operation`**: A string indicating the action to be performed on the `view`.
+2.  **`view` structure**: A JSON object representing the Android view element to be acted upon.
+
+**Available Operations:**
+
+You must map the input `operation` string to one of the following `event_type` values in the output JSON:
+
+  * `exit`: Corresponds to `KEY_ExitEvent`
+  * `click`: Corresponds to `KEY_TouchEvent`
+  * `long_click`: Corresponds to `KEY_LongTouchEvent`
+  * `swipe`: Corresponds to `KEY_SwipeEvent`
+  * `scroll`: Corresponds to `KEY_ScrollEvent`
+  * `set_text`: Corresponds to `KEY_SetTextEvent`
+  * `intent`: Corresponds to `KEY_IntentEvent`
+  * `spawn`: Corresponds to `KEY_SpawnEvent`
+  * `kill_app`: Corresponds to `KEY_KillAppEvent`
+
+**Output Format:**
+
+You must generate a JSON array of objects. Each object represents a single event and must strictly adhere to the following structure. Do not add any extra explanations or introductory text.
+
+**JSON Output Structure:**
+
+```json
+[
+    {
+        "event_type": "click",
+        "view":  {
+      "checkable": false,
+      "selected": false,
+      "scrollable": false,
+      "long_clickable": true,
+      "resource_id": "com.tuya.smartlifeiot:id/et_content",
+      "visible": true,
+      "enabled": true,
+      "clickable": true,
+      "is_password": false,
+      "checked": false,
+      "content_description": "scene_name",
+      "focused": true,
+      "class": "android.widget.EditText",
+      "children": [],
+      "child_count": 0,
+      "package": "com.tuya.smartlifeiot",
+      "text": "",
+      "bounds": [
+        [
+          180,
+          1142
+        ],
+        [
+          841,
+          1300
+        ]
+      ],
+      "editable": true,
+      "focusable": true,
+      "parent": 9,
+      "temp_id": 10,
+      "size": "661*158",
+      "signature": "[class]android.widget.EditText[resource_id]com.tuya.smartlifeiot:id/et_content[text][enabled,,]",
+      "view_str": "655c83cc77434f5d574d7100e870f3c3",
+      "content_free_signature": "[class]android.widget.EditText[resource_id]com.tuya.smartlifeiot:id/et_content"
+    },
+        "text": "..." // Only include this field if the event_type is "set_text"
+        // Other top-level keys like "log_lines", "prompt", "x", "y" should be set to null if not provided.
+    }
+]
+```
+
+**Key Formatting Rules:**
+
+1.  The `event_type` must be one of the specified values (e.g., `click`, `set_text`).
+2.  The fields within the view object must be populated strictly according to the schema in the JSON Output Structure. If the input data does not provide a value for a specific field, set it to null.
+3.  For the `set_text` operation, you must include a top-level `text` field in the JSON object, containing the text to be set.
+4.  For all other operations, the `text` field should be omitted or set to `null`.
+
+-----
+
+### **Example Walkthrough**
+
+**Input Example 1:**
+
+```
+operation: "click"
+view structure:
+[{"key":"elementId","value":null,"name":"elementId"},{"key":"package","value":"com.tuya.smartlifeiot","name":"package"},{"key":"class","value":"android.widget.TextView","name":"class"},{"key":"text","value":"Account","name":"text"},{"key":"resource-id","value":"com.tuya.smartlifeiot:id/tv_account_tip","name":"resource-id"},{"key":"clickable","value":"false","name":"clickable"},{"key":"enabled","value":"true","name":"enabled"},{"key":"bounds","value":"[36,478][216,604]","name":"bounds"}]
+```
+
+**Expected JSON Output for Example 1:**
+
+```json
+[
+  {
+    "event_type": "click",
+    "log_lines": null,
+    "prompt": null,
+    "view": {
+      "checkable": false,
+      "selected": false,
+      "scrollable": false,
+      "long_clickable": true,
+      // ... other view attributes
+    },
+    "x": null,
+    "y": null
+  }
+]
+```
+
+**Input Example 2:**
+
+```
+operation: "set_text", text: "Hello"
+view structure:
+[{"key":"elementId","value":null,"name":"elementId"},{"key":"package","value":"com.tuya.smartlifeiot","name":"package"},{"key":"class","value":"android.widget.EditText","name":"class"},{"key":"text","value":"Please enter the account","name":"text"},{"key":"content-desc","value":"addfamily_name","name":"content-desc"},{"key":"resource-id","value":"com.tuya.smartlifeiot:id/et_account","name":"resource-id"},{"key":"clickable","value":"true","name":"clickable"},{"key":"enabled","value":"true","name":"enabled"}]
+```
+
+**Expected JSON Output for Example 2:**
+
+```json
+[
+  {
+    "event_type": "set_text",
+    "log_lines": null,
+    "prompt": null,
+    "view": {
+      "checkable": false,
+      "selected": false,
+      "scrollable": false,
+      "long_clickable": true,
+      // ... other view attributes
+    },
+    "text": "Hello", // Note the inclusion of this field for set_text
+    "x": null,
+    "y": null
+  }
+]
+```

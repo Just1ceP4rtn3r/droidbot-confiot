@@ -1,18 +1,27 @@
 class settings:
-    device_serial = "14131FDF600073"
+    device_serial = "192.168.72.132:5555"
 
     # app_path = "/root/documents/droidbot-new/a2dp/a2dp.Vol_169.apk"
     # droid_output = "/root/documents/droidbot-new/a2dp/"
-    app_path = "/root/documents/Output/Alexa/amazon.apk"
-    droid_output = "/root/documents/Output/Alexa/host/result"  #"/root/documents/Output/mihome/mihome-smartscale-guest/result"
+    app_path = "/root/documents/Output/mihome/mihome-smartscale-CCS25-40min-droidbot-gpt-4o/mihome.apk"
+    # droid_output = r"/root/ConfiotOutput/Output/Tuya/host/result"  #"/root/documents/Output/mihome/mihome-smartscale-guest/result"
+    droid_output = r"/root/documents/Output/mihome/mihome-smartscale-CCS25-40min-droidbot-gpt-4o/host/result"
 
-    Confiot_output = f"{droid_output}/Confiot"
+    Confiot_output = f"{droid_output}/Confiot/"
     UI_output = Confiot_output + "/UI/"
+    Pages = Confiot_output + "/Pages/"
+
+    violation_output = Confiot_output + "/Violation/"
+    LLMConfiguration_output = Confiot_output + "/LLM_ConfigParsing"
+    autodroid_output = Confiot_output + "/LLM_task_replay"
     Static_comparation_output = Confiot_output + "/Comparation/"
     UIHierarchy_comparation_output = Static_comparation_output + "/UIHierarchy/"
     Feasibility_comparation_output = Static_comparation_output + "/Feasibility/"
 
-    ##### Screen Capture resolution for GPT ######
+    screen_xy = (1080, 1920)
+    LabelResoluation_threshold = 80
+
+    ##### Screen Capture resolution######
     resol_x = 230
     resol_y = 512
 
@@ -24,11 +33,12 @@ class settings:
     ##### Crawler Limitation ######
     # {"activity": {bounds_str : view_id}}
     bounds_map = {}
-    parent_map = {}
+    back_map = {}
     # 仅仅只允许同一个center point的view被点击{bounds_limit}次
-    bounds_limit = 3
-    parent_limit = 10
+    bounds_limit = 50
+    back_limit = 5
 
+    new_states = []
     ##### BackButton ######
     # backs: 匹配中心点举例backs坐标50 pixel距离的views
     # precise_backs: 精准匹配某些views
@@ -58,10 +68,9 @@ class settings:
     # backs = ([[0,54],[126,158]],)
     # precise_backs = ()
 
-
     # Mihome router
 
-    backs = ([[32,84],[95,147]],)
+    backs = ([[32, 84], [95, 147]],)
     precise_backs = ()
 
     def __init__(self, device, app_path, droid_output) -> None:
@@ -71,6 +80,17 @@ class settings:
 
         settings.Confiot_output = settings.droid_output + "/Confiot/"
         settings.UI_output = settings.Confiot_output + "/UI/"
+        settings.Pages = settings.Confiot_output + "/Pages/"
+
+        settings.violation_output = settings.Confiot_output + "/Violation/"
+        settings.LLMConfiguration_output = (
+            settings.Confiot_output + "/LLM_ConfigParsing"
+        )
+        settings.autodroid_output = settings.Confiot_output + "/LLM_task_replay"
         settings.Static_comparation_output = settings.Confiot_output + "/Comparation/"
-        settings.UIHierarchy_comparation_output = settings.Static_comparation_output + "/UIHierarchy/"
-        settings.Feasibility_comparation_output = settings.Static_comparation_output + "/Feasibility/"
+        settings.UIHierarchy_comparation_output = (
+            settings.Static_comparation_output + "/UIHierarchy/"
+        )
+        settings.Feasibility_comparation_output = (
+            settings.Static_comparation_output + "/Feasibility/"
+        )

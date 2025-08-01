@@ -1,0 +1,11 @@
+### One of Page that has some UI widget changes
+
+The state of the page before the configuration is executed.
+'''
+{{PAGEINFO}}
+'''
+
+After configuration, the GUI changes are:
+'''
+{{PAGEUICHANGE}}
+'''

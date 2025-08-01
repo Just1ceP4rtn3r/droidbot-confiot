@@ -1,255 +1,212 @@
-from optparse import OptionParser
+import optparse
 import os
 import sys
 import re
 import json
+from loguru import logger
+
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__)) + "/"
 sys.path.append(BASE_DIR + "/../")
 
 from Confiot_main.Confiot import ConfiotGuest, ConfiotHost, Confiot
 from Confiot_main.settings import settings
-from Confiot_main.util import get_ConfigResourceMapper_from_file, progress
-from Confiot_main.PolicyGenerator import PolicyGenerator
-from Confiot_main.UIComparator import UIComparator
+from Confiot_main.ConfigurationParser.ConfigurationParser import ConfigurationParser
+from Confiot_main.ConfigurationParser.PageExploration import PageExplorer
+from Confiot_main.ConfiotHunter.TestingPhase import Phase
+from Confiot_main.ConfiotHunter.ConfiotOracle import (
+    ConfiotOracle,
+    ConfigurationConfiotOracle,
+)
 
+@logger.catch
+def _Autodroid(task_id, page=None, task=None):
+    from Confiot_main.globalvars import GlobalVars
 
-def HostInitialization(path=''):
-    confiot = ConfiotHost()
-    full_mapping_path = ''
-    filtered_mapping_path = ''
-
-    if (path != ''):
-        full_mapping_path = path + "/ConfigResourceMapping.txt"
-        filtered_mapping_path = path + "/FilteredConfigResourceMapping.txt"
-    else:
-        full_mapping_path = settings.Confiot_output + "/ConfigResourceMapping.txt"
-        filtered_mapping_path = settings.Confiot_output + "/FilteredConfigResourceMapping.txt"
-
-    # 请求GPT
-    if (not os.path.exists(full_mapping_path)):
-        confiot.ConfigResourceMapper = confiot.device_map_config_resource(settings.Confiot_output)
-    else:
-        confiot.ConfigResourceMapper = get_ConfigResourceMapper_from_file(full_mapping_path, settings.Confiot_output)
-
-    if (os.path.exists(filtered_mapping_path)):
-        confiot.FilteredConfigResourceMapper = get_ConfigResourceMapper_from_file(filtered_mapping_path)
-    else:
-        print("[ERR]: can not find file:", filtered_mapping_path)
-
-    # print(confiot.FilteredConfigResourceMapper)
-    return confiot
-
-
-def GuestInitialization():
-    confiot = ConfiotGuest()
-
-    if (not os.path.exists(settings.Confiot_output + "/ConfigResourceMapping.txt")):
-        confiot.ConfigResourceMapper = confiot.device_map_config_resource(settings.Confiot_output)
-    else:
-        confiot.ConfigResourceMapper = get_ConfigResourceMapper_from_file(
-            settings.Confiot_output + "/ConfigResourceMapping.txt", settings.Confiot_output)
-
-    if (os.path.exists(settings.Confiot_output + "/FilteredConfigResourceMapping.txt")):
-        confiot.FilteredConfigResourceMapper = get_ConfigResourceMapper_from_file(settings.Confiot_output +
-                                                                                  "/FilteredConfigResourceMapping.txt")
-    else:
-        print("[ERR]: can not find file:", settings.Confiot_output + "/FilteredConfigResourceMapping.txt")
-    return confiot
-
-
-def HostRunTask(task, task_state):
     from AutoDroid.droidbot import input_manager
-    from AutoDroid.droidbot import input_policy
     from AutoDroid.droidbot import env_manager
-    from AutoDroid.droidbot.droidbot import DroidBot
-    from AutoDroid.droidbot.droidmaster import DroidMaster
+    from AutoDroid.droidbot.droidbot import DroidBot as AutoDroid
 
-    droidbot = DroidBot(app_path=settings.app_path,
-                        device_serial=settings.device_serial,
-                        task=task,
-                        is_emulator=True,
-                        output_dir=settings.droid_output + "/Autodroid/",
-                        env_policy=env_manager.POLICY_NONE,
-                        policy_name=input_manager.POLICY_TASK,
-                        script_path=None,
-                        event_interval=2,
-                        timeout=input_manager.DEFAULT_TIMEOUT,
-                        event_count=input_manager.DEFAULT_EVENT_COUNT,
-                        debug_mode=False,
-                        keep_app=True,
-                        keep_env=True,
-                        grant_perm=True,
-                        enable_accessibility_hard=True,
-                        ignore_ad=True,
-                        state=task_state)
+    # s = settings(
+    #     "172.20.10.10:5555",
+    #     "/root/documents/Output/mihome/mihome-aqarahub-usenix25/mihome.apk",
+    #     r"/root/documents/Output/mihome/mihome-aqarahub-usenix25/host/result",
+    # )
+    if not task:
+        Tasks = {}
+        with open(
+            settings.LLMConfiguration_output + "/ConfigurationsSummary.json", "r"
+        ) as f:
+            Tasks = json.load(f)
+        for t in Tasks:
+            if t["Id"] == task_id:
+                page = t["Page ID"]
+                task = t["Tasks"]
+                break
+
+    droidbot = AutoDroid(
+        app_path=settings.app_path,
+        device_serial=settings.device_serial,
+        task=task,
+        is_emulator=True,
+        output_dir=settings.droid_output + "/Autodroid/",
+        env_policy=env_manager.POLICY_NONE,
+        policy_name=input_manager.POLICY_TASK,
+        script_path=None,
+        event_interval=1,
+        timeout=input_manager.DEFAULT_TIMEOUT,
+        event_count=30,
+        debug_mode=False,
+        keep_app=True,
+        keep_env=True,
+        grant_perm=True,
+        enable_accessibility_hard=True,
+        ignore_ad=True,
+    )
+
+    Agent = Confiot()
+    Agent.device = droidbot.device
+    Agent.app = droidbot.app
+    Agent.device.connect()
+
+    PE = PageExplorer(Agent)
+
+    PE.parse_struture_unique_pages()
+    PE.extract_navigations()
+
+    if page:
+        GlobalVars.event_dict_steps = PE.test_device_page_replay(
+            settings.UIHierarchy_comparation_output + "/tmp/", page, autodroid=True
+        )
+
+        GlobalVars.step_outputfile = (
+            settings.autodroid_output + f"/Task-{str(task_id)}.json"
+        )
+
     droidbot.start()
 
 
-# point用于断点继续开始, replay_point:state_str, walker_point:view_2fb7d047fc22be5efccfd0fa9c96be7b.jpg121
-def GuestRunAnalysis(host_analyzing_config="", related_resources=None):
-    actor = GuestInitialization()
-    actor.device_connect()
+def run_Configuration_parser(options):
+    Agent = Confiot()
+    try:
+        Agent.device_connect()
+    except:
+        pass
 
-    actor.device_state_replay(host_analyzing_config, related_resources)
-    actor.device_guest_config_walker(host_analyzing_config, related_resources)
-    actor.device.disconnect()
+    CP = ConfigurationParser(Agent)
 
-
-def HostAction(hosttasks, task_point=''):
-    # 主人开始task list中的任务
-    tasks = hosttasks
-
-    for task in tasks:
-        for t in task["Tasks"]:
-            if (task_point == '' or str(task["Id"]) == task_point):
-                # 主人进行task t
-                HostRunTask(t, task["state"])
-                break
-            else:
-                continue
+    CP.query_LLM_for_configuration_mapping_based_on_page_graph(
+        settings.LLMConfiguration_output
+    )
+    CP.save_configurations(settings.LLMConfiguration_output)
+    try:
+        Agent.device.disconnect()
+    except:
+        pass
 
 
-def GuestAction(hosttasks, task_point=''):
-    # 主人开始task list中的任务
-    tasks = hosttasks
+def run_Configuration_testing(options):
 
-    if (task_point == ''):
-        # 对于每条path代表的所有task进行前，完成一遍GuestRunAnalysis
-        host_analyzing_config = "000"
-        GuestRunAnalysis(host_analyzing_config)
+    settings(options.host_device, options.host_app_path, options.host_droidbot_output)
+    Tasks = {}
+    with open(
+        settings.LLMConfiguration_output + "/ConfigurationsSummary.json", "r"
+    ) as f:
+        Tasks = json.load(f)
 
-    begin_flag = False
+    logger.info("--- Configuration Tasks in Testing ---")
+    logger.info(Tasks)
 
-    if (task_point == ''):
-        begin_flag = True
+    if options.home_name:
+        Tasks.append(
+            {
+                "Id": "REVOKE",
+                "Page ID": None,
+                "Tasks": f"Exit the {options.home_name} in home management",
+                "Related operations": [],
+            }
+        )
 
-    for task in tasks:
-        if (task_point != '' and not begin_flag):
-            if (str(task["Id"]) == task_point):
-                begin_flag = True
-            else:
-                continue
-        if (begin_flag):
-            for t in task["Tasks"]:
-                cleaned_sentence = re.sub(r'[^a-zA-Z0-9 ]', '', t)
-                task_name = '_'.join(cleaned_sentence.split())
-                host_analyzing_config = str(task["Id"]) + "_" + task_name
-                host_analyzing_config = host_analyzing_config[:50]
+    for t in Tasks:
+        try:
+            logger.info(
+                f"Try to complete the configuration {t['Id']} with Autodroid on device {options.host_device}"
+            )
+            settings(
+                options.host_device, options.host_app_path, options.host_droidbot_output
+            )
+            _Autodroid(task_id=t["Id"], page=t["Page ID"], task=t["Tasks"])
+            logger.info("Autodroid finished\n")
+            logger.info("  ---------------------------------")
+        except Exception as e:
+            logger.error(e)
 
-                # 主人进行task t
-                # HostRunTask(host, t)
-                input()
-                # 客人进行app分析
-                GuestRunAnalysis(host_analyzing_config, task["Resources"])
+        logger.info(f"Try to capture the UI changes in {options.host_device}")
+        settings(
+            options.guest_device, options.guest_app_path, options.guest_droidbot_output
+        )
+        Agent = Confiot()
 
+        # 执行Task-0, ...
+        Agent.device_connect()
+        ConfigurationParser(Agent).app_pages_exploration(f"Task-{str(t['Id'])}")
 
-# Infer Policy through UI Hierarchy comparison
-def InferPolicyWithUIHierarchy(HostActor: ConfiotHost, GuestActor: ConfiotGuest, target_state=None):
-    STEP1 = '''
-##########################################
-Infer Policy through UI Hierarchy comparison
-##########################################
-'''
-    print(STEP1)
-
-    if (os.path.exists(settings.UIHierarchy_comparation_output + "/UIHierarchyChanges.txt")):
-        return
-
-    policy_generator = PolicyGenerator()
-    host_tasks = ["000"]
-
-    for task in HostActor.FilteredConfigResourceMapper:
-        for t in task["Tasks"]:
-            cleaned_sentence = re.sub(r'[^a-zA-Z0-9 ]', '', t)
-            task_name = '_'.join(cleaned_sentence.split())
-            host_analyzing_config = str(task["Id"]) + "_" + task_name
-            host_analyzing_config = host_analyzing_config[:50]
-            host_tasks.append(host_analyzing_config)
-
-    UIHierarchyChanges = {}
-    for n in range(len(GuestActor.utg_graph.nodes)):
-        node = GuestActor.utg_graph.nodes[n]
-        state_str = node.name
-        UIHierarchyChanges[state_str] = []
-        before_config = None
-        after_config = None
-        if (target_state and state_str != target_state):
-            continue
-        for host_analyzing_config in host_tasks:
-            host_analyzing_config = host_analyzing_config[:50]
-            if (not before_config):
-                before_config = host_analyzing_config
-            else:
-                after_config = host_analyzing_config
-                resource_changes = policy_generator.Policy_generate_1(before_config, after_config, state_str,
-                                                                      GuestActor.ConfigResourceMapper)
-
-                resource_changes["host_analyzing_config"] = f"{before_config}_to_{after_config}"
-                UIHierarchyChanges[state_str].append(resource_changes)
-
-                s = json.dumps(resource_changes)
-                with open(settings.UIHierarchy_comparation_output + f"/{before_config}_to_{after_config}/{state_str}.txt",
-                          'w') as f:
-                    f.write(s)
-                before_config = after_config
-
-        progress(100 * (n + 1) / len(GuestActor.utg_graph.nodes))
-
-    UIHierarchyChanges_json = json.dumps(UIHierarchyChanges)
-
-    with open(settings.UIHierarchy_comparation_output + "/UIHierarchyChanges.txt", 'w') as f:
-        f.write(UIHierarchyChanges_json)
+        Agent.device.disconnect()
 
 
-#Infer Policy with the feasibility of the configurations
-def InferPolicyWithFeasibility(HostActor: ConfiotHost, GuestActor: ConfiotGuest, target_state=None):
-    STEP2 = '''
-##########################################
-Infer Policy with the feasibility of the configurations
-##########################################
-'''
-    print(STEP2)
-    if (os.path.exists(settings.Feasibility_comparation_output + "/Feasibilities.txt")):
-        return
+def run_Oracle(options):
+    settings(
+        options.guest_device, options.guest_app_path, options.guest_droidbot_output
+    )
 
-    host_tasks = ["000"]
+    task_replay_steps_file = os.listdir(settings.UIHierarchy_comparation_output)
+    task_ids = [
+        int(file[5:])
+        for file in task_replay_steps_file
+        if file.startswith(("Task")) and file != "Task-REVOKE"
+    ]
+    task_ids.sort()
+    task_ids = [f"Task-{id}" for id in task_ids]
+    if "000" in task_replay_steps_file:
+        task_ids.insert(0, "000")
+    if "Task-REVOKE" in task_replay_steps_file:
+        task_ids.append("Task-REVOKE")
+    # Capabilities Oracle
 
-    for task in HostActor.FilteredConfigResourceMapper:
-        for t in task["Tasks"]:
-            cleaned_sentence = re.sub(r'[^a-zA-Z0-9 ]', '', t)
-            task_name = '_'.join(cleaned_sentence.split())
-            host_analyzing_config = str(task["Id"]) + "_" + task_name
-            host_analyzing_config = host_analyzing_config[:50]
-            host_tasks.append(host_analyzing_config)
+    Agent = Confiot()
+    oracle = ConfigurationConfiotOracle(Agent)
+    Criteria = oracle.LoadCriterias()
+    Configurations = oracle.LoadConfigurations(
+        settings.Confiot_output + "/LLM_ConfigParsing"
+    )
+    last_task = None
+    for task in task_ids:
+        UIChanges = oracle.LoadUIChanges(last_task, task)
 
-    Feasibilities = {}
-    totalconfs = len(GuestActor.conf_list) * len(host_tasks)
-    count = 0
-    for host_analyzing_config in host_tasks:
-        # 分析每个guest的config
-        Feasibilities[host_analyzing_config] = {}
-        for conf in GuestActor.conf_list:
-            config_view_name = conf["view_images"] + str(conf["event_id"])
-            xml_dir = settings.UI_output + f"/{host_analyzing_config}/guest:" + config_view_name
+        if not last_task:
+            phase = Phase.AfterDelegation
+        elif task == "Task-REVOKE":
+            phase = Phase.AfterRevocation
+        else:
+            phase = Phase.DuringUsage
+        oracle.IdentifyConfiot(
+            phase,
+            Criteria,
+            Configurations,
+            UIChanges,
+            "Administrators" if options.role else "Guests",
+            settings.violation_output + "/" + oracle.proceed_configuration + "/",
+        )
+        last_task = task
 
-            if (os.path.exists(xml_dir + "/before.xml") and os.path.exists(xml_dir + "/after.xml")):
-                feasible = UIComparator.compare_xml_files_with_bounds(xml_dir + "/before.xml", xml_dir + "/after.xml",
-                                                                      str(conf['bounds']))
-                if (feasible):
-                    Feasibilities[host_analyzing_config][config_view_name] = feasible
-            else:
-                print("[ERR]: Do not found files:", xml_dir)
-                continue
-            count += 1
-            progress(100 * count / totalconfs)
+    # Privacy Oracle
 
-    Feasibilities_json = json.dumps(Feasibilities)
+    # co = ConfiotOracle()
+    # co.IdnetifyConfiot(
+    #     options.guest_droidbot_output + "/Confiot/",
+    #     [],
+    # )
 
-<<<<<<< Updated upstream
-    with open(settings.Feasibility_comparation_output + "/Feasibilities.txt", 'w') as f:
-        f.write(Feasibilities_json)
-=======
 
 def run_Appcrawler(task, steplimit=100):
     from Confiot_main.globalvars import GlobalVars
@@ -400,8 +357,6 @@ def main():
     parser.add_option(
         "--crawler-steplimit",
         dest="steplimit",
-        type="int",
-        default=100,
         help="How many operation steps does the app crawler execute before it stops exploring.",
     )
 
@@ -534,67 +489,7 @@ def main():
         run_Appcrawler(
             f"Explore the this app to identify and capture all unique pages related to device [{options.device_name}]. Always cancel the configuration. Focus exclusively on functionalities and settings. Avoid enter any advertisements and promotional materials content.", options.steplimit
         )
->>>>>>> Stashed changes
 
 
 if __name__ == "__main__":
-
-    # test
-    # s = settings("192.168.31.121:5555", "/root/documents/Output/Huawei_AI_Life/Huawei.apk",
-    #              "/root/documents/Output/Huawei_AI_Life/guest/result")
-    # GuestActor = GuestInitialization()
-    # HostActor = HostInitialization(path="/root/documents/Output/Huawei_AI_Life/guest/result" + "/../../host/result/Confiot")
-    # InferPolicyWithFeasibility(HostActor, GuestActor, "503c186b9a0ec74f8067fcd50b431b40b3f55c38354bec8a34a7f208136985d6")
-
-    # s = settings("14131FDF600073", "/root/documents/Output/Huawei_AI_Life/Huawei.apk",
-    #              "/root/documents/Output/Huawei_AI_Life/host/result")
-    # # HostActor = HostInitialization()
-    # HostAction(None, "2. Remove an alarm", "015ba3ec79e0b0f55a19ce31bbc72b503e56184e14e0cef46ad942d8d357f489")
-
-    parser = OptionParser()
-    parser.add_option("-a", "--app-path", dest="app_path", help="The apk path of the target application")
-    parser.add_option("-d", "--device", dest="device", help="The device serial")
-    parser.add_option("-D", "--droidbot-output", dest="droid_output", help="The output path of droidbot")
-    parser.add_option("-H", "--host", dest="host", action="store_true", default=False, help="Host")
-    parser.add_option("-G", "--guest", dest="guest", action="store_true", default=False, help="Guest")
-    parser.add_option("-b", "--director", dest="director", action="store_true", default=False, help="Director Mode")
-    parser.add_option("-c",
-                      "--configuration",
-                      dest="config",
-                      action="store_true",
-                      default=False,
-                      help="Genereate configurations")
-    parser.add_option("-P", "--policygeneration", dest="policy", action="store_true", default=False, help="Policy generation")
-    parser.add_option("--proxy", dest="proxy", help="HTTPS Proxy")
-    parser.add_option("--task-point", dest="task_point", help="Configuration File")
-    (options, args) = parser.parse_args()
-
-    s = settings(options.device, options.app_path, options.droid_output)
-
-    HostActor = None
-    GuestActor = None
-
-    task_point = ''
-    if (options.task_point):
-        task_point = str(options.task_point)
-    if (options.proxy):
-        os.environ["https_proxy"] = options.proxy
-
-    if (options.config):
-        GuestInitialization()
-    elif (options.host):
-        HostActor = HostInitialization()
-        HostAction(HostActor.FilteredConfigResourceMapper, task_point)
-    elif (options.guest and not options.policy):
-        GuestActor = GuestInitialization()
-        HostConfiotPath = options.droid_output + "/../../host/result/Confiot" if (
-            "guest" in options.droid_output) else options.droid_output + "/../../guest/result/Confiot"
-        # print(HostConfiotPath)
-        HostActor = HostInitialization(path=HostConfiotPath)
-        GuestAction(HostActor.FilteredConfigResourceMapper, task_point=task_point)
-    elif (options.guest and options.policy):
-        GuestActor = GuestInitialization()
-        HostConfiotPath = options.droid_output + "/../../host/result/Confiot" if "guest" in options.droid_output else options.droid_output + "/../../guest/result/Confiot"
-        HostActor = HostInitialization(path=HostConfiotPath)
-        InferPolicyWithUIHierarchy(HostActor, GuestActor)
-        InferPolicyWithFeasibility(HostActor, GuestActor)
+    main()

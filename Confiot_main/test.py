@@ -3,10 +3,10 @@ import math
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 sys.path.append(BASE_DIR + "/../")
-from Confiot_main.Confiot import ConfiotGuest, ConfiotHost, Confiot
+from Confiot_main.Confiot import *
 import xml.etree.ElementTree as ET
-from Confiot_main.UIComparator import UIComparator
-from Confiot_main.PolicyGenerator import PolicyGenerator
+from Confiot_main.PolicyInference.UIComparator import UIComparator
+from Confiot_main.PolicyInference.PolicyGenerator import PolicyGenerator
 
 # For test
 HOST_CONFIG_ANALYZED = "host:August_on"
@@ -15,17 +15,21 @@ HOST_CONFIG_ANALYZED = "host:August_on"
 ######################################
 # util.py
 def test_parse_config_resource_map():
-    from Confiot_main.util import parse_config_resource_mapping
+    from Confiot_main.utils.util import parse_config_resource_mapping
+
     with open("prompt/response.txt") as f:
         respond = f.read()
         parse_config_resource_mapping(respond)
 
 
 def test_resize_png():
-    from Confiot_main.util import png_resize
+    from Confiot_main.utils.util import png_resize
+
     png_resize(
         "/root/documents/droidbot-new/a2dp/Confiot/UI/host:A2DP_Start_at_Boot_off/guest:view_0fe88b3189e686f7242ae495c9b79a4a.png/after.png",
-        230, 512)
+        230,
+        512,
+    )
 
 
 #####################################
@@ -34,18 +38,23 @@ def test_resize_png():
 
 def test_goto_state():
     from Confiot_main.settings import settings
-    from Confiot_main.util import query_config_resource_mapping, parse_config_resource_mapping, get_ConfigResourceMapper_from_file
-    settings.device_serial = "192.168.31.218:5555"
-    settings.app_path = "/root/documents/Output/Huawei_AI_Life/Huawei.apk"
-    settings.droid_output = "/root/documents/Output/Huawei_AI_Life/host/result"
+    from Confiot_main.utils.util import (
+        query_config_resource_mapping,
+        parse_config_resource_mapping,
+        get_ConfigResourceMapper_from_file,
+    )
+
+    # settings.device_serial = "192.168.2.176:5555"
+    # settings.app_path = "/root/documents/Output/mihome/mihome-smartscale-10-25/mihome.apk"
+    # settings.droid_output = "/root/documents/Output/mihome/mihome-smartscale-10-25/host/result"
     confiot = ConfiotGuest()
     confiot.device_connect()
 
     # print(confiot.events)
 
-    while (1):
+    while 1:
         target_str = input("state: ")
-        if (target_str == '\n' or target_str == ''):
+        if target_str == "\n" or target_str == "":
             confiot.device_stop_app()
             break
         confiot.device_to_state(HOST_CONFIG_ANALYZED, target_str)
@@ -70,7 +79,7 @@ def test_state_walker():
 
 def test_config_extract():
     confiot = ConfiotGuest()
-    #confiot.device_connect()
+    # confiot.device_connect()
 
     # print(confiot.events)
 
@@ -91,10 +100,10 @@ def test_xml_parse():
 
     # 打印相关的node元素
     for node in before_config_node:
-        print(ET.tostring(node, encoding='unicode'))
+        print(ET.tostring(node, encoding="unicode"))
 
     for node in after_config_node:
-        print(ET.tostring(node, encoding='unicode'))
+        print(ET.tostring(node, encoding="unicode"))
 
 
 def test_identify_alert():
@@ -112,7 +121,9 @@ def check_nearby_rectangles(rectangle, target_rectangle, threshold):
     center_x = (rectangle[0][0] + rectangle[1][0]) / 2
     center_y = (rectangle[0][1] + rectangle[1][1]) / 2
 
-    distance = math.sqrt((center_x - target_center_x)**2 + (center_y - target_center_y)**2)
+    distance = math.sqrt(
+        (center_x - target_center_x) ** 2 + (center_y - target_center_y) ** 2
+    )
     print(distance)
     if distance < threshold:
         return True
@@ -156,11 +167,14 @@ def test_STEP1():
 def test_get_ui_hierarchy():
     from Confiot_main.settings import settings
     import json
+
     settings.device_serial = "192.168.31.218:5555"
     confiot = ConfiotHost()
     confiot.device_connect()
-    while (input() != '1'):
-        confiot.device_get_UIElement("", "", "/root/documents/droidbot-confiot/Confiot_main/", "output.json")
+    while input() != "1":
+        confiot.device_get_UIElement(
+            "", "", "/root/documents/droidbot-confiot/Confiot_main/", "output.json"
+        )
 
     # while(input() != '1'):
     #     a= confiot.device.get_views()
@@ -173,11 +187,15 @@ def test_get_ui_hierarchy():
 
 def test_mapping_uitree():
     from Confiot_main.settings import settings
-    from Confiot_main.util import query_config_resource_mapping, parse_config_resource_mapping, get_ConfigResourceMapper_from_file
+    from Confiot_main.utils.util import (
+        query_config_resource_mapping,
+        parse_config_resource_mapping,
+        get_ConfigResourceMapper_from_file,
+    )
 
     confiot = Confiot()
     policy_generator = PolicyGenerator()
-    #confiot.device_connect()
+    # confiot.device_connect()
 
     # print(confiot.events)
 
@@ -193,13 +211,481 @@ def test_mapping_uitree():
 
 def test_Enumerate_operations():
     from Confiot_main.settings import settings
-    from Confiot_main.util import query_config_resource_mapping, parse_config_resource_mapping, get_ConfigResourceMapper_from_file
+    from Confiot_main.utils.util import (
+        query_config_resource_mapping,
+        parse_config_resource_mapping,
+        get_ConfigResourceMapper_from_file,
+    )
 
-    confiot = Confiot()
-    confiot.Enumerate_operations()
+    confiot = V2_Confiot()
+    confiot.label_resolution()
+
+
+def test_Enumerate_pages():
+    from Confiot_main.settings import settings
+    from Confiot_main.ConfigurationParser.PageExploration import PageExplorer
+    from Confiot_main.utils.util import (
+        query_config_resource_mapping,
+        parse_config_resource_mapping,
+        get_ConfigResourceMapper_from_file,
+    )
+
+    Agent = Confiot()
+
+    PE = PageExplorer(Agent)
+    # while (1):
+    #     a, b = input().split(' ')
+    #     print(PE.calc_state_jaccard_similarity(a, b))
+
+    PE.parse_struture_unique_pages()
+    PE.extract_navigations()
+
+    Agent.device_connect()
+    PE.test_device_page_replay(
+        settings.UIHierarchy_comparation_output + "/000/", "Page-4"
+    )
+    # print(PE.pages)
+
+
+def test_LLM_json_response():
+    from Confiot_main.settings import settings
+    from Confiot_main.ConfigurationParser.ConfigurationParser import ConfigurationParser
+    from Confiot_main.utils.util import (
+        query_config_operation_mapping_with_structured_output,
+    )
+
+    os.environ["https_proxy"] = "http://192.168.72.1:1083"
+
+    system_prompt = """
+You are a text-based IoT app configuration semantic identifier. I will provide a specific Android app page, which will include a list of operations on specific UI views/widgets from the page and plain texts in the page. Additionally, I will also provide an operation that has resulted in a transition from a preceding page to this page.
+
+An operation is defined as: <Action, UIType:,RelatedText>, such as <Click, android.widget.Button, 'History'> means to click the button view with the text description 'History'.
+You need to analyze the semantic similarity among the operations and the context to group operations that potentially work together to achieve a goal. Next, divide these operations according to different concrete configuration goals (e.g., add a user with the name "testname"), merging and assembling them into a configuration task list. If a particular configuration task depends on other configuration tasks, please indicate this in the 'dependencies' field of your response. For example, if "Task-1" depends on "Task-2", you should include "Task-2" in the 'dependencies' field of "Task-1".
+
+
+**Important: Response format**:
+    task_id: str // start from "Task-1"
+    page_id: str // like "Page-0", must be the same format as the input
+    task_content: str // "detailed task", or "None" if no specific task can be determined
+    related_operations: list[str] // ["operation_1", "operation_2", "operation_3"], "opreation_id" only
+    dependencies: str  // ["Task-2"], the tasks that shoud be completed before this task
+    reason: str // why configuration task, dependencies is generated, please think step by step
+    """
+
+    user_prompt = """
+    The Page ID is:```Page-20```
+    The operation lead to this page is: "<Click, android.view.ViewGroup, "Device">"
+    The operation list in this page is:
+    ```
+    (operation_0) <Click, android.view.ViewGroup, "Kg,Jin">
+    (operation_1) <Click, android.view.ViewGroup, "Lb">
+    ```
+    The plain texts in this page is:
+    ```
+    <p>Device</p>
+    <p>Weight Unit</p>
+    ```
+    """
+
+    res = query_config_operation_mapping_with_structured_output(
+        system_prompt, user_prompt
+    )
+
+    print(res)
+
+
+def test_Configuration_parser():
+    from Confiot_main.settings import settings
+    from Confiot_main.ConfigurationParser.ConfigurationParser import ConfigurationParser
+    from Confiot_main.ConfigurationParser.OperationExtraction import OperationExtractor
+    from Confiot_main.utils.util import (
+        query_config_resource_mapping,
+        parse_config_resource_mapping,
+        get_ConfigResourceMapper_from_file,
+    )
+
+    # Agent = Confiot()
+    # Agent.device_connect()
+
+    # CP = ConfigurationParser(Agent)
+
+    # CP.PE.test_device_page_replay("/tmp", "Page-0")
+
+    Agent = Confiot()
+
+    # 执行Task-0, ...
+    Agent.device_connect()
+    ConfigurationParser(Agent).app_pages_exploration(f"test")
+
+
+    Agent.device.disconnect()
+
+
+def test_ConfioT_Hunter(last_task, task, role):
+    from Confiot_main.settings import settings
+    from Confiot_main.ConfigurationParser.ConfigurationParser import ConfigurationParser
+    from Confiot_main.ConfiotHunter.TestingPhase import Phase
+    from Confiot_main.ConfiotHunter.ConfiotOracle import (
+        ConfiotOracle,
+        ConfigurationConfiotOracle,
+    )
+
+    Agent = Confiot()
+
+    oracle = ConfigurationConfiotOracle(Agent)
+
+    Criteria = oracle.LoadCriterias()
+    Configurations = oracle.LoadConfigurations(
+        settings.Confiot_output + "/LLM_ConfigParsing"
+    )
+    UIChanges = oracle.LoadUIChanges(last_task, task)
+
+    oracle.IdentifyConfiot(
+        Phase.AfterDelegation if not last_task else Phase.DuringUsage,
+        Criteria,
+        Configurations,
+        UIChanges,
+        role,
+        settings.violation_output + "/" + oracle.proceed_configuration + "/",
+    )
+    return
+
+
+def test_autodroid(task_id, page=None, task=None):
+    from Confiot_main.settings import settings
+    from Confiot_main.globalvars import GlobalVars
+    from Confiot_main.ConfigurationParser.PageExploration import PageExplorer
+
+    from AutoDroid.droidbot import input_manager
+    from AutoDroid.droidbot import env_manager
+    from AutoDroid.droidbot.droidbot import DroidBot as AutoDroid
+
+    # s = settings(
+    #     "172.20.10.10:5555",
+    #     "/root/documents/Output/mihome/mihome-aqarahub-usenix25/mihome.apk",
+    #     r"/root/documents/Output/mihome/mihome-aqarahub-usenix25/host/result",
+    # )
+    if not page or not task:
+        Tasks = {}
+        with open(
+            settings.LLMConfiguration_output + "/ConfigurationsSummary.json", "r"
+        ) as f:
+            Tasks = json.load(f)
+        for t in Tasks:
+            if t["Id"] == task_id:
+                page = t["Page ID"]
+                task = t["Tasks"]
+                break
+
+    droidbot = AutoDroid(
+        app_path=settings.app_path,
+        device_serial=settings.device_serial,
+        task=task,
+        is_emulator=True,
+        output_dir=settings.droid_output + "/Autodroid/",
+        env_policy=env_manager.POLICY_NONE,
+        policy_name=input_manager.POLICY_TASK,
+        script_path=None,
+        event_interval=1,
+        timeout=input_manager.DEFAULT_TIMEOUT,
+        event_count=30,
+        debug_mode=False,
+        keep_app=True,
+        keep_env=True,
+        grant_perm=True,
+        enable_accessibility_hard=True,
+        ignore_ad=True,
+    )
+
+    Agent = Confiot()
+    Agent.device = droidbot.device
+    Agent.app = droidbot.app
+    Agent.device.connect()
+
+    PE = PageExplorer(Agent)
+
+    PE.parse_struture_unique_pages()
+    PE.extract_navigations()
+
+    GlobalVars.event_dict_steps = PE.test_device_page_replay(
+        settings.UIHierarchy_comparation_output + "/tmp/", page, autodroid=True
+    )
+
+    GlobalVars.step_outputfile = (
+        settings.autodroid_output + f"/Task-{str(task_id)}.json"
+    )
+
+    droidbot.start()
+
+
+def replay_task_based_on_file(task_id):
+    from Confiot_main.utils.util import get_task_replay_steps
+    from Confiot_main.settings import settings
+    from AutoDroid.droidbot.input_event import IntentEvent as autoIntentEvent
+
+    s = settings(
+        "172.20.10.10:5555",
+        "/root/documents/Output/Tuya/Tuya.apk",
+        r"/root/documents/Output/Tuya/guest/result",
+    )
+    steps = get_task_replay_steps(task_id, settings.autodroid_output)
+
+    Agent = Confiot()
+    Agent.device_connect()
+
+    Agent.device_stop_app()
+
+    for event_dict in steps:
+        event = InputEvent.from_dict(event_dict)
+        if not event:
+            event = autoIntentEvent.from_dict(event_dict)
+        print("[DBG]: Action: ", str(event_dict))
+        event.send(Agent.device)
+        time.sleep(4)
+
+    Agent.device.disconnect()
+
+
+def test_replay_revoke(jsonfile):
+    from Confiot_main.utils.util import get_task_replay_steps
+    from Confiot_main.settings import settings
+    from AutoDroid.droidbot.input_event import IntentEvent as autoIntentEvent
+
+    def find_view_in_page(Agent, view):
+        found_view = None
+
+        if not view:
+            return None
+
+        current_state = Agent.device.get_current_state()
+        if current_state is None:
+            return None
+
+        views_in_state = current_state.views
+
+        candidates = []
+        for v in views_in_state:
+            if (
+                v["resource_id"] == view["resource_id"]
+                and v["class"] == view["class"]
+                and (
+                    not view["content_description"]
+                    or v["content_description"] == view["content_description"]
+                )
+                and (not view["text"] or v["text"] == view["text"])
+            ):
+                candidates.append(v)
+                if v["bounds"] == view["bounds"]:
+                    found_view = v
+                    return found_view
+
+        # 按照直线距离排序
+        view_center = [
+            (view["bounds"][1][0] - view["bounds"][0][0]) / 2,
+            (view["bounds"][1][1] - view["bounds"][0][1]) / 2,
+        ]
+        min_dist = 9999999
+        for v in candidates:
+            v_center = [
+                (v["bounds"][1][0] - v["bounds"][0][0]) / 2,
+                (v["bounds"][1][1] - v["bounds"][0][1]) / 2,
+            ]
+            dist = math.sqrt(
+                (view_center[0] - v_center[0]) ** 2
+                + (view_center[1] - v_center[1]) ** 2
+            )
+
+            if dist < min_dist:
+                min_dist = dist
+                found_view = v
+
+        if not found_view:
+            return None
+        return found_view
+
+    s = settings(
+        "192.168.2.207:5555",
+        "/root/documents/Output/Tuya/Tuya-2025-6-30/Tuya.apk",
+        r"/root/documents/Output/Tuya/Tuya-2025-6-30/guest/result",
+    )
+
+    event_dict_steps = []
+    with open(jsonfile, "r") as f:
+        records = json.load(f)
+        for record in records:
+            event_dict_steps.append(record)
+
+    Agent = Confiot()
+    Agent.device_connect()
+    Agent.device_stop_app()
+    Agent.device.start_app(Agent.app)
+
+    time.sleep(3)
+    for event_dict in event_dict_steps:
+        view = event_dict["view"]
+        event_dict["view"] = find_view_in_page(Agent, view)
+        event = InputEvent.from_dict(event_dict)
+        if not event:
+            event = autoIntentEvent.from_dict(event_dict)
+        print("[DBG]: Action: ", str(event_dict))
+        event.send(Agent.device)
+        time.sleep(3)
+
+    Agent.device.disconnect()
+
+
+def page_exploration(task_id):
+    from Confiot_main.settings import settings
+    from Confiot_main.ConfigurationParser.ConfigurationParser import ConfigurationParser
+    from Confiot_main.ConfiotHunter.TestingPhase import Phase
+    from Confiot_main.ConfiotHunter.ConfiotOracle import (
+        ConfiotOracle,
+        ConfigurationConfiotOracle,
+    )
+
+    s = settings(
+        "172.20.10.9:5555",
+        "/root/documents/Output/Tuya/Tuya.apk",
+        r"/root/documents/Output/Tuya/host/result",
+    )
+
+    Agent = Confiot()
+
+    # 执行Task-0, ...
+    Agent.device_connect()
+    ConfigurationParser(Agent).app_pages_exploration(f"Task-{str(task_id)}")
+
+    Agent.device.disconnect()
+
+
+def test_privacy_data():
+
+    from Confiot_main.ConfiotHunter.ConfiotOracle import (
+        ConfiotOracle,
+        ConfigurationConfiotOracle,
+    )
+
+    co = ConfiotOracle()
+    co.IdnetifyConfiot(
+        "/root/documents/Output/Tuya/host/result/Confiot",
+        ["host"],
+    )
+
+def test_get_UIstate():
+    from Confiot_main.globalvars import GlobalVars
+
+    from AutoDroid.droidbot import input_manager
+    from AutoDroid.droidbot import env_manager
+    from AutoDroid.droidbot.droidbot import DroidBot as AutoDroid
+    from AutoDroid.droidbot.input_event import KeyEvent, IntentEvent
+    import time
+
+    droidbot = AutoDroid(
+        app_path=settings.app_path,
+        device_serial=settings.device_serial,
+        task="xxx",
+        is_emulator=True,
+        output_dir=settings.droid_output,
+        env_policy=env_manager.POLICY_NONE,
+        policy_name=input_manager.POLICY_AutodroidCrawlerPolicy,
+        script_path=None,
+        event_interval=1,
+        timeout=1200,
+        event_count=100,
+        debug_mode=False,
+        keep_app=True,
+        keep_env=True,
+        grant_perm=True,
+        enable_accessibility_hard=True,
+        ignore_ad=True,
+    )
+
+    # droidbot = AutoDroid(
+    #     app_path=settings.app_path,
+    #     device_serial=settings.device_serial,
+    #     task=task,
+    #     is_emulator=True,
+    #     output_dir=settings.droid_output,
+    #     env_policy=env_manager.POLICY_NONE,
+    #     policy_name=input_manager.POLICY_TASK,
+    #     script_path=None,
+    #     event_interval=1,
+    #     timeout=1200,
+    #     event_count=3000,
+    #     debug_mode=False,
+    #     keep_app=True,
+    #     keep_env=True,
+    #     grant_perm=True,
+    #     enable_accessibility_hard=True,
+    #     ignore_ad=True,
+    # )
+
+    GlobalVars.step_outputfile = settings.droid_output + "/tmp.json"
+
+    droidbot.device.connect()
+    event = KeyEvent(name="HOME")
+
+    event.send(droidbot.device)
+
+    time.sleep(1)
+    event = IntentEvent(droidbot.app.get_start_intent())
+    event.send(droidbot.device)
+    time.sleep(3)
+
+    droidbot.start()
 
 
 if __name__ == "__main__":
-    #test_device_guest_config_walker()
-    # test_STEP0()
-    test_Enumerate_operations()
+    # test_Enumerate_pages()
+
+    s = settings(
+        "192.168.2.207:5555",
+        "/root/documents/Output/Huawei/iHORN_gateway/Huawei.apk",
+        r"/root/documents/Output/Huawei/iHORN_temperature_sensor/NDSS26/guest/result",
+    )
+
+    test_Configuration_parser()
+    # test_replay_revoke("/tmp/test.json")
+
+    # s = settings(
+    #     "192.168.2.176:5555",
+    #     "/root/documents/Output/mihome/mihome-smartscale-CCS25-40min-droidbot-gpt-4o/mihome.apk",
+    #     r"/root/documents/Output/mihome/mihome-smartscale-CCS25-40min-droidbot-gpt-4o/host/result",
+    # )
+
+    # test_Configuration_parser()
+
+    # Tasks = {}
+    # with open(
+    #     settings.LLMConfiguration_output + "/ConfigurationsSummary.json", "r"
+    # ) as f:
+    #     Tasks = json.load(f)
+    # for t in Tasks:
+    #     test_autodroid(task_id=t["Id"])
+    #     input()
+
+    # 获取目录下所有task_id, mihome/mihome-smartscale-12-27/host/result/Confiot/LLM_task_replay/Task-0.json
+    # from Confiot_main.settings import settings
+
+    # task_replay_steps_file = os.listdir(settings.autodroid_output)
+    # task_ids = [
+    #     int(file.replace(".json", "")[5:])
+    #     for file in task_replay_steps_file
+    #     if file.endswith((".json"))
+    # ]
+    # task_ids.sort()
+    # if task_ids:
+    #     for task_id in task_ids:
+    #         replay_task_based_on_file(task_id=task_id)
+    #         page_exploration(task_id=task_id)
+
+    # test_privacy_data()
+
+    # s = settings(
+    #     "172.20.10.10:5555",
+    #     "/root/documents/Output/Tuya/Tuya.apk",
+    #     r"/root/documents/Output/Tuya/guest/result",
+    # )
+
+    # # test_ConfioT_Hunter(None, "000", "Administrators")
+    # test_ConfioT_Hunter(None, "000", "Guests")
