@@ -166,11 +166,18 @@ class ConfigurationParser:
         if not os.path.exists(save_dir):
             os.makedirs(save_dir)
 
+
         for page in self.operations:
             overview = {"PAGE": page, "CONTEXT": {}, "OPERATIONS": {}, "LABELS": {}}
 
-            # save labels
-            overview["LABELS"] = {"label_views": self.plain_labels[page]}
+            if page in self.plain_labels:
+                # save labels
+                overview["LABELS"] = {"label_views": self.plain_labels[page]}
+
+            if page not in self.operations and page in self.plain_labels:
+                with open(outputdir + f"/{page}/PageInfo.txt", "w") as f:
+                    f.write(json.dumps(self.PAGEINFO[page]))
+                continue
 
             # save operations
             operations_str = []
