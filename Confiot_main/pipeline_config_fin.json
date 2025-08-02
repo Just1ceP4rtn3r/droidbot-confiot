@@ -5,16 +5,14 @@
       "host_device": "17291JECB10652",
       "guest_device": "adb-17281JECB06200-vxom7J._adb-tls-connect._tcp.",
       "apk_file": "com.sifely.smartlockapp.apk",
-      "crawler_steplimit": 200,
-      "priority_device_keywords": ["door lock"]
+      "crawler_steplimit": 150
     },
     {
       "app_name": "Google_home",
       "host_device": "17291JECB10653",
       "guest_device": "adb-17281JECB06200-vxom7J._adb-tls-connect._tcp.",
       "apk_file": "com.google.android.apps.chromecast.app",
-      "crawler_steplimit": 150,
-      "priority_device_keywords": ["Living Room speaker"]
+      "crawler_steplimit": 150
     }
   ]
 }

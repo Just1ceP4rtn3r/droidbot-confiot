@@ -86,9 +86,10 @@ class ConfiotPipeline:
         # Step 1: Run host crawler
         host_crawler_cmd = [
             "python3", "main.py",
-            "--device-name", host_device,
+            "--device-name", app_name,  # This is used for the task description
             "--Autodroid-crawler",
             f"--A-app-path={apk_path}",
+            f"--A-device={host_device}",
             f"--A-droidbot-output={host_dir}"
         ]
         
@@ -109,6 +110,7 @@ class ConfiotPipeline:
             "python3", "main.py",
             "--task-parser",
             f"--A-app-path={apk_path}",
+            f"--A-device={host_device}",
             f"--A-droidbot-output={host_dir}"
         ]
         
@@ -120,9 +122,10 @@ class ConfiotPipeline:
         # Step 3: Run guest crawler
         guest_crawler_cmd = [
             "python3", "main.py",
-            "--device-name", guest_device,
+            "--device-name", app_name,  # This is used for the task description
             "--Autodroid-crawler",
             f"--A-app-path={apk_path}",
+            f"--A-device={guest_device}",
             f"--A-droidbot-output={guest_dir}"
         ]
         
@@ -143,6 +146,7 @@ class ConfiotPipeline:
             "python3", "main.py",
             "--task-parser",
             f"--A-app-path={apk_path}",
+            f"--A-device={guest_device}",
             f"--A-droidbot-output={guest_dir}"
         ]
         

@@ -210,6 +210,8 @@ def run_Oracle(options):
 
 def run_Appcrawler(task, steplimit=100):
     from Confiot_main.globalvars import GlobalVars
+    from Confiot_main.memory_monitor import MemoryMonitor
+    import gc
 
     from Appcrawler.droidbot import input_manager
     from Appcrawler.droidbot import env_manager
@@ -217,59 +219,115 @@ def run_Appcrawler(task, steplimit=100):
     from Appcrawler.droidbot.input_event import KeyEvent, IntentEvent
     import time
 
-    droidbot = AutoDroid(
-        app_path=settings.app_path,
-        device_serial=settings.device_serial,
-        task=task,
-        is_emulator=True,
-        output_dir=settings.droid_output,
-        env_policy=env_manager.POLICY_NONE,
-        policy_name=input_manager.POLICY_AutodroidCrawlerPolicy,
-        script_path=None,
-        event_interval=1,
-        timeout=1200,
-        event_count=steplimit,
-        debug_mode=False,
-        keep_app=True,
-        keep_env=True,
-        grant_perm=True,
-        enable_accessibility_hard=True,
-        ignore_ad=True,
-    )
+    # Initialize memory monitoring
+    memory_log_file = os.path.join(settings.droid_output, f"memory_log_{time.strftime('%Y%m%d_%H%M%S')}.jsonl")
+    monitor = MemoryMonitor(memory_log_file)
+    monitor.log_memory("Appcrawler start")
 
-    # droidbot = AutoDroid(
-    #     app_path=settings.app_path,
-    #     device_serial=settings.device_serial,
-    #     task=task,
-    #     is_emulator=True,
-    #     output_dir=settings.droid_output,
-    #     env_policy=env_manager.POLICY_NONE,
-    #     policy_name=input_manager.POLICY_TASK,
-    #     script_path=None,
-    #     event_interval=1,
-    #     timeout=1200,
-    #     event_count=3000,
-    #     debug_mode=False,
-    #     keep_app=True,
-    #     keep_env=True,
-    #     grant_perm=True,
-    #     enable_accessibility_hard=True,
-    #     ignore_ad=True,
-    # )
+    droidbot = None
+    try:
+        monitor.log_memory("Before DroidBot creation")
+        
+        droidbot = AutoDroid(
+            app_path=settings.app_path,
+            device_serial=settings.device_serial,
+            task=task,
+            is_emulator=True,
+            output_dir=settings.droid_output,
+            env_policy=env_manager.POLICY_NONE,
+            policy_name=input_manager.POLICY_AutodroidCrawlerPolicy,
+            script_path=None,
+            event_interval=1,
+            timeout=1200,
+            event_count=steplimit,
+            debug_mode=False,
+            keep_app=True,
+            keep_env=True,
+            grant_perm=True,
+            enable_accessibility_hard=True,
+            ignore_ad=True,
+        )
 
-    GlobalVars.step_outputfile = settings.droid_output + "/tmp.json"
+        monitor.log_memory("After DroidBot creation")
+        
+        GlobalVars.step_outputfile = settings.droid_output + "/tmp.json"
 
-    droidbot.device.connect()
-    event = IntentEvent(droidbot.app.get_stop_intent())
+        monitor.log_memory("Before device connect")
+        droidbot.device.connect()
+        monitor.log_memory("After device connect")
+        
+        event = IntentEvent(droidbot.app.get_stop_intent())
+        event.send(droidbot.device)
 
-    event.send(droidbot.device)
+        time.sleep(1)
+        event = IntentEvent(droidbot.app.get_start_intent())
+        event.send(droidbot.device)
+        time.sleep(3)
 
-    time.sleep(1)
-    event = IntentEvent(droidbot.app.get_start_intent())
-    event.send(droidbot.device)
-    time.sleep(3)
-
-    droidbot.start()
+        monitor.log_memory("Before droidbot start")
+        droidbot.start()
+        monitor.log_memory("After droidbot start")
+        
+    except Exception as e:
+        logger.error(f"Error in run_Appcrawler: {e}")
+        monitor.log_memory(f"Error occurred: {e}")
+        raise
+    finally:
+        monitor.log_memory("Starting cleanup")
+        
+        # MEMORY CLEANUP: Properly clean up resources
+        try:
+            if droidbot and hasattr(droidbot, 'device') and droidbot.device:
+                logger.info("Disconnecting device...")
+                droidbot.device.disconnect()
+                monitor.log_memory("After device disconnect")
+        except Exception as e:
+            logger.warning(f"Error disconnecting device: {e}")
+        
+        try:
+            if droidbot and hasattr(droidbot, 'input_manager') and droidbot.input_manager:
+                logger.info("Stopping input manager...")
+                droidbot.input_manager.stop()
+                monitor.log_memory("After input manager stop")
+        except Exception as e:
+            logger.warning(f"Error stopping input manager: {e}")
+        
+        # Clear global variables to prevent memory leaks
+        try:
+            logger.info("Clearing global variables...")
+            memory_usage_before = monitor.get_memory_info()
+            GlobalVars.clear_all()
+            monitor.log_memory("After clearing global variables")
+        except Exception as e:
+            logger.warning(f"Error clearing global variables: {e}")
+        
+        # Clean up temporary files
+        try:
+            temp_dirs = [
+                os.path.join(settings.droid_output, "temp"),
+            ]
+            monitor.cleanup_temp_files(temp_dirs)
+            monitor.log_memory("After temp file cleanup")
+        except Exception as e:
+            logger.warning(f"Error cleaning temp files: {e}")
+        
+        # Explicitly delete the droidbot object
+        if droidbot:
+            logger.info("Deleting droidbot object...")
+            del droidbot
+            monitor.log_memory("After droidbot deletion")
+        
+        # Force garbage collection
+        logger.info("Running garbage collection...")
+        gc.collect()
+        monitor.log_memory("After garbage collection", force_gc=True)
+        
+        # Print memory summary
+        summary = monitor.get_summary()
+        logger.info(f"Memory Summary - Growth: {summary.get('memory_growth_mb', 0):.1f}MB, "
+                   f"Peak: {summary.get('peak_memory_mb', 0):.1f}MB")
+        
+        logger.info("Appcrawler cleanup completed")
 
 
 def main():
@@ -357,6 +415,8 @@ def main():
     parser.add_option(
         "--crawler-steplimit",
         dest="steplimit",
+        type="int",
+        default=100,
         help="How many operation steps does the app crawler execute before it stops exploring.",
     )
 
