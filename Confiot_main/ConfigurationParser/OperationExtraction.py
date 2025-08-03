@@ -176,7 +176,7 @@ class OperationExtractor:
                         complete_operation_views.append(
                             hashlib.sha256(str(view).encode("utf-8")).hexdigest()
                         )
-                    continue
+                    # continue
                 o_rec = Rectangle(
                     view["bounds"][0][0],
                     view["bounds"][0][1],
@@ -205,10 +205,11 @@ class OperationExtractor:
                             parent["bounds"][1][1],
                         )
                         is_related = calc_collision_vector(parent_rec, t_rec)
-                        if is_related == "PotentialLeftLabel" or not is_related:
+                        if not is_related:
                             continue
-
-                        if is_related.get_magnitude() == -1:
+                        if is_related == "PotentialLeftLabel":
+                            is_related = Vector(o_rec.get_top_right(), t_rec.get_top_left(), 0)
+                        elif is_related.get_magnitude() == -1:
                             is_related = Vector(Coordinate(0, 0.5), Coordinate(0, 0), 0)
 
 
