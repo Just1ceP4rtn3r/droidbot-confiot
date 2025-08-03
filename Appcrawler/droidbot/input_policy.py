@@ -1477,7 +1477,7 @@ class AutodroidCrawlerPolicy(UtgBasedInputPolicy):
     # ============================================================================================
     # MODIFICATION 1: Updated LLM query method to include page summary in the response structure.
     # ============================================================================================
-    def _query_llm_for_action(self, system_prompt, user_prompt, llm="gpt-4o"):
+    def _query_llm_for_action(self, system_prompt, user_prompt, llm="gpt-4.1"):
         """
         Queries the LLM for the next action using structured output parsing.
         """
@@ -1545,8 +1545,9 @@ Your task is to:
 2. Provide a concise, one-sentence to represent the current page. This page functionality summary will be added to the history for future steps. If the summary of the current page is similar or identical to that mentioned in "Previous UI actions", you should use the same summary as much as possible to identify the duplicate pages.
 
 Execution Strategy:
-1. When a pop-up dialog appears (e.g., one with "Yes/No" or "OK/Cancel" buttons and so on), always select the negative option (or Choose the positive option if the pop-up has no negative response). You can ignore any other instructions and potential "already clicked"; this rule takes precedence.
-2. If you get stuck in a loop (e.g., repeatedly visiting same pages), and even "go back" cannot break it, you need to select other buttons on the page (you can click "already clicked" buttons in this case).
+1. If you notice that there are concrete configuration options/checkbox (e.g., choose date/time/country or other similar options), you need to immediately "Cancel/No/..." (if in a pop-up) or go back.
+2. When a pop-up dialog appears (e.g., one with "Yes/No" or "OK/Cancel" buttons and so on), always select the negative option (or Choose the positive option if the pop-up has no negative response). You can ignore any other instructions and potential "already clicked"; this rule takes precedence.
+3. If you get stuck in a loop (e.g., repeatedly visiting same pages), and even "go back" cannot break it, you need to select other buttons on the page (you can click "already clicked" buttons in this case).
 
 Respond with the element `idx`, the `action_type` (e.g., 'tap', 'input'), any `input_text` if required, and the `page_summary` for the chosen action."""
 
@@ -1603,9 +1604,6 @@ Respond with the element `idx`, the `action_type` (e.g., 'tap', 'input'), any `i
                     "button" in line.lower()
                     and "back" not in line.lower()
                     and "cancel" not in line.lower()
-                    and "yes" not in line.lower()
-                    and "no" not in line.lower()
-                    and "ok" not in line.lower()
                     and ",ok" not in line.lower()
                     and "ok," not in line.lower()
                     and "确定" not in line.lower()
@@ -1656,24 +1654,35 @@ Respond with the element `idx`, the `action_type` (e.g., 'tap', 'input'), any `i
             from Confiot_main.ConfigurationParser.OperationExtraction import (
                 OperationExtractor,
             )
-
             def get_described_operations(operations, plain_labels, hashable_views):
-                text_frame = "<p id=@>#</p>"
-                btn_frame = "<button id=@>#</button>"
-                imgbtn_frame = "<imagebutton id=@>#</imagebutton>"
-                checkbox_frame = "<checkbox id=@ checked=$>#</checkbox>"
-                input_frame = "<input id=@>#</input>"
+                text_frame = "<p id=@>#</p bounds=!!>"
+                btn_frame = "<button id=@ $>#</button bounds=!!>"
+                imgbtn_frame = "<imagebutton id=@ $>#</imagebutton bounds=!!>"
+                checkbox_frame = "<checkbox id=@ checked=$>#</checkbox bounds=!!>"
+                input_frame = "<input id=@>#</input bounds=!!>"
 
                 state_prompt = ""
                 # event list
                 candidate_actions = []
 
                 for label_view in plain_labels:
-                    view_desc = text_frame.replace("@", str(len(candidate_actions))).replace(
-                        "#", label_view["text"]
-                    )
-                    state_prompt += view_desc + "\n"
-                    candidate_actions.append(TouchEvent(view=label_view))
+                    if ("widget.Button" in label_view["class"]):
+                        if (not label_view["enabled"]):
+                            view_desc = btn_frame.replace("$", "disabled").replace("@", str(len(candidate_actions))).replace(
+                                "#", label_view["text"]
+                            ).replace("!!", str(label_view["bounds"]))
+                        else:
+                            view_desc = btn_frame.replace(" $", "").replace("@", str(len(candidate_actions))).replace(
+                                "#", label_view["text"]
+                            ).replace("!!", str(label_view["bounds"]))
+                        state_prompt += view_desc + "\n"
+                        candidate_actions.append(TouchEvent(view=label_view))
+                    else:
+                        view_desc = text_frame.replace("@", str(len(candidate_actions))).replace(
+                            "#", label_view["text"]
+                        ).replace("!!", str(label_view["bounds"]))
+                        state_prompt += view_desc + "\n"
+                        candidate_actions.append(TouchEvent(view=label_view))
 
                 for op in operations:
                     op_view = hashable_views[op]
@@ -1696,25 +1705,35 @@ Respond with the element `idx`, the `action_type` (e.g., 'tap', 'input'), any `i
                     if op_view["checkable"]:
                         view_desc = checkbox_frame.replace("@", str(len(candidate_actions))).replace(
                             "#", op_text
-                        ).replace("$", str(op_view["checked"]))
+                        ).replace("$", str(op_view["checked"])).replace("!!", str(op_view["bounds"]))
                         state_prompt += view_desc + "\n"
                         candidate_actions.append(TouchEvent(view=op_view))
                     elif op_view["editable"]:
                         view_desc = input_frame.replace("@", str(len(candidate_actions))).replace(
                             "#", op_text
-                        )
+                        ).replace("!!", str(op_view["bounds"]))
                         state_prompt += view_desc + "\n"
                         candidate_actions.append(SetTextEvent(view=op_view, text="HelloWorld"))
                     elif "image" in op_type.lower() or "img" in op_type.lower():
-                        view_desc = imgbtn_frame.replace("@", str(len(candidate_actions))).replace(
-                            "#", op_text
-                        )
+                        if(not op_view["enabled"]):
+                            view_desc = imgbtn_frame.replace("$", "disabled").replace("@", str(len(candidate_actions))).replace(
+                                "#", op_text
+                            ).replace("!!", str(op_view["bounds"]))
+                        else:
+                            view_desc = imgbtn_frame.replace(" $", "").replace("@", str(len(candidate_actions))).replace(
+                                "#", op_text
+                            ).replace("!!", str(op_view["bounds"]))
                         state_prompt += view_desc + "\n"
                         candidate_actions.append(TouchEvent(view=op_view))
                     else:
-                        view_desc = btn_frame.replace("@", str(len(candidate_actions))).replace(
-                            "#", op_text
-                        )
+                        if(not op_view["enabled"]):
+                            view_desc = btn_frame.replace("$", "disabled").replace("@", str(len(candidate_actions))).replace(
+                                "#", op_text
+                            ).replace("!!", str(op_view["bounds"]))
+                        else:
+                            view_desc = btn_frame.replace(" $", "").replace("@", str(len(candidate_actions))).replace(
+                                "#", op_text
+                            ).replace("!!", str(op_view["bounds"]))
                         state_prompt += view_desc + "\n"
                         candidate_actions.append(TouchEvent(view=op_view))
 
@@ -1722,8 +1741,6 @@ Respond with the element `idx`, the `action_type` (e.g., 'tap', 'input'), any `i
                 candidate_actions.append(KeyEvent(name="BACK"))
 
                 return state_prompt, candidate_actions
-
-
             OE = OperationExtractor()
             OE.views = copy.deepcopy(current_state.views)
             for v in OE.views:
