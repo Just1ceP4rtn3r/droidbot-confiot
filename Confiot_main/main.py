@@ -283,7 +283,8 @@ def run_Oracle(options):
             UIChanges,
             "Administrators" if options.role else "Guests",
             settings.violation_output + "/" + oracle.proceed_configuration + "/",
-            task_content=task_content
+            task_content=task_content,
+            device_name=options.device_name
         )
         last_task = task
 
@@ -482,6 +483,7 @@ def main():
     parser.add_option(
         "--device-name",
         dest="device_name",
+        default="",
         help="The device name in App (e.g., Tuya smartplug)",
     )
 
