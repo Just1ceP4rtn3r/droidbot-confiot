@@ -574,9 +574,12 @@ class ConfigurationParser:
 
             for f in features:
                 for op in f["Sequence"]:
-                    op["Operation"]["Operation"] = self.PAGEOPERATIONS[op["Page ID"]][
-                        op["Operation"]["ID"]
-                    ]
+                    try:
+                        op["Operation"]["Operation"] = self.PAGEOPERATIONS[op["Page ID"]][
+                            op["Operation"]["ID"]
+                        ]
+                    except:
+                        continue
 
             with open(outputdir + f"/{page}/Raw_bottom_up.txt", "w") as f:
                 f.write("################ Page: " + page + "################\n")
@@ -659,7 +662,7 @@ class ConfigurationParser:
 
         for config in filtered_configurations:
             try:
-                config["Page ID"] = config["Related operations"][0]["Page ID"]
+                config["Page ID"] = config["Related operations"][-1]["Page ID"]
             except:
                 pass
 
