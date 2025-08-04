@@ -629,7 +629,7 @@ class ConfigurationParser:
                             "Page ID": page,
                             "Feature Content": c["Feature"],
                             "Related operations": c["Sequence"],
-                            "WhySequence": c["WhySequence"],
+                            "WhySequence": c["Details"] + ";" + c["WhySequence"],
                         }
                     )
 
@@ -645,7 +645,7 @@ class ConfigurationParser:
             messages=[
                 {
                     "role": "system",
-                    "content": "Below are some JSON-formatted features (user functions/tasks) for an IoT app. You have following requirements: (1) Please deduplicate the tasks in the same page based on their semantics. If two tasks perform the same operation (or configure the same resource) and only differ in their configuration options (e.g., pair with/add device_a'' and add device_b'' is the same task), keep only one and try to retain the one with richer and more complete details like options (e.g., keep 'configure the light state to off' instead of 'light management'). \n **Output Format** \n Please provide only the final filtered Feature IDs.",
+                    "content": "Below are some JSON-formatted features (user functions/tasks) for an IoT app. You have following requirements: (1) Please deduplicate the same features based on their semantics. keep only one and try to retain the one with richer and more complete details like options. \n **Output Format** \n Please provide only the final filtered Feature IDs.",
                 },
                 # {"role": "system", "content": "Below are some JSON-formatted testing tasks for an IoT app. You have following requirements: (1) Please deduplicate the tasks in the same page based on their semantics. If two tasks perform the same operation (or configure the same resource) and only differ in their configuration options (e.g., pair with/add device_a'' and add device_b'' is the same task), keep only one and try to retain the one with richer and more complete details like options (e.g., keep 'configure the light state to off' instead of 'light management'). (2) Prioritize tasks with more specific details or options by ranking them first in the response. (3) Then, remove tasks that only involve read semantic (not write to any resource): ['view', 'access', 'retrieve', 'obtain', 'read', 'inspect']."},
                 {

@@ -1,0 +1,27 @@
+You are an expert in IoT system logic and user interaction design. Your task is to analyze a pair of seemingly conflicting configuration capabilities and determine if a plausible counterexample exists where they can coexist without causing a conflict. You are not looking for the conflict; you are looking for a reason why a conflict might not occur in a well-designed system.
+
+### 1. The Scenario
+We analyze multi-user shared IoT usage scenarios. In this scenario, a set of IoT devices is shared among different users through a companion app (e.g., the MiHome app). Two roles are defined:
+- **Administrators:** Device owners or hosts with the highest level of permissions.
+- **Guests:** Users with limited or temporary access rights, such as Airbnb guests or employees.
+
+
+### 2. Inputs Provided to You
+
+You will be given a specific pair of configurations that are suspected to be in conflict:
+
+Potential Conflicting Capability (Role A): A specific action that Role A (e.g., Administrator) can perform.
+Potential Conflicting Capability (Role B): A specific action that Role B (e.g., Guest) can perform.
+Reason why conflicting: why the pair of configurations are conflict.
+
+### 3. Your Task:
+For each conflict, your main task is to brainstorm plausible, ask your self following question to find any counterexample of the conflict:
+
+* **Counterexample Question (Argue AGAINST Conflict):**
+    * **Question Format:** "Is it **possible** for two capablities can coexist **without** creating an unavoidable conflict?"
+    * **To answer, you must:** Reviewing the `[Conflict_Reason]` and the details in two `[Potential_Conflicting_Capability]`, especially considering uncertain language in the process (e.g., "could/maybe/..."). Actively search for alternative interpretations. Create a detailed and credible scenario that illustrates how the conflict is successfully avoided. Tell a story. Evaluate the plausibility of your proposed counterexample: vaguer details imply a more plausible counterexample. Any counterexample with an assessed plausibility of less than 50% should be disregarded.
+
+
+
+### Input conflicts
+

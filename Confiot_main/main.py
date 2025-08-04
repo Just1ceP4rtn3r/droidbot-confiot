@@ -297,6 +297,44 @@ def run_Oracle(options):
     # )
 
 
+def run_Conflicts_identification(options):
+    if os.path.exists(settings.violation_output + "/Conflicts"):
+        logger.info("Relevant violation results already exist: " + settings.violation_output + "/Conflicts")
+        return
+
+    settings(
+        options.host_device, options.host_app_path, options.host_droidbot_output
+    )
+    Agent = Confiot()
+    oracle = ConfigurationConfiotOracle(Agent)
+    HostCapabilities = oracle.LoadConfigurations(
+        settings.Confiot_output + "/LLM_ConfigParsing"
+    )
+
+    settings(
+        options.guest_device, options.guest_app_path, options.guest_droidbot_output
+    )
+    Agent = Confiot()
+    oracle = ConfigurationConfiotOracle(Agent)
+    GuestCapabilities = oracle.LoadConfigurations(
+        settings.Confiot_output + "/LLM_ConfigParsing"
+    )
+
+    UserCapabilities = {"Role-A": HostCapabilities, "Role-a": GuestCapabilities}
+
+
+    phase = Phase.AfterDelegation
+    oracle.IdentifyConfiot(
+        phase,
+        "",
+        UserCapabilities,
+        -1,
+        "",
+        settings.violation_output + "/Conflicts",
+        device_name=options.device_name
+    )
+
+
 def run_Appcrawler(task, steplimit=100):
     from Confiot_main.globalvars import GlobalVars
 
@@ -401,6 +439,13 @@ def main():
         action="store_true",
         default=False,
         help="Run crawler with Autodroid.",
+    )
+    module_group.add_option(
+        "--Identify-conflicts",
+        dest="conflicts",
+        action="store_true",
+        default=False,
+        help="Identify conflicts in different roles' capabilities",
     )
     parser.add_option_group(module_group)
 
@@ -578,6 +623,8 @@ def main():
             f"Explore the this app to identify and capture all unique pages related to device [{options.device_name}]. Always cancel the configuration. Focus exclusively on functionalities and settings. Avoid enter any advertisements and promotional materials content.",
             int(options.steplimit),
         )
+    elif options.conflicts:
+        run_Conflicts_identification(options)
 
 
 if __name__ == "__main__":

@@ -805,11 +805,15 @@ class ConfigurationConfiotOracle(ConfiotOracle):
         AfterDelegation_system_ask_questions_template = ""
         AfterDelegation_user_template = ""
         DuringUsage_system_template = ""
-
         DuringUsage_user_template = ""
         AfterRevocation_system_template = ""
         AfterRevocation_user_template = ""
         PageUIChange_template = ""
+
+        Conflicts_system_verification_template = ""
+        Conflicts_system_counterexample_template = ""
+        Conflicts_user_template = ""
+
         BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
         with open(
@@ -844,10 +848,125 @@ class ConfigurationConfiotOracle(ConfiotOracle):
         ) as f:
             PageUIChange_template = f.read()
 
+
+        with open(
+            BASE_DIR + "/../prompt/IdentifyCapabilityConfiot/Conflicts_system_verification.txt"
+        ) as f:
+            Conflicts_system_verification_template = f.read()
+        with open(
+            BASE_DIR + "/../prompt/IdentifyCapabilityConfiot/Conflicts_system_counterexample.txt"
+        ) as f:
+            Conflicts_system_counterexample_template = f.read()
+        with open(
+            BASE_DIR + "/../prompt/IdentifyCapabilityConfiot/Conflicts_user.txt"
+        ) as f:
+            Conflicts_user_template = f.read()
+
         system_prompt = ""
         user_prompt = ""
+        if TestingPhase == Phase.AfterDelegation and "Role-A" in Configurations and "Role-a" in Configurations:
+            config_strs_Role_A = []
+            Configurations_Role_A = Configurations["Role-A"]
+
+            config_strs_Role_a = []
+            Configurations_Role_a = Configurations["Role-a"]
+            cid = 0
+            for page in Configurations_Role_A:
+                for c in Configurations_Role_A[page]:
+                    if c != "" and c != "None":
+                        config_strs_Role_A.append(
+                            f"({cid}) "
+                            + c
+                            + "    Details: "
+                            + str(Configurations_Role_A[page][c])
+                        )
+                        cid += 1
+            cid = 0
+            for page in Configurations_Role_a:
+                for c in Configurations_Role_a[page]:
+                    if c != "" and c != "None":
+                        config_strs_Role_a.append(
+                            f"({cid}) "
+                            + c
+                            + "    Details: "
+                            + str(Configurations_Role_a[page][c])
+                        )
+                        cid += 1
+            user_prompt = Conflicts_user_template.replace(
+                "{{HOSTCONFIG}}", "\n".join(config_strs_Role_A)
+            )
+            user_prompt = user_prompt.replace(
+                "{{GUESTCONFIG}}", "\n".join(config_strs_Role_a)
+            )
+
+            user_prompt = f"In `[device]` {device_name}\n\n" + user_prompt
+
+            # ask verification questions
+            system_prompt = Conflicts_system_verification_template
+
+            LLMresponse_verification_answer = (
+                query_Conflicts_verification(
+                    system_prompt=system_prompt,
+                    user_prompt=user_prompt,
+                    TestingPhase=TestingPhase,
+                )
+            )
+
+            candidate_violations = []
+            final_violations = []
+
+            for a in LLMresponse_verification_answer.Answers:
+                candidate_violations.append(
+                    {
+                        "Administrator_Conflicting_Capability": a.Administrator_Conflicting_Capability,
+                        "Guest_Conflicting_Capability": a.Guest_Conflicting_Capability,
+                        "Shared_Resource": a.Shared_Resource,
+                        "Why_Conflicting": a.Why_Conflicting,
+                    }
+                )
+
+
+            with open(outputdir + "/VerificationQuestions.txt", "w") as f:
+                f.write(
+                    system_prompt
+                    + user_prompt
+                    + "\n\n\n"
+                    + str(candidate_violations)
+                    + "\n"
+                )
+
+
+            system_prompt = Conflicts_system_counterexample_template
+            user_prompt = f"In `[device]` {device_name}\n\n" + str(candidate_violations)
+
+            LLMresponse_counterexample_answer = (
+                query_Conflicts_counterexample(
+                    system_prompt=system_prompt,
+                    user_prompt=user_prompt,
+                    TestingPhase=TestingPhase,
+                )
+            )
+
+            for a in LLMresponse_counterexample_answer.Answers:
+                final_violations.append(
+                    {
+                        "has_counterexample": a.has_counterexample,
+                        "Administrator_Conflicting_Capability": a.Administrator_Conflicting_Capability,
+                        "Guest_Conflicting_Capability": a.Guest_Conflicting_Capability,
+                        "Counterexample": a.Counterexample
+                    }
+                )
+
+            with open(outputdir + "/CounterexampleQuestions.txt", "w") as f:
+                f.write(
+                    system_prompt
+                    + str(candidate_violations)
+                    + "\n\n\n"
+                    + str(final_violations)
+                    + "\n"
+                )
         # After Delegation
-        if TestingPhase == Phase.AfterDelegation and UIChanges == -1:
+        elif TestingPhase == Phase.AfterDelegation and UIChanges == -1:
             config_strs = []
             cid = 0
             for page in Configurations:
