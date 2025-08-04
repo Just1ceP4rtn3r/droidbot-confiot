@@ -99,7 +99,7 @@ def query_gpt(prompt, llm="xxx"):
     else:
         client = OpenAI()
         completion = client.chat.completions.create(
-            model="gpt-4o",
+            model="gpt-4.1-mini",
             messages=[
                 {
                     "role": "user",

@@ -492,7 +492,7 @@ def query_config_resource_mapping(prompt):
     headers = {"Content-Type": "application/json", "Authorization": f"Bearer {api_key}"}
 
     # syncxxx: use gpt-4 new model
-    payload = {"model": "gpt-4o", "messages": [{"role": "user", "content": prompt}]}
+    payload = {"model": "gpt-4.1-mini", "messages": [{"role": "user", "content": prompt}]}
     # payload = {"model": "gpt-3.5-turbo", "messages": [{"role": "user", "content": prompt}]}
 
     response = requests.post(
@@ -530,7 +530,7 @@ def query_page_features(system_prompt, user_prompt, llm="xxx"):
 
     client = OpenAI()
     completion = client.beta.chat.completions.parse(
-        model="gpt-4o",
+        model="gpt-4.1-mini",
         messages=[
             {"role": "system", "content": system_prompt},
             {
@@ -573,7 +573,7 @@ def query_page_dependencies(system_prompt, user_prompt, llm="xxx"):
 
     client = OpenAI()
     completion = client.beta.chat.completions.parse(
-        model="gpt-4o",
+        model="gpt-4.1-mini",
         messages=[
             {"role": "system", "content": system_prompt},
             {
@@ -613,7 +613,7 @@ def query_continuation_features(system_prompt, user_prompt, llm="xxx"):
 
     client = OpenAI()
     completion = client.beta.chat.completions.parse(
-        model="gpt-4o",
+        model="gpt-4.1-mini",
         messages=[
             {"role": "system", "content": system_prompt},
             {
@@ -691,7 +691,7 @@ def query_config_operation_mapping_with_structured_output(
 
     client = OpenAI()
     completion = client.beta.chat.completions.parse(
-        model="gpt-4o",
+        model="gpt-4.1-mini",
         messages=[
             {"role": "system", "content": system_prompt},
             {
@@ -994,7 +994,7 @@ def query_config_operation_mapping_qwen(system_prompt, user_prompt):
 #     if TestingPhase == Phase.AfterDelegation:
 #         client = OpenAI()
 #         completion = client.beta.chat.completions.parse(
-#             model="gpt-4o",
+#             model="gpt-4.1-mini",
 #             messages=[
 #                 {"role": "system", "content": system_prompt},
 #                 {
@@ -1009,7 +1009,7 @@ def query_config_operation_mapping_qwen(system_prompt, user_prompt):
 #     elif TestingPhase == Phase.DuringUsage:
 #         client = OpenAI()
 #         completion = client.beta.chat.completions.parse(
-#             model="gpt-4o",
+#             model="gpt-4.1-mini",
 #             messages=[
 #                 {"role": "system", "content": system_prompt},
 #                 {
@@ -1043,7 +1043,7 @@ def query_Confiot_identification_ask_questions(
     if TestingPhase == Phase.AfterDelegation:
         client = OpenAI()
         completion = client.beta.chat.completions.parse(
-            model="gpt-4o",
+            model="gpt-4.1-mini",
             messages=[
                 {"role": "system", "content": system_prompt},
                 {
@@ -1058,7 +1058,7 @@ def query_Confiot_identification_ask_questions(
     elif TestingPhase == Phase.DuringUsage:
         client = OpenAI()
         completion = client.beta.chat.completions.parse(
-            model="gpt-4o",
+            model="gpt-4.1-mini",
             messages=[
                 {"role": "system", "content": system_prompt},
                 {
@@ -1097,7 +1097,7 @@ def query_Confiot_identification(system_prompt, user_prompt, TestingPhase, llm="
 
         client = OpenAI()
         completion = client.beta.chat.completions.parse(
-            model="gpt-4o",
+            model="gpt-4.1-mini",
             messages=[
                 {"role": "system", "content": system_prompt},
                 {
@@ -1123,7 +1123,7 @@ def query_Confiot_identification(system_prompt, user_prompt, TestingPhase, llm="
 
         client = OpenAI()
         completion = client.beta.chat.completions.parse(
-            model="gpt-4o",
+            model="gpt-4.1-mini",
             messages=[
                 {"role": "system", "content": system_prompt},
                 {
@@ -1148,7 +1148,7 @@ def query_Confiot_identification(system_prompt, user_prompt, TestingPhase, llm="
 
         client = OpenAI()
         completion = client.beta.chat.completions.parse(
-            model="gpt-4o",
+            model="gpt-4.1-mini",
             messages=[
                 {"role": "system", "content": system_prompt},
                 {

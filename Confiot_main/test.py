@@ -649,8 +649,8 @@ if __name__ == "__main__":
 
     # s = settings(
     #     "192.168.2.176:5555",
-    #     "/root/documents/Output/mihome/mihome-smartscale-CCS25-40min-droidbot-gpt-4o/mihome.apk",
-    #     r"/root/documents/Output/mihome/mihome-smartscale-CCS25-40min-droidbot-gpt-4o/host/result",
+    #     "/root/documents/Output/mihome/mihome-smartscale-CCS25-40min-droidbot-gpt-4.1-mini/mihome.apk",
+    #     r"/root/documents/Output/mihome/mihome-smartscale-CCS25-40min-droidbot-gpt-4.1-mini/host/result",
     # )
 
     # test_Configuration_parser()

@@ -1238,7 +1238,7 @@ class TaskPolicy(UtgBasedInputPolicy):
         return view_desc
 
 
-    def _query_llm_for_action(self, system_prompt, user_prompt, llm="gpt-4o"):
+    def _query_llm_for_action(self, system_prompt, user_prompt, llm="gpt-4.1-mini"):
         """
         Queries the LLM for the next action using structured output parsing.
         """
@@ -1645,7 +1645,7 @@ class AutodroidCrawlerPolicy(UtgBasedInputPolicy):
     # ============================================================================================
     # MODIFICATION 1: Updated LLM query method to include page summary in the response structure.
     # ============================================================================================
-    def _query_llm_for_action(self, system_prompt, user_prompt, llm="gpt-4o"):
+    def _query_llm_for_action(self, system_prompt, user_prompt, llm="gpt-4.1-mini"):
         """
         Queries the LLM for the next action using structured output parsing.
         """

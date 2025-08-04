@@ -62,7 +62,7 @@ def query_gpt(prompt):
     headers = {"Content-Type": "application/json", "Authorization": f"Bearer {api_key}"}
 
     # syncxxx: use gpt-4 new model
-    payload = {"model": "gpt-4o", "messages": [{"role": "user", "content": prompt}]}
+    payload = {"model": "gpt-4.1-mini", "messages": [{"role": "user", "content": prompt}]}
     # payload = {"model": "gpt-3.5-turbo", "messages": [{"role": "user", "content": prompt}]}
 
     response = requests.post(

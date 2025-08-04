@@ -29,7 +29,7 @@ def GetDataset(current_dir, privacy_training_file, non_privacy_training_file, pr
     non_privacy_training_data = GetDataList(current_dir, non_privacy_training_file)
     X_train = privacy_training_data + non_privacy_training_data
     y_train = [1] * len(privacy_training_data) + [0] * len(non_privacy_training_data)
-    
+
     privacy_testing_data = GetDataList(current_dir, privacy_testing_file)
     non_privacy_testing_data = GetDataList(current_dir, non_privacy_testing_file)
     X_test = privacy_testing_data + non_privacy_testing_data
@@ -41,7 +41,7 @@ def ClassifierGPT(privacy_file, non_privacy_file):
         current_dir = os.path.dirname(os.path.abspath(__file__))
         privacy_data = GetDataList(current_dir, privacy_file)
         non_privacy_data = GetDataList(current_dir, non_privacy_file)
-        
+
         with open(os.path.join(current_dir, "dataset/testDataset.json"), 'r') as f:
             content = json.load(f)
 
@@ -54,7 +54,7 @@ def ClassifierGPT(privacy_file, non_privacy_file):
 
 
         payload = {
-            "model": "gpt-4o",
+            "model": "gpt-4.1-mini",
             "messages": [
                 {
                     "role": "system",
@@ -109,7 +109,7 @@ def GPTResult(result_file, test_file):
             result_label.append(1)
         else:
             result_label.append(0)
-    
+
     with open(os.path.join(current_dir, test_file), 'r') as f:
         content = json.load(f)
     test_label = []
@@ -125,7 +125,7 @@ def GPTResult(result_file, test_file):
     print(f"Precision: {precision:.2f}")
     print(f"Recall: {recall:.2f}")
     print("Classification Report:\n", classification_report(test_label, result_label))
-    
+
 
 
 def ClassifierSVM(privacy_training_file, non_privacy_training_file, privacy_testing_file, non_privacy_testing_file):
@@ -135,7 +135,7 @@ def ClassifierSVM(privacy_training_file, non_privacy_training_file, privacy_test
     X_train, y_train = shuffle(X_train, y_train, random_state=42)
 
     # feature extraction
-    tfidf = TfidfVectorizer(max_features=1000)  
+    tfidf = TfidfVectorizer(max_features=1000)
     X_train_tfidf = tfidf.fit_transform(X_train)
     X_test_tfidf = tfidf.transform(X_test)
 
@@ -174,7 +174,7 @@ def GetEmbedding(words, model, embedding_dim=100):
 def WordClassifierSVM(word_emb, privacy_training_file, non_privacy_training_file, privacy_testing_file, non_privacy_testing_file):
     current_dir = os.path.dirname(os.path.abspath(__file__))
     training_data, y_train, testing_data, y_test = GetDataset(current_dir, privacy_training_file, non_privacy_training_file, privacy_testing_file, non_privacy_testing_file)
-    
+
     if word_emb == "Word2Vec":
         train_tokens = [text.split() for text in training_data]
         test_tokens = [text.split() for text in testing_data]
@@ -274,7 +274,7 @@ def ClassifierBert(privacy_training_file, non_privacy_training_file, privacy_tes
             loop.set_postfix(loss=loss.item())
 
     # Save the trained model and tokenizer
-    output_dir = os.path.join(current_dir, "model/fine_tuned_bert") 
+    output_dir = os.path.join(current_dir, "model/fine_tuned_bert")
     os.makedirs(output_dir, exist_ok=True)
     model.save_pretrained(output_dir)
     tokenizer.save_pretrained(output_dir)
