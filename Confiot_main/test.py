@@ -623,14 +623,14 @@ def test_get_UIstate():
     GlobalVars.step_outputfile = settings.droid_output + "/tmp.json"
 
     droidbot.device.connect()
-    event = KeyEvent(name="HOME")
+    # event = KeyEvent(name="HOME")
 
-    event.send(droidbot.device)
+    # event.send(droidbot.device)
 
-    time.sleep(1)
-    event = IntentEvent(droidbot.app.get_start_intent())
-    event.send(droidbot.device)
-    time.sleep(3)
+    # time.sleep(1)
+    # event = IntentEvent(droidbot.app.get_start_intent())
+    # event.send(droidbot.device)
+    # time.sleep(3)
 
     droidbot.start()
 
@@ -639,12 +639,12 @@ if __name__ == "__main__":
     # test_Enumerate_pages()
 
     s = settings(
-        "192.168.2.176:5555",
-        "/root/documents/Output/Huawei/iHORN_gateway/Huawei.apk",
-        r"/root/documents/Output/Huawei/YANKON_smart_bulb/NDSS26/host/result/",
+        "192.168.2.140:5555",
+        "/root/documents/Output/mihome/Xiaomi_Smart_Power_Strip2/com.xiaomi.smarthome.apk",
+        r"/root/documents/Output/mihome/smart_fan/NDSS26/host/result ",
     )
 
-    test_Configuration_parser()
+    test_get_UIstate()
     # test_replay_revoke("/tmp/test.json")
 
     # s = settings(

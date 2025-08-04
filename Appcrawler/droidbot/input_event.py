@@ -437,7 +437,7 @@ class TouchEvent(UIEvent):
 
     def send(self, device):
         x, y = UIEvent.get_xy(x=self.x, y=self.y, view=self.view)
-        device.view_long_touch(x=x, y=y, duration=200)
+        device.view_long_touch(x=x, y=y, duration=100)
         return True
 
     def get_event_str(self, state):

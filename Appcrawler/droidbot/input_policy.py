@@ -1896,6 +1896,7 @@ Respond with the element `idx`, the `action_type` (e.g., 'tap', 'input'), any `i
                 {"action": action_desc, "summary": page_summary}
             )
             self.__thought_history.append(thought)
+            print(action)
             return None, action
 
         if self.__random_explore:

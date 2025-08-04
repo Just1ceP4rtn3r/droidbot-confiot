@@ -797,7 +797,7 @@ class ConfigurationConfiotOracle(ConfiotOracle):
     # Configurations: {"Page-0": {"Task Content": [op_id, ...]}}
     # UIChanges: {"Page-0": [ConfiotHunter.SpecificUIChange, ...]}
     def IdentifyConfiot(
-        self, TestingPhase, Criteria, Configurations, UIChanges, Role, outputdir, task_content=""
+        self, TestingPhase, Criteria, Configurations, UIChanges, Role, outputdir, task_content="", device_name=""
     ):
         if not os.path.exists(outputdir):
             os.makedirs(outputdir)
@@ -863,7 +863,7 @@ class ConfigurationConfiotOracle(ConfiotOracle):
             user_prompt = AfterDelegation_user_template.replace(
                 "{{CONFIG}}", "\n".join(config_strs)
             )
-            user_prompt = user_prompt.replace("{{ROLE}}", Role)
+            user_prompt = user_prompt.replace("{{ROLE}}", Role + f", In `[device]` {device_name}")
             user_prompt = user_prompt.replace("{{CRITERIA}}", str(Criteria))
 
             verification_questions = []
@@ -951,12 +951,12 @@ class ConfigurationConfiotOracle(ConfiotOracle):
                 + """
             * **Counterexample Question (Argue AGAINST Violation):**
                 * **Question Format:** "Is it **possible** for the role `[User Role]`'s capability `[capability text]` to exist **without** violating criterion `[criterion text]`?"
-                * **To answer, you must:** Reviewing the [Reasoning Process] for this Violation identification, especially considering uncertain language in the process (e.g., "could/maybe/..."). Actively search for alternative interpretations. Could the terms be ambiguous (e.g., "Device settings" is vague, could not consist over-priviledge configuration. Or privacy data "xxx log" is belong to `[User Role]` but not other users)? Could the capability's scope be narrower than the criterion's? Is there a plausible scenario where the two do not conflict?
+                * **To answer, you must:** Reviewing the `[Violation_Reasoning_Process]` for this Violation identification and the details in `[capability]`, especially considering uncertain language in the process (e.g., "could/maybe/...") and missing steps in the [capability] description for task completion. Actively search for alternative interpretations. Could the terms be ambiguous (e.g., "Device settings" is vague, could not consist over-priviledge configuration. Or privacy data "xxx log" is belong to `[User Role]` but not other users)? Is there a plausible scenario where the two do not conflict? Evaluate the plausibility of your proposed counterexample based on the clarity of the original `[capability]` details: vaguer details imply a more plausible counterexample. Any counterexample with an assessed plausibility of less than 50% should be disregarded.
 
             * **Output format**
                 Question_ID: int # which question
                 Answer_Yes_or_No: bool # - Yes/True: Indicates that a plausible **counterexample** or alternative interpretation was found, allowing the capability to exist **without** violating the criterion.
-                Reasoning_steps: list[str] # if Answer_Yes_or_No=True: what counterexample you have found. if Answer_Yes_or_No=False: why you did not find any plausible counterexample.
+                Reasoning_steps: list[str] # if Answer_Yes_or_No=True: what counterexample you have found. if Answer_Yes_or_No=False: why you did not find any plausible counterexample, and provide the Possibility value (xx%) of this counterexample.
                 Related_criterion: str
             """
                 + str(counterexample_questions)
@@ -1006,7 +1006,7 @@ class ConfigurationConfiotOracle(ConfiotOracle):
             #     print("[DBG]: Skip because no UI changes")
             #     return
             system_prompt = DuringUsage_system_template
-            user_prompt = DuringUsage_user_template.replace("{{ROLE}}", Role)
+            user_prompt = DuringUsage_user_template.replace("{{ROLE}}", Role + f", In `[smart device]` {device_name}")
             user_prompt = user_prompt.replace("{{CRITERIA}}", str(Criteria))
             user_prompt = user_prompt.replace(
                 "{{EXECUTOR}}", "Administrators" if Role == "Guests" else "Guests"
