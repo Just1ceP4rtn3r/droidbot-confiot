@@ -314,7 +314,7 @@ def test_Configuration_parser():
     Agent = Confiot()
 
     # 执行Task-0, ...
-    Agent.device_connect()
+    # Agent.device_connect()
     ConfigurationParser(Agent).app_pages_exploration(f"Task-REVOKE")
 
 
@@ -641,10 +641,10 @@ if __name__ == "__main__":
     s = settings(
         "192.168.2.140:5555",
         "/root/documents/Output/mihome/Xiaomi_Smart_Power_Strip2/com.xiaomi.smarthome.apk",
-        r"/root/documents/Output/mihome/smart_fan/NDSS26/host/result ",
+        r"/root/documents/Output/smartthings/guest",
     )
 
-    test_get_UIstate()
+    test_Configuration_parser()
     # test_replay_revoke("/tmp/test.json")
 
     # s = settings(

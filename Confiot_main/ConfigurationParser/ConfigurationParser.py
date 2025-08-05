@@ -175,8 +175,8 @@ class ConfigurationParser:
                 overview["LABELS"] = {"label_views": self.plain_labels[page]}
 
             if page not in self.operations and page in self.plain_labels:
-                with open(outputdir + f"/{page}/PageInfo.txt", "w") as f:
-                    f.write(json.dumps(self.PAGEINFO[page]))
+                with open(save_dir + f"{page}.json", "w") as f:
+                    f.write(json.dumps(overview, indent=2))
                 continue
 
             # save operations
@@ -226,6 +226,7 @@ class ConfigurationParser:
                 op_id += 1
 
             context_operation = ""
+
             if page not in self.page_context:
                 continue
             for context in self.page_context[page]:

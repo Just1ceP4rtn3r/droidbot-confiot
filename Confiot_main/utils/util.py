@@ -194,7 +194,7 @@ class DirectedGraph:
     def get_neighbors(self, node):
         neighbors = []
         for edge in self.edges:
-            if edge.start_node == node:
+            if edge.start_node.name == node.name:
                 neighbors.append(edge.end_node)
         return neighbors
 
