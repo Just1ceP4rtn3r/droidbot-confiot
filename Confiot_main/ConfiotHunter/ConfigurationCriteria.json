@@ -18,7 +18,7 @@
         {
             "Id": "3",
             "Role": "Guests",
-            "Capabilities": "Should not add/delete the device to/from the device list or smart home"
+            "Capabilities": "Should not add/delete the device to/from the device list or smart home."
         },
         {
             "Id": "4",
@@ -34,6 +34,11 @@
             "Id": "6",
             "Role": "Administrators, Guests",
             "Capabilities": "Should not access/view the device usage log of security devices including camera image, camera video, smart lock history and User audio clips recorded by the speaker. Do not propose a violation unless the device usage log is a specified security type (e.g., camera and smart lock)"
+        },
+        {
+            "Id": "7",
+            "Role": "Guests",
+            "Capabilities": "Should not manage or edit the user list or account"
         }
     ]
 }

@@ -369,9 +369,12 @@ class ConfigurationParser:
 
             for f in features:
                 for op in f["Sequence"]:
-                    op["Operation"]["Operation"] = self.PAGEOPERATIONS[op["Page ID"]][
-                        op["Operation"]["ID"]
-                    ]
+                    try:
+                        op["Operation"]["Operation"] = self.PAGEOPERATIONS[op["Page ID"]][
+                            op["Operation"]["ID"]
+                        ]
+                    except:
+                        continue
 
             self.PAGEINFO[page]["Summarized Features"] = features
 

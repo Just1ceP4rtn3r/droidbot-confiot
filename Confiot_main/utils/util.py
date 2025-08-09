@@ -1127,7 +1127,7 @@ def query_Confiot_identification_ask_questions(
     if TestingPhase == Phase.AfterDelegation:
         client = OpenAI()
         completion = client.beta.chat.completions.parse(
-            model="gpt-4.1-mini",
+            model="o4-mini",
             messages=[
                 {"role": "system", "content": system_prompt},
                 {
@@ -1142,7 +1142,7 @@ def query_Confiot_identification_ask_questions(
     elif TestingPhase == Phase.DuringUsage:
         client = OpenAI()
         completion = client.beta.chat.completions.parse(
-            model="gpt-4.1-mini",
+            model="o4-mini",
             messages=[
                 {"role": "system", "content": system_prompt},
                 {
@@ -1184,7 +1184,7 @@ def query_Confiot_identification(system_prompt, user_prompt, TestingPhase, llm="
 
         client = OpenAI()
         completion = client.beta.chat.completions.parse(
-            model="gpt-4.1-mini",
+            model="o4-mini",
             messages=[
                 {"role": "system", "content": system_prompt},
                 {
@@ -1210,7 +1210,7 @@ def query_Confiot_identification(system_prompt, user_prompt, TestingPhase, llm="
 
         client = OpenAI()
         completion = client.beta.chat.completions.parse(
-            model="gpt-4.1-mini",
+            model="o4-mini",
             messages=[
                 {"role": "system", "content": system_prompt},
                 {
@@ -1235,7 +1235,7 @@ def query_Confiot_identification(system_prompt, user_prompt, TestingPhase, llm="
 
         client = OpenAI()
         completion = client.beta.chat.completions.parse(
-            model="gpt-4.1-mini",
+            model="o4-mini",
             messages=[
                 {"role": "system", "content": system_prompt},
                 {
