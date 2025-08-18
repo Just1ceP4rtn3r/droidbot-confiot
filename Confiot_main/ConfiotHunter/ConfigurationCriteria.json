@@ -18,12 +18,12 @@
         {
             "Id": "3",
             "Role": "Guests",
-            "Capabilities": "Should not add/delete the device to/from the device list or smart home."
+            "Capabilities": "Should not add/delete the device to/from the device list or smart home. If capabilities' missing details whether or not can add device successfully, it should be considered as a violation."
         },
         {
             "Id": "4",
             "Role": "Guests",
-            "Capabilities": "Should not enable/disable remote control of the device"
+            "Capabilities": "Should not enable/disable remote control of the device, such as disabling the capability of controling device"
         },
         {
             "Id": "5",

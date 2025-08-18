@@ -167,7 +167,7 @@ class ConfigurationParser:
             os.makedirs(save_dir)
 
 
-        for page in self.operations:
+        for page in self.pages:
             overview = {"PAGE": page, "CONTEXT": {}, "OPERATIONS": {}, "LABELS": {}}
 
             if page in self.plain_labels:
@@ -179,6 +179,8 @@ class ConfigurationParser:
                     f.write(json.dumps(overview, indent=2))
                 continue
 
+            if page not in self.operations:
+                continue
             # save operations
             operations_str = []
             operations, hashable_views = self.operations[page]
@@ -227,30 +229,29 @@ class ConfigurationParser:
 
             context_operation = ""
 
-            if page not in self.page_context:
-                continue
-            for context in self.page_context[page]:
-                context_view, context_text = context
-                if context_text == "" or not context_text:
-                    continue
-                else:
-                    op_action = None
-                    if not context_view:
-                        context_operation = f'<"{context_text}">'
+            if page in self.page_context:
+                for context in self.page_context[page]:
+                    context_view, context_text = context
+                    if context_text == "" or not context_text:
+                        continue
                     else:
-                        if "select" in context_view["class"].lower():
-                            op_action = "Select"
-                        elif "check" in context_view["class"].lower():
-                            op_action = "check"
-                        elif "input" in context_view["class"].lower():
-                            op_action = "Input"
+                        op_action = None
+                        if not context_view:
+                            context_operation = f'<"{context_text}">'
                         else:
-                            op_action = "Click"
-                        context_operation = f"<{op_action}, {context_view['class']}, \"{context_text}\">"
+                            if "select" in context_view["class"].lower():
+                                op_action = "Select"
+                            elif "check" in context_view["class"].lower():
+                                op_action = "check"
+                            elif "input" in context_view["class"].lower():
+                                op_action = "Input"
+                            else:
+                                op_action = "Click"
+                            context_operation = f"<{op_action}, {context_view['class']}, \"{context_text}\">"
 
-                ctx_str = context_operation
-                overview["CONTEXT"] = {"ctx_str": ctx_str, "ctx_view": context_view}
-                break
+                    ctx_str = context_operation
+                    overview["CONTEXT"] = {"ctx_str": ctx_str, "ctx_view": context_view}
+                    break
             # save overview to f{page}.json
             import json
 
