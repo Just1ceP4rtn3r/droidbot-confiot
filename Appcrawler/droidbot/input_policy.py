@@ -1665,6 +1665,14 @@ Respond with the element `idx`, the `action_type` (e.g., 'tap', 'input'), any `i
                 # event list
                 candidate_actions = []
 
+
+                # 添加没有任何文本的imagebutton
+                for h in hashable_views:
+                    view = hashable_views[h]
+                    if (h not in operations and view["clickable"]):
+                        operations[h] = [(view,-1),]
+
+
                 for label_view in plain_labels:
                     if ("widget.Button" in label_view["class"]):
                         if (not label_view["enabled"]):
@@ -1688,6 +1696,12 @@ Respond with the element `idx`, the `action_type` (e.g., 'tap', 'input'), any `i
                     op_view = hashable_views[op]
                     op_type = op_view["class"]
                     op_text = ",".join([tview[0]["text"] for tview in operations[op]])
+
+                    if (not op_text or op_text.strip() == ""):
+                        if "resource_id" in op_view:
+                            op_text = f"``resource_id'': {op_view['resource_id']}"
+                        else:
+                            continue
 
                     lowertext = op_text.lower()
                     # popup dialog
