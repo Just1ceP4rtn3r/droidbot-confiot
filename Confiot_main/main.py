@@ -90,19 +90,26 @@ def run_Configuration_parser(options):
     Agent = Confiot()
     try:
         Agent.device_connect()
-    except:
-        pass
+    except Exception as e:
+        print(f"[WARN]: Failed to connect device: {e}")
 
-    CP = ConfigurationParser(Agent)
-
-    CP.query_LLM_for_configuration_mapping_based_on_page_graph(
-        settings.LLMConfiguration_output
-    )
-    CP.save_configurations(settings.LLMConfiguration_output)
     try:
-        Agent.device.disconnect()
-    except:
-        pass
+        CP = ConfigurationParser(Agent)
+
+        CP.query_LLM_for_configuration_mapping_based_on_page_graph(
+            settings.LLMConfiguration_output
+        )
+        CP.save_configurations(settings.LLMConfiguration_output)
+    except Exception as e:
+        print(f"[ERROR]: Configuration parser failed: {e}")
+        import traceback
+        traceback.print_exc()
+        raise e
+    finally:
+        try:
+            Agent.device.disconnect()
+        except Exception as e:
+            print(f"[WARN]: Failed to disconnect device: {e}")
 
 
 def run_Configuration_testing(options):
@@ -179,6 +186,9 @@ def run_Oracle(options):
     Configurations = oracle.LoadConfigurations(
         settings.Confiot_output + "/LLM_ConfigParsing"
     )
+    if Configurations is None:
+        print(f"[WARNING] ConfigurationsComplete.json not found in {settings.Confiot_output}/LLM_ConfigParsing")
+        return
     last_task = None
     for task in task_ids:
         UIChanges = oracle.LoadUIChanges(last_task, task)
@@ -237,7 +247,7 @@ def run_Appcrawler(task, steplimit=100):
             env_policy=env_manager.POLICY_NONE,
             policy_name=input_manager.POLICY_AutodroidCrawlerPolicy,
             script_path=None,
-            event_interval=1,
+            event_interval=2,
             timeout=1200,
             event_count=steplimit,
             debug_mode=False,
@@ -262,7 +272,7 @@ def run_Appcrawler(task, steplimit=100):
         time.sleep(1)
         event = IntentEvent(droidbot.app.get_start_intent())
         event.send(droidbot.device)
-        time.sleep(3)
+        time.sleep(5)
 
         monitor.log_memory("Before droidbot start")
         droidbot.start()
@@ -525,8 +535,8 @@ def main():
             )
             logger.debug(settings.Confiot_output)
             run_Configuration_parser(options)
-        except:
-            pass
+        except Exception as e:
+            logger.error(f"Error in host configuration parser: {e}")
 
         try:
             settings(
@@ -536,12 +546,22 @@ def main():
             )
             logger.debug(settings.Confiot_output)
             run_Configuration_parser(options)
-        except:
-            pass
+        except Exception as e:
+            logger.error(f"Error in guest configuration parser: {e}")
+        
+        logger.info("Task parser completed. Exiting...")
+        sys.exit(0)
+        
     elif options.testing:
         run_Configuration_testing(options)
+        logger.info("Testing completed. Exiting...")
+        sys.exit(0)
+        
     elif options.oracle:
         run_Oracle(options)
+        logger.info("Oracle completed. Exiting...")
+        sys.exit(0)
+        
     elif options.autodroid_crawler:
         settings(
             options.host_device, options.host_app_path, options.host_droidbot_output
@@ -549,6 +569,8 @@ def main():
         run_Appcrawler(
             f"Explore the this app to identify and capture all unique pages related to device [{options.device_name}]. Always cancel the configuration. Focus exclusively on functionalities and settings. Avoid enter any advertisements and promotional materials content.", options.steplimit
         )
+        logger.info("Autodroid crawler completed. Exiting...")
+        sys.exit(0)
 
 
 if __name__ == "__main__":

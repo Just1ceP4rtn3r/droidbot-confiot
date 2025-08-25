@@ -1,0 +1,11 @@
+{
+  "apps": [
+    {
+      "app_name": "smartthings",
+      "host_device": "17291JECB10652",
+      "guest_device": "17281JECB06200",
+      "apk_file": "com.samsung.android.oneconnect.apk",
+      "device_names": ["Hub", "Button", "Multipurpose Sensor", "Eve Energy Plug"]
+    }
+  ]
+}

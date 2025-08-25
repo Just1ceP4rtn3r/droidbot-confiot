@@ -39,6 +39,20 @@ class settings:
     back_limit = 5
 
     new_states = []
+    
+    ##### Blacklist Keywords ######
+    # Keywords to skip during crawling
+    blacklist_keywords = [
+        'discover', 'service', 'shop', 'store', 'shopping', 'buy', 'cart', 'checkout', 'explore', 'pair',
+        'payment', 'product', 'price', 'sale', 'discount', 'time', 'when', 'at a scheduled period', 'anytime', 'select an event',
+        'marketplace', 'commerce', 'merchant', 'vendor', 'retail', 'goods', 'help', 'support', 'customer service', 'reboot', 'feedback',
+        'catalog', 'inventory', 'wishlist', 'basket', 'billing', 'invoice', 'remove', 'terms of service', 'version', 'privacy policy', 'open source license', 'hostiottest@gmail.com', 'choose an account', 'guestiottest@gmail.com', 'more options',
+        'refund', 'coupon', 'voucher', 'deal', 'offer'
+    ]
+    
+    ##### Priority Keywords ######
+    # Keywords to explore first when found during crawling
+    priority_keywords = []
     ##### BackButton ######
     # backs: 匹配中心点举例backs坐标50 pixel距离的views
     # precise_backs: 精准匹配某些views
@@ -74,6 +88,9 @@ class settings:
     precise_backs = ()
 
     def __init__(self, device, app_path, droid_output) -> None:
+        import json
+        import os
+        
         settings.device_serial = device
         settings.app_path = app_path
         settings.droid_output = droid_output
@@ -94,3 +111,23 @@ class settings:
         settings.Feasibility_comparation_output = (
             settings.Static_comparation_output + "/Feasibility/"
         )
+        
+        # Load blacklist keywords from JSON file if it exists
+        blacklist_file = os.path.join(droid_output, "blacklist_keywords.json")
+        if os.path.exists(blacklist_file):
+            try:
+                with open(blacklist_file, 'r') as f:
+                    data = json.load(f)
+                    settings.blacklist_keywords = data.get('blacklist_keywords', settings.blacklist_keywords)
+            except Exception as e:
+                print(f"Error loading blacklist keywords: {e}")
+                
+        # Load priority keywords from JSON file if it exists
+        priority_file = os.path.join(droid_output, "priority_keywords.json")
+        if os.path.exists(priority_file):
+            try:
+                with open(priority_file, 'r') as f:
+                    data = json.load(f)
+                    settings.priority_keywords = data.get('priority_keywords', [])
+            except Exception as e:
+                print(f"Error loading priority keywords: {e}")

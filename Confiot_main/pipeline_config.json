@@ -1,20 +1,102 @@
 {
   "apps": [
     {
-      "app_name": "sifely_smart_lock",
+      "app_name": "Google_home",
       "host_device": "17291JECB10652",
-      "guest_device": "adb-17281JECB06200-vxom7J._adb-tls-connect._tcp.",
-      "apk_file": "com.sifely.smartlockapp.apk",
-      "crawler_steplimit": 200,
-      "priority_device_keywords": ["door lock"]
+      "guest_device": "17281JECB06200",
+      "apk_file": "com.google.android.apps.chromecast.app",
+      "device_names": [""]
     },
     {
-      "app_name": "Google_home",
-      "host_device": "17291JECB10653",
-      "guest_device": "adb-17281JECB06200-vxom7J._adb-tls-connect._tcp.",
-      "apk_file": "com.google.android.apps.chromecast.app",
-      "crawler_steplimit": 150,
-      "priority_device_keywords": ["Living Room speaker"]
+      "app_name": "sifely_smart_lock",
+      "host_device": "17291JECB10652",
+      "guest_device": "17281JECB06200",
+      "apk_file": "com.sifely.smartlockapp.apk",
+      "device_names": [""]
+    },
+    {
+      "app_name": "netview_camera",
+      "host_device": "17291JECB10652",
+      "guest_device": "17281JECB06200",
+      "apk_file": "com.netviewtech",
+      "device_names": [""]
+    },
+        {
+      "app_name": "tapo_camera",
+      "host_device": "17291JECB10652",
+      "guest_device": "17281JECB06200",
+      "apk_file": "com.tplink.iot.apk",
+      "device_names": [""]
+    },
+    {
+      "app_name": "Philips_Hue",
+      "host_device": "17291JECB10652",
+      "guest_device": "17281JECB06200",
+      "apk_file": "com.philips.lighting.hue2.apk",
+      "device_names": [""]
+    },
+    {
+      "app_name": "switchbot",
+      "host_device": "17291JECB10652",
+      "guest_device": "17281JECB06200",
+      "apk_file": "com.theswitchbot.switchbot.apk",
+      "device_names": [""]
+    },
+    {
+      "app_name": "OREIN_bulb",
+      "host_device": "17291JECB10652",
+      "guest_device": "17281JECB06200",
+      "apk_file": "com.iotsolution.aidot.apk",
+      "device_names": [""]
+    },
+    {
+      "app_name": "Govee_home",
+      "host_device": "17291JECB10652",
+      "guest_device": "17281JECB06200",
+      "apk_file": "com.govee.home.apk",
+      "device_names": "Shared,Smart Plug"
+    },
+    {
+      "app_name": "smartthings",
+      "host_device": "17291JECB10652",
+      "guest_device": "17281JECB06200",
+      "apk_file": "com.samsung.android.oneconnect.apk",
+      "device_names": ["Living room,"]
+    },
+    {
+      "app_name": "VeSync_elektric_plug",
+      "host_device": "17291JECB10652",
+      "guest_device": "17281JECB06200",
+      "apk_file": "com.etekcity.vesyncplatform.apk",
+      "device_names": ["plug"]
+    },
+    {
+      "app_name": "avatar_plug",
+      "host_device": "17291JECB10652",
+      "guest_device": "17281JECB06200",
+      "apk_file": "com.avatarsmart.home.apk",
+      "device_names": ["Smart Socket"]
+    },
+    {
+      "app_name": "fitbit",
+      "host_device": "17291JECB10652",
+      "guest_device": "17281JECB06200",
+      "apk_file": "com.fitbit.FitbitMobile.apk",
+      "device_names": ["Devices and apps"]
+    },
+    {
+      "app_name": "AiDot_OREIN_light",
+      "host_device": "17291JECB10652",
+      "guest_device": "17281JECB06200",
+      "apk_file": "com.iotsolution.aidot.apk",
+      "device_names": ["Smart RGBTW Bulb"]
+    },
+    {
+      "app_name": "smartlife",
+      "host_device": "17291JECB10652",
+      "guest_device": "17281JECB06200",
+      "apk_file": "com.tuya.smartlife.apk",
+      "device_names": ["Smart Power Strip"]
     }
   ]
 }

@@ -2,28 +2,38 @@
     "Criteria": [
         {
             "Id": "1",
+            "Role": "Guests",
+            "Capabilities": "When other users create automation rules (including scenes, routines, schedules, trigger-action or IFTTT), other users should be able to view the new rules on the app page. If no automation-rule-related UI changes in the given pages, it should be considered as a violation."
+        },
+        {
+            "Id": "2",
             "Role": "Administrators, Guests",
             "Capabilities": "Should be able to view the list of all current users"
         },
         {
-            "Id": "2",
+            "Id": "3",
             "Role": "Guests",
             "Capabilities": "Should not changing device password (e.g., door locker, WiFi password)"
         },
         {
-            "Id": "3",
-            "Role": "Guests",
-            "Capabilities": "Should not add/delete the device to/from the device list or smart home"
-        },
-        {
             "Id": "4",
             "Role": "Guests",
-            "Capabilities": "Should not enable/disable remote control of the device"
+            "Capabilities": "Should not delete the device to/from the device list or smart home"
         },
         {
             "Id": "5",
             "Role": "Guests",
+            "Capabilities": "Should not enable/disable remote control of the device"
+        },
+        {
+            "Id": "6",
+            "Role": "Guests",
             "Capabilities": "Should not disable device functionalities (e.g., smart smoke detector, plug, camera)"
+        },
+        {
+            "Id": "7",
+            "Role": "Administrators, Guests",
+            "Capabilities": "Should not access/view the device usage log of security devices including camera image, camera video, smart lock history and User audio clips recorded by the speaker. Do not propose a violation unless the device usage log is a specified security type (e.g., camera and smart lock)"
         }
     ]
 }

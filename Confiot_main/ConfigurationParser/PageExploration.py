@@ -209,18 +209,25 @@ class PageExplorer:
                     self.pages[page_name][state] = state_content_free_signature
                     self.state_in_which_page[state] = page_name
 
-                    screenshot = self.Agent.utg_graph.nodes_dict[state].screenshot
-                    if screenshot and os.path.exists(screenshot):
-                        import shutil
-
-                        shutil.copy(screenshot, settings.Pages + f"/{page_name}.jpg")
+                    try:
+                        screenshot = self.Agent.utg_graph.nodes_dict[state].screenshot
+                        if screenshot and os.path.exists(screenshot):
+                            import shutil
+                            # Ensure the Pages directory exists
+                            os.makedirs(settings.Pages, exist_ok=True)
+                            shutil.copy(screenshot, settings.Pages + f"/{page_name}.jpg")
+                    except Exception as screenshot_error:
+                        print(f"[WARN]: Failed to copy screenshot for {page_name}: {screenshot_error}")
 
                 else:
                     # 将state加入最相似的page
                     self.pages[max_similar_page][state] = state_content_free_signature
                     self.state_in_which_page[state] = max_similar_page
             except Exception as e:
-                pass
+                print(f"[ERROR]: Error processing state {state}: {e}")
+                import traceback
+                traceback.print_exc()
+                continue
 
     # step-2: 解析pages的navigation关系，生成page_navigation_graph
     def extract_navigations(self):
@@ -335,6 +342,11 @@ class PageExplorer:
         last_event_str = ""
         PAGES = list(self.pages.keys())
         is_new_page = False
+        
+        # Add loop detection
+        back_loop_count = {}  # Track consecutive BACK operations on same page
+        max_back_attempts = 3  # Maximum consecutive BACK attempts on same page
+        
         while PAGES:
             worklist = {}
             self.Agent.device_get_UIElement(store_path=outputdir, store_file="tmp.xml")
@@ -406,6 +418,26 @@ class PageExplorer:
                 # input()
                 is_new_page = True
                 if PAGES:
+                    # Check for BACK loop before adding BACK operation
+                    if current_page not in back_loop_count:
+                        back_loop_count[current_page] = 0
+                    
+                    if last_event_str == "BACK" and current_page in back_loop_count:
+                        back_loop_count[current_page] += 1
+                        print(f"[WARN]: BACK loop detected on {current_page}, count: {back_loop_count[current_page]}")
+                        
+                        if back_loop_count[current_page] >= max_back_attempts:
+                            print(f"[ERROR]: Too many BACK attempts on {current_page}, restarting app")
+                            self.Agent.device_stop_app()
+                            self.Agent.device.start_app(self.Agent.app)
+                            time.sleep(5)
+                            last_event_str = "RESTART"
+                            back_loop_count[current_page] = 0
+                            continue
+                    else:
+                        # Reset counter if not consecutive BACK
+                        back_loop_count[current_page] = 0
+                    
                     worklist["Back2LastPage"] = "BACK"
 
             if not is_new_page:
@@ -437,7 +469,23 @@ class PageExplorer:
                 worklist["Back2LastPage"] = "BACK"
 
             print(f"[DBG]: worklist in current page {current_page}: ", worklist.keys())
-            target = list(worklist.keys())[0]
+            
+            # Check if worklist is empty (shouldn't happen, but safety check)
+            if not worklist:
+                print("[ERROR]: Empty worklist, breaking out of loop")
+                break
+            
+            # Prioritize non-Back2LastPage items over Back2LastPage
+            worklist_keys = list(worklist.keys())
+            if len(worklist_keys) > 1 and "Back2LastPage" in worklist_keys:
+                # Remove Back2LastPage from the list temporarily
+                worklist_keys.remove("Back2LastPage")
+                # Use first non-Back2LastPage item
+                target = worklist_keys[0]
+            else:
+                # Either only Back2LastPage or no Back2LastPage, use first item
+                target = worklist_keys[0]
+            
             edges = worklist[target]
 
             view = None
@@ -446,6 +494,12 @@ class PageExplorer:
             if edges == "BACK":
                 event = KeyEvent(name="BACK")
                 event_str = "BACK"
+                
+                # Additional safety check for BACK loops
+                if last_event_str == "BACK" and current_page in back_loop_count:
+                    if back_loop_count[current_page] >= max_back_attempts:
+                        print(f"[ERROR]: Preventing infinite BACK loop on {current_page}")
+                        break
             else:
                 view = edges[0].view
                 event_str = edges[0].event_str
@@ -467,6 +521,9 @@ class PageExplorer:
             self.device_send_event(event, event_str, wait_time)
             if edges != "BACK":
                 current_page = target
+                # Reset BACK loop counter when successfully navigating to a different page
+                if current_page in back_loop_count:
+                    back_loop_count[current_page] = 0
 
         for page in cannot_reach_pages:
             if not os.path.exists(

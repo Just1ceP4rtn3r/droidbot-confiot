@@ -74,11 +74,16 @@ class ConfigurationParser:
                 page_xmls[page] = xml_path
 
         for page in page_xmls:
-            operations, plain_labels, hashable_views = OperationExtractor(
-                page_xml_file=page_xmls[page]
-            ).extract_operations()
-            self.operations[page] = (operations, hashable_views)
-            self.plain_labels[page] = plain_labels
+            try:
+                operations, plain_labels, hashable_views = OperationExtractor(
+                    page_xml_file=page_xmls[page]
+                ).extract_operations()
+                self.operations[page] = (operations, hashable_views)
+                self.plain_labels[page] = plain_labels
+            except Exception as e:
+                print(f"[ERROR]: Failed to extract operations for page {page}: {e}")
+                self.operations[page] = ({}, {})
+                self.plain_labels[page] = []
 
     def pagecontext_extraction(self):
         replay_paths = {}
@@ -150,10 +155,14 @@ class ConfigurationParser:
             os.makedirs(save_dir)
 
         for page in self.operations:
-            overview = {"PAGE": page, "CONTEXT": {}, "OPERATIONS": {}, "LABELS": {}}
+            try:
+                overview = {"PAGE": page, "CONTEXT": {}, "OPERATIONS": {}, "LABELS": {}}
 
-            # save labels
-            overview["LABELS"] = {"label_views": self.plain_labels[page]}
+                # save labels
+                overview["LABELS"] = {"label_views": self.plain_labels.get(page, [])}
+            except Exception as e:
+                print(f"[ERROR]: Error processing page {page}: {e}")
+                continue
 
             # save operations
             operations_str = []
@@ -262,6 +271,7 @@ class ConfigurationParser:
         for page in page_worklist:
             Configurations = []
             if page not in self.operations:
+                print(f"[WARN]: Page {page} not found in operations, skipping...")
                 continue
 
             children = []
@@ -344,9 +354,22 @@ class ConfigurationParser:
 
             for f in features:
                 for op in f["Sequence"]:
-                    op["Operation"]["Operation"] = self.PAGEOPERATIONS[op["Page ID"]][
-                        op["Operation"]["ID"]
-                    ]
+                    page_id = op["Page ID"]
+                    operation_id = op["Operation"]["ID"]
+                    
+                    # Skip invalid page IDs
+                    if page_id == -1 or page_id not in self.PAGEOPERATIONS:
+                        print(f"[WARN]: Skipping invalid page ID {page_id} in continuation features")
+                        op["Operation"]["Operation"] = f"<Invalid Page ID: {page_id}>"
+                        continue
+                    
+                    # Skip invalid operation IDs
+                    if operation_id not in self.PAGEOPERATIONS[page_id]:
+                        print(f"[WARN]: Skipping invalid operation ID {operation_id} for page {page_id}")
+                        op["Operation"]["Operation"] = f"<Invalid Operation ID: {operation_id}>"
+                        continue
+                    
+                    op["Operation"]["Operation"] = self.PAGEOPERATIONS[page_id][operation_id]
 
             self.PAGEINFO[page]["Summarized Features"] = features
 
@@ -501,6 +524,7 @@ class ConfigurationParser:
 
         for page in page_worklist:
             if page not in self.operations:
+                print(f"[WARN]: Page {page} not found in operations, skipping...")
                 continue
 
             children = []
@@ -516,19 +540,34 @@ class ConfigurationParser:
             else:
                 children_info = {}
                 for child_page in children:
-                    if not os.path.exists(outputdir + f"/{child_page}"):
+                    child_page_info_file = outputdir + f"/{child_page}/PageInfo.txt"
+                    if not os.path.exists(child_page_info_file):
+                        print(f"[WARN]: PageInfo.txt not found for child page {child_page}, skipping...")
                         continue
 
-                    with open(outputdir + f"/{child_page}/PageInfo.txt", "r") as f:
-                        childpage_info = f.read()
+                    try:
+                        with open(child_page_info_file, "r") as f:
+                            childpage_info = f.read()
 
-                    children_info[child_page] = json.loads(childpage_info)
-                    children_info[child_page]["ChildPage ID"] = children_info[
-                        child_page
-                    ].pop("Page ID")
+                        children_info[child_page] = json.loads(childpage_info)
+                        children_info[child_page]["ChildPage ID"] = children_info[
+                            child_page
+                        ].pop("Page ID")
+                    except Exception as e:
+                        print(f"[ERROR]: Failed to read PageInfo.txt for child page {child_page}: {e}")
+                        continue
 
-                with open(outputdir + f"/{page}/PageInfo.txt", "r") as f:
-                    page_info = f.read()
+                page_info_file = outputdir + f"/{page}/PageInfo.txt"
+                if not os.path.exists(page_info_file):
+                    print(f"[WARN]: PageInfo.txt not found for page {page}, skipping continuation features...")
+                    continue
+
+                try:
+                    with open(page_info_file, "r") as f:
+                        page_info = f.read()
+                except Exception as e:
+                    print(f"[ERROR]: Failed to read PageInfo.txt for page {page}: {e}")
+                    continue
 
                 system_prompt = FatherQuery_template
                 user_prompt = (
@@ -550,9 +589,22 @@ class ConfigurationParser:
 
             for f in features:
                 for op in f["Sequence"]:
-                    op["Operation"]["Operation"] = self.PAGEOPERATIONS[op["Page ID"]][
-                        op["Operation"]["ID"]
-                    ]
+                    page_id = op["Page ID"]
+                    operation_id = op["Operation"]["ID"]
+                    
+                    # Skip invalid page IDs
+                    if page_id == -1 or page_id not in self.PAGEOPERATIONS:
+                        print(f"[WARN]: Skipping invalid page ID {page_id} in continuation features")
+                        op["Operation"]["Operation"] = f"<Invalid Page ID: {page_id}>"
+                        continue
+                    
+                    # Skip invalid operation IDs
+                    if operation_id not in self.PAGEOPERATIONS[page_id]:
+                        print(f"[WARN]: Skipping invalid operation ID {operation_id} for page {page_id}")
+                        op["Operation"]["Operation"] = f"<Invalid Operation ID: {operation_id}>"
+                        continue
+                    
+                    op["Operation"]["Operation"] = self.PAGEOPERATIONS[page_id][operation_id]
 
             with open(outputdir + f"/{page}/Raw_bottom_up.txt", "w") as f:
                 f.write("################ Page: " + page + "################\n")
@@ -607,76 +659,109 @@ class ConfigurationParser:
                     )
 
         from pydantic import BaseModel
-        from openai import OpenAI
-
-        class response(BaseModel):
-            feature_IDs: list[int]
-
-        client = OpenAI()
-        completion = client.beta.chat.completions.parse(
-            model="gpt-4o",
-            messages=[
-                {
-                    "role": "system",
-                    "content": "Below are some JSON-formatted features (user functions/tasks) for an IoT app. You have following requirements: (1) Please deduplicate the tasks in the same page based on their semantics. If two tasks perform the same operation (or configure the same resource) and only differ in their configuration options (e.g., pair with/add device_a'' and add device_b'' is the same task), keep only one and try to retain the one with richer and more complete details like options (e.g., keep 'configure the light state to off' instead of 'light management'). \n **Output Format** \n Please provide only the final filtered Feature IDs.",
-                },
-                # {"role": "system", "content": "Below are some JSON-formatted testing tasks for an IoT app. You have following requirements: (1) Please deduplicate the tasks in the same page based on their semantics. If two tasks perform the same operation (or configure the same resource) and only differ in their configuration options (e.g., pair with/add device_a'' and add device_b'' is the same task), keep only one and try to retain the one with richer and more complete details like options (e.g., keep 'configure the light state to off' instead of 'light management'). (2) Prioritize tasks with more specific details or options by ranking them first in the response. (3) Then, remove tasks that only involve read semantic (not write to any resource): ['view', 'access', 'retrieve', 'obtain', 'read', 'inspect']."},
-                {
-                    "role": "user",
-                    "content": json.dumps(config_json),
-                },
-            ],
-            response_format=response,
-        )
-
-        event = completion.choices[0].message.parsed
-
-        filtered_configurations = [config_json[id] for id in event.feature_IDs]
-
-        for config in filtered_configurations:
-            try:
-                config["Page ID"] = config["Related operations"][0]["Page ID"]
-            except:
-                pass
-
-        with open(LLMResult_dir + "/ConfigurationsComplete.json", "w") as f:
-            _str = json.dumps(filtered_configurations, indent=4)
+        
+        # First, save a backup of all configurations without filtering
+        print(f"[INFO]: Saving backup configurations to {LLMResult_dir}/ConfigurationsRaw.json")
+        with open(LLMResult_dir + "/ConfigurationsRaw.json", "w") as f:
+            _str = json.dumps(config_json, indent=4)
             _str = _str.replace("Feature ID", "Id").replace("Feature Content", "Tasks")
             f.write(_str)
 
-        client = OpenAI()
-        completion = client.beta.chat.completions.parse(
-            model="gpt-4o",
-            messages=[
-                {
-                    "role": "system",
-                    "content": "Below are some JSON-formatted features (user functions/tasks) for an IoT app. You have following requirements: (1) Please deduplicate the tasks in the same page based on their semantics. If two tasks perform the same operation (or configure the same resource) and only differ in their configuration options (e.g., pair with/add device_a'' and add device_b'' is the same task), keep only one and try to retain the one with richer and more complete details like options (e.g., keep 'configure the light state to off' instead of 'light management'). (2) Then, remove tasks that only involve read semantic (not write to any resource): ['view', 'access', 'retrieve', 'obtain', 'read', 'inspect']. \n **Output Format** \n Please provide only the final filtered Feature IDs.",
-                },
-                # {"role": "system", "content": "Below are some JSON-formatted testing tasks for an IoT app. You have following requirements: (1) Please deduplicate the tasks in the same page based on their semantics. If two tasks perform the same operation (or configure the same resource) and only differ in their configuration options (e.g., pair with/add device_a'' and add device_b'' is the same task), keep only one and try to retain the one with richer and more complete details like options (e.g., keep 'configure the light state to off' instead of 'light management'). (2) Prioritize tasks with more specific details or options by ranking them first in the response. (3) Then, remove tasks that only involve read semantic (not write to any resource): ['view', 'access', 'retrieve', 'obtain', 'read', 'inspect']."},
-                {
-                    "role": "user",
-                    "content": json.dumps(config_json),
-                },
-            ],
-            response_format=response,
-        )
+        try:
+            from openai import OpenAI
 
-        event = completion.choices[0].message.parsed
+            class response(BaseModel):
+                feature_IDs: list[int]
 
-        filtered_configurations = [config_json[id] for id in event.feature_IDs]
+            print("[INFO]: Attempting to filter configurations using OpenAI API...")
+            client = OpenAI()
+            completion = client.beta.chat.completions.parse(
+                model="gpt-4o",
+                messages=[
+                    {
+                        "role": "system",
+                        "content": "Below are some JSON-formatted features (user functions/tasks) for an IoT app. You have following requirements: (1) Please deduplicate the tasks in the same page based on their semantics. If two tasks perform the same operation (or configure the same resource) and only differ in their configuration options (e.g., pair with/add device_a'' and add device_b'' is the same task), keep only one and try to retain the one with richer and more complete details like options (e.g., keep 'configure the light state to off' instead of 'light management'). \n **Output Format** \n Please provide only the final filtered Feature IDs.",
+                    },
+                    {
+                        "role": "user",
+                        "content": json.dumps(config_json),
+                    },
+                ],
+                response_format=response,
+            )
 
-        for config in filtered_configurations:
-            try:
-                config["Page ID"] = config["Related operations"][0]["Page ID"]
-            except:
-                pass
+            event = completion.choices[0].message.parsed
+            filtered_configurations = [config_json[id] for id in event.feature_IDs]
 
-        # Configurations = sorted(Configurations, key=lambda x: len(x["Tasks"]), reverse=True)
+            for config in filtered_configurations:
+                try:
+                    config["Page ID"] = config["Related operations"][0]["Page ID"]
+                except:
+                    pass
 
-        with open(LLMResult_dir + "/ConfigurationsSummary.json", "w") as f:
-            _str = json.dumps(filtered_configurations, indent=4)
-            _str = _str.replace("Feature ID", "Id").replace("Feature Content", "Tasks")
-            f.write(_str)
+            print(f"[INFO]: Successfully filtered {len(config_json)} configurations to {len(filtered_configurations)}")
+            
+            with open(LLMResult_dir + "/ConfigurationsComplete.json", "w") as f:
+                _str = json.dumps(filtered_configurations, indent=4)
+                _str = _str.replace("Feature ID", "Id").replace("Feature Content", "Tasks")
+                f.write(_str)
+
+            # Second filtering for summary
+            print("[INFO]: Applying second filter for summary...")
+            completion = client.beta.chat.completions.parse(
+                model="gpt-4o",
+                messages=[
+                    {
+                        "role": "system",
+                        "content": "Below are some JSON-formatted features (user functions/tasks) for an IoT app. You have following requirements: (1) Please deduplicate the tasks in the same page based on their semantics. If two tasks perform the same operation (or configure the same resource) and only differ in their configuration options (e.g., pair with/add device_a'' and add device_b'' is the same task), keep only one and try to retain the one with richer and more complete details like options (e.g., keep 'configure the light state to off' instead of 'light management'). (2) Then, remove tasks that only involve read semantic (not write to any resource): ['view', 'access', 'retrieve', 'obtain', 'read', 'inspect']. \n **Output Format** \n Please provide only the final filtered Feature IDs.",
+                    },
+                    {
+                        "role": "user",
+                        "content": json.dumps(config_json),
+                    },
+                ],
+                response_format=response,
+            )
+
+            event = completion.choices[0].message.parsed
+            final_filtered_configurations = [config_json[id] for id in event.feature_IDs]
+
+            for config in final_filtered_configurations:
+                try:
+                    config["Page ID"] = config["Related operations"][0]["Page ID"]
+                except:
+                    pass
+
+            print(f"[INFO]: Final summary has {len(final_filtered_configurations)} configurations")
+
+            with open(LLMResult_dir + "/ConfigurationsSummary.json", "w") as f:
+                _str = json.dumps(final_filtered_configurations, indent=4)
+                _str = _str.replace("Feature ID", "Id").replace("Feature Content", "Tasks")
+                f.write(_str)
+
+        except Exception as e:
+            print(f"[ERROR]: OpenAI API filtering failed: {e}")
+            print("[INFO]: Using fallback: saving all configurations without filtering")
+            
+            # Fallback: save all configurations without filtering
+            for config in config_json:
+                try:
+                    config["Page ID"] = config["Related operations"][0]["Page ID"]
+                except:
+                    pass
+
+            # Save as both Complete and Summary (same content as fallback)
+            with open(LLMResult_dir + "/ConfigurationsComplete.json", "w") as f:
+                _str = json.dumps(config_json, indent=4)
+                _str = _str.replace("Feature ID", "Id").replace("Feature Content", "Tasks")
+                f.write(_str)
+
+            with open(LLMResult_dir + "/ConfigurationsSummary.json", "w") as f:
+                _str = json.dumps(config_json, indent=4)
+                _str = _str.replace("Feature ID", "Id").replace("Feature Content", "Tasks")
+                f.write(_str)
+            
+            print(f"[INFO]: Fallback completed. Saved {len(config_json)} configurations to both files.")
 
     # decrpted
     # def query_LLM_for_configuration_mapping(self, outputdir):

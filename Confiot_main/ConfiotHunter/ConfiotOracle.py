@@ -905,10 +905,16 @@ class ConfigurationConfiotOracle(ConfiotOracle):
             candidate_violations = []
             final_violations = []
             for a in LLMresponse_verification_answer.Answers:
+                # Check if Question_ID is within bounds
+                if a.Question_ID < 0 or a.Question_ID >= len(verification_questions):
+                    print(f"Warning: Question_ID {a.Question_ID} is out of bounds for verification_questions (length: {len(verification_questions)})")
+                    continue
+                
+                question_text = verification_questions[a.Question_ID]["question"]
                 verification_answers.append(
                     {
                         "Question_ID": a.Question_ID,
-                        "Question": verification_questions[a.Question_ID],
+                        "Question": question_text,
                         "Answer_Yes_or_No": a.Answer_Yes_or_No,
                         "Reasoning_steps": a.Reasoning_steps,
                         "Related_criterion": a.Related_criterion,
@@ -918,7 +924,7 @@ class ConfigurationConfiotOracle(ConfiotOracle):
                     candidate_violations.append(
                         {
                             "Question_ID": a.Question_ID,
-                            "Question": verification_questions[a.Question_ID],
+                            "Question": question_text,
                             "Answer_Yes_or_No": a.Answer_Yes_or_No,
                             "Reasoning_steps": a.Reasoning_steps,
                             "Related_criterion": a.Related_criterion,
@@ -935,6 +941,11 @@ class ConfigurationConfiotOracle(ConfiotOracle):
                 )
 
             for v in candidate_violations:
+                # Check if Question_ID is within bounds
+                if v["Question_ID"] < 0 or v["Question_ID"] >= len(config_strs):
+                    print(f"Warning: Question_ID {v['Question_ID']} is out of bounds for config_strs (length: {len(config_strs)})")
+                    continue
+                    
                 config = config_strs[v["Question_ID"]]
                 question = f"Is it **possible** for the role `[{Role}]`'s capability `[{config}]` to exist **without** violating criterion `[{v['Related_criterion']}]`?"
                 counterexample_questions.append(

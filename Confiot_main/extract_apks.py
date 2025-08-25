@@ -18,6 +18,9 @@ class APKExtractor:
     def run_adb_command(self, cmd):
         """Run an ADB command and return output"""
         try:
+            # Add device ID to command if not already present
+            if "-s " not in cmd:
+                cmd = cmd.replace("adb ", "adb -s 17291JECB10652 ")
             result = subprocess.run(cmd, shell=True, capture_output=True, text=True, check=True)
             return result.stdout.strip()
         except subprocess.CalledProcessError as e:
@@ -202,9 +205,9 @@ def main():
     extractor = APKExtractor(args.output_dir)
     
     # Check ADB connection
-    devices = subprocess.run(['adb', 'devices'], capture_output=True, text=True).stdout
-    if 'device\n' not in devices:
-        print("Error: No Android device connected")
+    devices = subprocess.run(['adb', '-s', '17291JECB10652', 'devices'], capture_output=True, text=True).stdout
+    if '17291JECB10652' not in devices or 'device' not in devices:
+        print("Error: Device 17291JECB10652 not connected")
         print("Run 'adb devices' to check connection")
         return
     

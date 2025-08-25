@@ -1,18 +1,188 @@
 {
   "apps": [
     {
+      "app_name": "Google_home",
+      "host_device": "17291JECB10652",
+      "guest_device": "adb-17281JECB06200-vxom7J._adb-tls-connect._tcp.",
+      "apk_file": "com.google.android.apps.chromecast.app",
+      "crawler_steplimit": 200
+    },
+    {
       "app_name": "sifely_smart_lock",
       "host_device": "17291JECB10652",
       "guest_device": "adb-17281JECB06200-vxom7J._adb-tls-connect._tcp.",
-      "apk_file": "com.sifely.smartlockapp.apk",
-      "crawler_steplimit": 150
+      "apk_file": "com.sifely.smartlockapp.apk"
+    },
+        {
+      "app_name": "Amazon_echo",
+      "host_device": "17291JECB10652",
+      "guest_device": "adb-17281JECB06200-vxom7J._adb-tls-connect._tcp.",
+      "apk_file": "com.amazon.dee.app.apk"
     },
     {
-      "app_name": "Google_home",
-      "host_device": "17291JECB10653",
+      "app_name": "netview_camera",
+      "host_device": "17291JECB10652",
       "guest_device": "adb-17281JECB06200-vxom7J._adb-tls-connect._tcp.",
-      "apk_file": "com.google.android.apps.chromecast.app",
-      "crawler_steplimit": 150
+      "apk_file": "com.netviewtech"
+    },
+        {
+      "app_name": "tapo_camera",
+      "host_device": "17291JECB10652",
+      "guest_device": "adb-17281JECB06200-vxom7J._adb-tls-connect._tcp.",
+      "apk_file": "com.tplink.iot.apk"
+    },
+    {
+      "app_name": "Philips_Hue",
+      "host_device": "17291JECB10652",
+      "guest_device": "adb-17281JECB06200-vxom7J._adb-tls-connect._tcp.",
+      "apk_file": "com.philips.lighting.hue2.apk"
+    },
+    {
+      "app_name": "Govee_home",
+      "host_device": "17291JECB10652",
+      "guest_device": "adb-17281JECB06200-vxom7J._adb-tls-connect._tcp.",
+      "apk_file": "com.govee.home.apk"
+    },
+    {
+      "app_name": "OREIN_bulb",
+      "host_device": "17291JECB10652",
+      "guest_device": "adb-17281JECB06200-vxom7J._adb-tls-connect._tcp.",
+      "apk_file": "com.iotsolution.aidot.apk"
+    },
+    {
+      "app_name": "VeSync_elektric_plug",
+      "host_device": "17291JECB10652",
+      "guest_device": "adb-17281JECB06200-vxom7J._adb-tls-connect._tcp.",
+      "apk_file": "com.etekcity.vesyncplatform.apk"
+    },
+    {
+      "app_name": "smartthings",
+      "host_device": "17291JECB10652",
+      "guest_device": "adb-17281JECB06200-vxom7J._adb-tls-connect._tcp.",
+      "apk_file": "com.samsung.android.oneconnect.apk"
+    },
+    {
+      "app_name": "smartlife",
+      "host_device": "17291JECB10652",
+      "guest_device": "adb-17281JECB06200-vxom7J._adb-tls-connect._tcp.",
+      "apk_file": "com.tuya.smartlife.apk"
+    },
+    {
+      "app_name": "AiDot_OREIN_light",
+      "host_device": "17291JECB10652",
+      "guest_device": "adb-17281JECB06200-vxom7J._adb-tls-connect._tcp.",
+      "apk_file": "com.iotsolution.aidot.apk"
+    },
+    {
+      "app_name": "fitbit",
+      "host_device": "17291JECB10652",
+      "guest_device": "adb-17281JECB06200-vxom7J._adb-tls-connect._tcp.",
+      "apk_file": "com.fitbit.FitbitMobile.apk"
+    },
+    {
+      "app_name": "switchbot",
+      "host_device": "17291JECB10652",
+      "guest_device": "adb-17281JECB06200-vxom7J._adb-tls-connect._tcp.",
+      "apk_file": "com.theswitchbot.switchbot.apk"
+    },
+    {
+      "app_name": "OREIN_bulb",
+      "host_device": "17291JECB10652",
+      "guest_device": "17281JECB06200",
+      "apk_file": "com.iotsolution.aidot.apk"
+    },
+    {
+      "app_name": "smartlife",
+      "host_device": "17291JECB10652",
+      "guest_device": "17281JECB06200",
+      "apk_file": "com.tuya.smartlife.apk"
+    },
+    {
+      "app_name": "AiDot_OREIN_light",
+      "host_device": "17291JECB10652",
+      "guest_device": "17281JECB06200",
+      "apk_file": "com.iotsolution.aidot.apk"
+    },
+    {
+      "app_name": "fitbit",
+      "host_device": "17291JECB10652",
+      "guest_device": "17281JECB06200",
+      "apk_file": "com.fitbit.FitbitMobile.apk"
+    },
+    {
+      "app_name": "avatar_plug",
+      "host_device": "17291JECB10652",
+      "guest_device": "17281JECB06200",
+      "apk_file": "com.avatarsmart.home.apk"
+    },
+    {
+      "app_name": "VeSync_elektric_plug",
+      "host_device": "17291JECB10652",
+      "guest_device": "17281JECB06200",
+      "apk_file": "com.etekcity.vesyncplatform.apk"
+    },
+    {
+      "app_name": "Govee_home",
+      "host_device": "17291JECB10652",
+      "guest_device": "17281JECB06200",
+      "apk_file": "com.govee.home.apk",
+      "device_names": "Shared,Smart Plug"
+    },
+    {
+      "app_name": "smartthings",
+      "host_device": "17291JECB10652",
+      "guest_device": "17281JECB06200",
+      "apk_file": "com.samsung.android.oneconnect.apk",
+      "device_names": ["Living room,"]
+    },
+    {
+      "app_name": "smartlife",
+      "host_device": "17291JECB10652",
+      "guest_device": "17281JECB06200",
+      "apk_file": "com.tuya.smartlife.apk",
+      "device_names": ["Living room,"]
+    },
+    {
+      "app_name": "AiDot_OREIN_light",
+      "host_device": "17291JECB10652",
+      "guest_device": "17281JECB06200",
+      "apk_file": "com.iotsolution.aidot.apk",
+      "device_names": ["Living room,"]
+    },
+    {
+      "app_name": "VeSync_elektric_plug",
+      "host_device": "17291JECB10652",
+      "guest_device": "17281JECB06200",
+      "apk_file": "com.etekcity.vesyncplatform.apk",
+      "device_names": ["plug"]
+    },
+    {
+      "app_name": "avatar_plug",
+      "host_device": "17291JECB10652",
+      "guest_device": "17281JECB06200",
+      "apk_file": "com.avatarsmart.home.apk",
+      "device_names": ["Smart Socket"]
+    },
+    {
+      "app_name": "fitbit",
+      "host_device": "17291JECB10652",
+      "guest_device": "17281JECB06200",
+      "apk_file": "com.fitbit.FitbitMobile.apk",
+      "device_names": ["Devices and apps"]
+    },
+    {
+      "app_name": "AiDot_OREIN_light",
+      "host_device": "17291JECB10652",
+      "guest_device": "17281JECB06200",
+      "apk_file": "com.iotsolution.aidot.apk",
+      "device_names": ["Smart RGBTW Bulb"]
+    },
+    {
+      "app_name": "smartlife",
+      "host_device": "17291JECB10652",
+      "guest_device": "17281JECB06200",
+      "apk_file": "com.tuya.smartlife.apk",
+      "device_names": ["Smart Power Strip"]
     }
   ]
 }
