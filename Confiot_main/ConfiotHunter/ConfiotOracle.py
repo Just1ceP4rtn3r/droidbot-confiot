@@ -293,7 +293,7 @@ class ConfiotOracle:
             client = OpenAI()
             # client.api_key = api_key
             completion = client.beta.chat.completions.parse(
-                model="gpt-4o",
+                model="gpt-4.1-mini",
                 messages=[
                     {
                         "role": "system",
@@ -334,7 +334,7 @@ class ConfiotOracle:
         }
 
         payload = {
-            "model": "gpt-4o",
+            "model": "gpt-4.1-mini",
             "messages": [
                 {
                     "role": "system",
@@ -369,7 +369,7 @@ class ConfiotOracle:
         }
 
         payload = {
-            "model": "gpt-4o",
+            "model": "gpt-4.1-mini",
             "messages": [
                 {
                     "role": "system",
@@ -414,7 +414,7 @@ class ConfiotOracle:
 
         client = OpenAI()
         completion = client.beta.chat.completions.parse(
-            model="gpt-4o",
+            model="gpt-4.1-mini",
             messages=[
                 {
                     "role": "system",
@@ -757,9 +757,9 @@ class ConfigurationConfiotOracle(ConfiotOracle):
             ).identify_change_type()
 
         _tmp = UIChanges.copy()
-        for page in _tmp:
-            if UIChanges[page] == []:
-                UIChanges.pop(page)
+        # for page in _tmp:
+        #     if UIChanges[page] == []:
+        #         UIChanges.pop(page)
         return UIChanges
 
     # [TODO]: 添加对于LLM configuration种Dependency的解析
@@ -797,7 +797,7 @@ class ConfigurationConfiotOracle(ConfiotOracle):
     # Configurations: {"Page-0": {"Task Content": [op_id, ...]}}
     # UIChanges: {"Page-0": [ConfiotHunter.SpecificUIChange, ...]}
     def IdentifyConfiot(
-        self, TestingPhase, Criteria, Configurations, UIChanges, Role, outputdir
+        self, TestingPhase, Criteria, Configurations, UIChanges, Role, outputdir, task_content="", device_name=""
     ):
         if not os.path.exists(outputdir):
             os.makedirs(outputdir)
@@ -805,11 +805,15 @@ class ConfigurationConfiotOracle(ConfiotOracle):
         AfterDelegation_system_ask_questions_template = ""
         AfterDelegation_user_template = ""
         DuringUsage_system_template = ""
-
         DuringUsage_user_template = ""
         AfterRevocation_system_template = ""
         AfterRevocation_user_template = ""
         PageUIChange_template = ""
+
+        Conflicts_system_verification_template = ""
+        Conflicts_system_counterexample_template = ""
+        Conflicts_user_template = ""
+
         BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
         with open(
@@ -844,10 +848,125 @@ class ConfigurationConfiotOracle(ConfiotOracle):
         ) as f:
             PageUIChange_template = f.read()
 
+
+        with open(
+            BASE_DIR + "/../prompt/IdentifyCapabilityConfiot/Conflicts_system_verification.txt"
+        ) as f:
+            Conflicts_system_verification_template = f.read()
+        with open(
+            BASE_DIR + "/../prompt/IdentifyCapabilityConfiot/Conflicts_system_counterexample.txt"
+        ) as f:
+            Conflicts_system_counterexample_template = f.read()
+        with open(
+            BASE_DIR + "/../prompt/IdentifyCapabilityConfiot/Conflicts_user.txt"
+        ) as f:
+            Conflicts_user_template = f.read()
+
         system_prompt = ""
         user_prompt = ""
+        if TestingPhase == Phase.AfterDelegation and "Role-A" in Configurations and "Role-a" in Configurations:
+            config_strs_Role_A = []
+            Configurations_Role_A = Configurations["Role-A"]
+
+            config_strs_Role_a = []
+            Configurations_Role_a = Configurations["Role-a"]
+            cid = 0
+            for page in Configurations_Role_A:
+                for c in Configurations_Role_A[page]:
+                    if c != "" and c != "None":
+                        config_strs_Role_A.append(
+                            f"({cid}) "
+                            + c
+                            + "    Details: "
+                            + str(Configurations_Role_A[page][c])
+                        )
+                        cid += 1
+            cid = 0
+            for page in Configurations_Role_a:
+                for c in Configurations_Role_a[page]:
+                    if c != "" and c != "None":
+                        config_strs_Role_a.append(
+                            f"({cid}) "
+                            + c
+                            + "    Details: "
+                            + str(Configurations_Role_a[page][c])
+                        )
+                        cid += 1
+            user_prompt = Conflicts_user_template.replace(
+                "{{HOSTCONFIG}}", "\n".join(config_strs_Role_A)
+            )
+            user_prompt = user_prompt.replace(
+                "{{GUESTCONFIG}}", "\n".join(config_strs_Role_a)
+            )
+
+            user_prompt = f"In `[device]` {device_name}\n\n" + user_prompt
+
+            # ask verification questions
+            system_prompt = Conflicts_system_verification_template
+
+            LLMresponse_verification_answer = (
+                query_Conflicts_verification(
+                    system_prompt=system_prompt,
+                    user_prompt=user_prompt,
+                    TestingPhase=TestingPhase,
+                )
+            )
+
+            candidate_violations = []
+            final_violations = []
+
+            for a in LLMresponse_verification_answer.Answers:
+                candidate_violations.append(
+                    {
+                        "Administrator_Conflicting_Capability": a.Administrator_Conflicting_Capability,
+                        "Guest_Conflicting_Capability": a.Guest_Conflicting_Capability,
+                        "Shared_Resource": a.Shared_Resource,
+                        "Why_Conflicting": a.Why_Conflicting,
+                    }
+                )
+
+
+            with open(outputdir + "/VerificationQuestions.txt", "w") as f:
+                f.write(
+                    system_prompt
+                    + user_prompt
+                    + "\n\n\n"
+                    + str(candidate_violations)
+                    + "\n"
+                )
+
+
+            system_prompt = Conflicts_system_counterexample_template
+            user_prompt = f"In `[device]` {device_name}\n\n" + str(candidate_violations)
+
+            LLMresponse_counterexample_answer = (
+                query_Conflicts_counterexample(
+                    system_prompt=system_prompt,
+                    user_prompt=user_prompt,
+                    TestingPhase=TestingPhase,
+                )
+            )
+
+            for a in LLMresponse_counterexample_answer.Answers:
+                final_violations.append(
+                    {
+                        "has_counterexample": a.has_counterexample,
+                        "Administrator_Conflicting_Capability": a.Administrator_Conflicting_Capability,
+                        "Guest_Conflicting_Capability": a.Guest_Conflicting_Capability,
+                        "Counterexample": a.Counterexample
+                    }
+                )
+
+            with open(outputdir + "/CounterexampleQuestions.txt", "w") as f:
+                f.write(
+                    system_prompt
+                    + str(candidate_violations)
+                    + "\n\n\n"
+                    + str(final_violations)
+                    + "\n"
+                )
         # After Delegation
-        if TestingPhase == Phase.AfterDelegation and UIChanges == -1:
+        elif TestingPhase == Phase.AfterDelegation and UIChanges == -1:
             config_strs = []
             cid = 0
             for page in Configurations:
@@ -863,7 +982,7 @@ class ConfigurationConfiotOracle(ConfiotOracle):
             user_prompt = AfterDelegation_user_template.replace(
                 "{{CONFIG}}", "\n".join(config_strs)
             )
-            user_prompt = user_prompt.replace("{{ROLE}}", Role)
+            user_prompt = user_prompt.replace("{{ROLE}}", Role + f", In `[device]` {device_name}")
             user_prompt = user_prompt.replace("{{CRITERIA}}", str(Criteria))
 
             verification_questions = []
@@ -962,12 +1081,12 @@ class ConfigurationConfiotOracle(ConfiotOracle):
                 + """
             * **Counterexample Question (Argue AGAINST Violation):**
                 * **Question Format:** "Is it **possible** for the role `[User Role]`'s capability `[capability text]` to exist **without** violating criterion `[criterion text]`?"
-                * **To answer, you must:** Reviewing the [Reasoning Process] for this Violation identification, especially considering uncertain language in the process (e.g., "could/maybe/..."). Actively search for alternative interpretations. Could the terms be ambiguous (e.g., "Device settings" is vague, could not consist over-priviledge configuration. Or privacy data "xxx log" is belong to `[User Role]` but not other users)? Could the capability's scope be narrower than the criterion's? Is there a plausible scenario where the two do not conflict?
+                * **To answer, you must:** Reviewing the `[Violation_Reasoning_Process]` for this Violation identification and the details in `[capability]`, especially considering uncertain language (e.g., "could/maybe/...") and missing steps in the [capability] description for task completion (i.e., if these steps are specific enough to guarantee the capability can be fully achieved? if not, there could be a counterexample). Actively search for alternative interpretations. Could the terms be ambiguous (e.g., "Device settings" is vague, could not consist over-priviledge configuration? Is there a plausible scenario where the two do not conflict? Evaluate the plausibility of your proposed counterexample based on the clarity of the original `[capability]` details: vaguer details imply a more plausible counterexample. Any counterexample with an assessed plausibility of less than 50% should be disregarded.
 
             * **Output format**
                 Question_ID: int # which question
                 Answer_Yes_or_No: bool # - Yes/True: Indicates that a plausible **counterexample** or alternative interpretation was found, allowing the capability to exist **without** violating the criterion.
-                Reasoning_steps: list[str] # if Answer_Yes_or_No=True: what counterexample you have found. if Answer_Yes_or_No=False: why you did not find any plausible counterexample.
+                Reasoning_steps: list[str] # if Answer_Yes_or_No=True: what counterexample you have found. if Answer_Yes_or_No=False: why you did not find any plausible counterexample, and provide the Possibility value (xx%) of this counterexample.
                 Related_criterion: str
             """
                 + str(counterexample_questions)
@@ -1013,16 +1132,16 @@ class ConfigurationConfiotOracle(ConfiotOracle):
                 json.dump(final_violations, f, indent=4, ensure_ascii=False)
 
         elif TestingPhase == Phase.DuringUsage:
-            if len(UIChanges) == 0:
-                print("[DBG]: Skip because no UI changes")
-                return
+            # if len(UIChanges) == 0:
+            #     print("[DBG]: Skip because no UI changes")
+            #     return
             system_prompt = DuringUsage_system_template
-            user_prompt = DuringUsage_user_template.replace("{{ROLE}}", Role)
+            user_prompt = DuringUsage_user_template.replace("{{ROLE}}", Role + f", In `[smart device]` {device_name}")
             user_prompt = user_prompt.replace("{{CRITERIA}}", str(Criteria))
             user_prompt = user_prompt.replace(
                 "{{EXECUTOR}}", "Administrators" if Role == "Guests" else "Guests"
             )
-            # user_prompt = user_prompt.replace("{{CONFIG}}", str(Criteria))
+            user_prompt = user_prompt.replace("{{CONFIG}}", str(task_content))
             page_ui_changes_str = []
 
             for changed_page in UIChanges:
@@ -1078,6 +1197,9 @@ class ConfigurationConfiotOracle(ConfiotOracle):
                         + "\n"
                     )
 
+                if not _change_details_str:
+                    _change_details_str = "NO UI CHANGES in this page"
+
                 _prompt = _prompt.replace("{{PAGEUICHANGE}}", _change_details_str)
                 page_ui_changes_str.append(_prompt)
 
@@ -1090,7 +1212,7 @@ class ConfigurationConfiotOracle(ConfiotOracle):
                 TestingPhase=TestingPhase,
             )
 
-            #  gpt-4o
+            #  gpt-4.1-mini
             try:
                 violations = []
                 for r in res.violations:
@@ -1129,20 +1251,16 @@ class ConfigurationConfiotOracle(ConfiotOracle):
                         with open(
                             settings.violation_output + "/Activities.txt", "w"
                         ) as f:
-                            for v in (
-                                res.Direct_Capability_Changes
-                                + res.Resource_State_Changes
-                            ):
-                                f.write(v + "\n")
+                            f.write(f"[Configuration executed]: {str(task_content)}\n")
+                            f.write(f"    [Direct Capability Changes]: {res.Direct_Capability_Changes}" + "\n"
+                                + f"    [Resource Changes]: {res.Resource_State_Changes}" + "\n")
                     else:
                         with open(
                             settings.violation_output + "/Activities.txt", "a"
                         ) as f:
-                            for v in (
-                                res.Direct_Capability_Changes
-                                + res.Resource_State_Changes
-                            ):
-                                f.write(v + "\n")
+                            f.write(f"[Configuration executed]: {str(task_content)}\n")
+                            f.write(f"    [Direct Capability Changes]: {res.Direct_Capability_Changes}" + "\n"
+                                + f"    [Resource Changes]: {res.Resource_State_Changes}" + "\n")
             except:
                 # deepseek or qwen
                 try:
@@ -1246,26 +1364,13 @@ class ConfigurationConfiotOracle(ConfiotOracle):
                 TestingPhase=TestingPhase,
             )
 
-            #  gpt-4o
+            #  gpt-4.1-mini
             try:
                 violations = []
                 for r in res.violations:
                     violation = {
-                        "FinallJudgment": (
-                            False
-                            if r.Verification_Answer_bool
-                            == r.Counterexample_Answer_bool
-                            else True
-                        ),
                         "Violated criterion id": r.violated_criterion_id,
                         "configuration_resource": r.configuration_resource,
-                        "Verification_Question": r.Verification_Question,
-                        "Verification_Answer_bool": r.Verification_Answer_bool,
-                        "Verification_Answer": r.Verification_Answer,
-                        "Counterexample_Question": r.Counterexample_Question,
-                        "Counterexample_Answer_bool": r.Counterexample_Answer_bool,
-                        "Counterexample_Answer": r.Counterexample_Answer,
-                        "Confidence_score": r.Confidence_score,
                         "Guess_steps": r.Guess_steps,
                     }
                     violations.append(violation)
@@ -1278,27 +1383,6 @@ class ConfigurationConfiotOracle(ConfiotOracle):
                 with open(outputdir + "/Violations.json", "w") as f:
                     json.dump(violations, f, indent=4, ensure_ascii=False)
 
-                if TestingPhase == Phase.DuringUsage:
-                    if not os.path.exists(
-                        settings.violation_output + "/Activities.txt"
-                    ):
-                        with open(
-                            settings.violation_output + "/Activities.txt", "w"
-                        ) as f:
-                            for v in (
-                                res.Direct_Capability_Changes
-                                + res.Resource_State_Changes
-                            ):
-                                f.write(v + "\n")
-                    else:
-                        with open(
-                            settings.violation_output + "/Activities.txt", "a"
-                        ) as f:
-                            for v in (
-                                res.Direct_Capability_Changes
-                                + res.Resource_State_Changes
-                            ):
-                                f.write(v + "\n")
             except:
                 # deepseek or qwen
                 try:

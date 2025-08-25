@@ -51,7 +51,7 @@ class OperationExtractor:
 
         return d
 
-    def extract_operations(self):
+    def extract_operations(self, Autodroid=False):
         # 包含文本的views
         Textual_views = []
         Textual_views_hash = []
@@ -98,44 +98,45 @@ class OperationExtractor:
         # TODO: 更多种类的可交互的配置layout
         # Layout-1：弹窗：确定、取消、输入
         is_diagram = False
-        diagram_view = []
-        title_view = []
-        for tview in Textual_views:
-            lowertext = tview["text"].lower()
-            if (
-                "cancel" in lowertext
-                or "apply" in lowertext
-                or "yes" in lowertext
-                or "confirm" in lowertext
-                or "ok" == lowertext
-                or "确定" in lowertext
-                or "取消" in lowertext
-            ):
-                diagram_view.append(tview)
-                is_diagram = True
-        if is_diagram:
+        if not Autodroid:
+            diagram_view = []
+            title_view = []
             for tview in Textual_views:
-                title_view.append(tview)
+                lowertext = tview["text"].lower()
+                if (
+                    "cancel" in lowertext
+                    or "apply" in lowertext
+                    or "yes" in lowertext
+                    or "confirm" in lowertext
+                    or "ok" == lowertext
+                    or "确定" in lowertext
+                    or "取消" in lowertext
+                ):
+                    diagram_view.append(tview)
+                    is_diagram = True
+            if is_diagram:
+                for tview in Textual_views:
+                    title_view.append(tview)
 
-        if is_diagram:
-            view = diagram_view[0]
+            if is_diagram:
+                view = diagram_view[0]
 
-            if (
-                hashlib.sha256(str(view).encode("utf-8")).hexdigest()
-                not in self.operations
-            ):
-                self.operations[
+                if (
                     hashlib.sha256(str(view).encode("utf-8")).hexdigest()
-                ] = []
-            for title in title_view:
-                self.operations[
-                    hashlib.sha256(str(view).encode("utf-8")).hexdigest()
-                ].append(
-                    (
-                        title,
-                        Vector(Coordinate(0, 0), Coordinate(0, 0), 0).get_magnitude(),
+                    not in self.operations
+                ):
+                    self.operations[
+                        hashlib.sha256(str(view).encode("utf-8")).hexdigest()
+                    ] = []
+                for title in title_view:
+                    self.operations[
+                        hashlib.sha256(str(view).encode("utf-8")).hexdigest()
+                    ].append(
+                        (
+                            title,
+                            Vector(Coordinate(0, 0), Coordinate(0, 0), 0).get_magnitude(),
+                        )
                     )
-                )
 
         # Layout-2：上下左右的文本，根据距离判断，将文本与最近的clickable view建立联系
         if not is_diagram:
@@ -175,7 +176,7 @@ class OperationExtractor:
                         complete_operation_views.append(
                             hashlib.sha256(str(view).encode("utf-8")).hexdigest()
                         )
-                    continue
+                    # continue
                 o_rec = Rectangle(
                     view["bounds"][0][0],
                     view["bounds"][0][1],
@@ -204,10 +205,11 @@ class OperationExtractor:
                             parent["bounds"][1][1],
                         )
                         is_related = calc_collision_vector(parent_rec, t_rec)
-                        if is_related == "PotentialLeftLabel" or not is_related:
+                        if not is_related:
                             continue
-
-                        if is_related.get_magnitude() == -1:
+                        if is_related == "PotentialLeftLabel":
+                            is_related = Vector(o_rec.get_top_right(), t_rec.get_top_left(), 0)
+                        elif is_related.get_magnitude() == -1:
                             is_related = Vector(Coordinate(0, 0.5), Coordinate(0, 0), 0)
 
 

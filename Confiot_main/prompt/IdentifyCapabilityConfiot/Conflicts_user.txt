@@ -1,0 +1,8 @@
+### `[Configuration Capabilities]` of `[User Role]`----- {{Administrator}}
+{{HOSTCONFIG}}
+
+
+
+
+### `[Configuration Capabilities]` of `[User Role]`----- {{Guest}}
+{{GUESTCONFIG}}

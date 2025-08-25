@@ -314,8 +314,8 @@ def test_Configuration_parser():
     Agent = Confiot()
 
     # 执行Task-0, ...
-    Agent.device_connect()
-    ConfigurationParser(Agent).app_pages_exploration(f"test")
+    # Agent.device_connect()
+    ConfigurationParser(Agent).app_pages_exploration(f"Task-REVOKE")
 
 
     Agent.device.disconnect()
@@ -623,14 +623,14 @@ def test_get_UIstate():
     GlobalVars.step_outputfile = settings.droid_output + "/tmp.json"
 
     droidbot.device.connect()
-    event = KeyEvent(name="HOME")
+    # event = KeyEvent(name="HOME")
 
-    event.send(droidbot.device)
+    # event.send(droidbot.device)
 
-    time.sleep(1)
-    event = IntentEvent(droidbot.app.get_start_intent())
-    event.send(droidbot.device)
-    time.sleep(3)
+    # time.sleep(1)
+    # event = IntentEvent(droidbot.app.get_start_intent())
+    # event.send(droidbot.device)
+    # time.sleep(3)
 
     droidbot.start()
 
@@ -639,9 +639,9 @@ if __name__ == "__main__":
     # test_Enumerate_pages()
 
     s = settings(
-        "192.168.2.207:5555",
-        "/root/documents/Output/Huawei/iHORN_gateway/Huawei.apk",
-        r"/root/documents/Output/Huawei/iHORN_temperature_sensor/NDSS26/guest/result",
+        "192.168.2.140:5555",
+        "/root/documents/Output/mihome/Xiaomi_Smart_Power_Strip2/com.xiaomi.smarthome.apk",
+        r"/root/documents/Output/smartthings/guest",
     )
 
     test_Configuration_parser()
@@ -649,8 +649,8 @@ if __name__ == "__main__":
 
     # s = settings(
     #     "192.168.2.176:5555",
-    #     "/root/documents/Output/mihome/mihome-smartscale-CCS25-40min-droidbot-gpt-4o/mihome.apk",
-    #     r"/root/documents/Output/mihome/mihome-smartscale-CCS25-40min-droidbot-gpt-4o/host/result",
+    #     "/root/documents/Output/mihome/mihome-smartscale-CCS25-40min-droidbot-gpt-4.1-mini/mihome.apk",
+    #     r"/root/documents/Output/mihome/mihome-smartscale-CCS25-40min-droidbot-gpt-4.1-mini/host/result",
     # )
 
     # test_Configuration_parser()

@@ -48,8 +48,8 @@ For each candidate violation, you must internally formulate and answer the follo
 
 **Step 3: Make a Final Judgment**
 Based on your analysis in Step 2, decide if a violation is confirmed.
-- **Confirm a Violation** only if the **Verification** argument is strong AND you could **not** find a plausible **Counterexample**.
-- **Dismiss a Candidate** if you find a plausible **Counterexample**.
+- **Please add all violations from the **Verification** question, even if you could find a plausible **Counterexample** in **Counterexample** question
+
 
 **Step 4: Report Confirmed Violations**
 For each violation confirmed in Step 3, generate a report using the specified JSON schema. If no violations are confirmed, the `violations` field should be an empty list `[]`.
@@ -81,7 +81,7 @@ You must respond with a JSON object that strictly adheres to the provided schema
 
     }
   ],
-    Direct_Capability_Changes:list[str],
-    Resource_State_Changes:list[str],
+    Direct_Capability_Changes:str,
+    Resource_State_Changes:str,
     Capability_Changes: list[str],
 }

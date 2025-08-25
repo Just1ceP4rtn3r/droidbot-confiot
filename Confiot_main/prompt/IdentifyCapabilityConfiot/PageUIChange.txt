@@ -5,7 +5,7 @@ The state of the page before the configuration is executed.
 {{PAGEINFO}}
 '''
 
-After configuration, the GUI changes are:
+After the `[configuration]` (see above), the GUI changes are:
 '''
 {{PAGEUICHANGE}}
 '''

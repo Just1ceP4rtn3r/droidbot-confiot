@@ -194,7 +194,7 @@ class DirectedGraph:
     def get_neighbors(self, node):
         neighbors = []
         for edge in self.edges:
-            if edge.start_node == node:
+            if edge.start_node.name == node.name:
                 neighbors.append(edge.end_node)
         return neighbors
 
@@ -492,7 +492,7 @@ def query_config_resource_mapping(prompt):
     headers = {"Content-Type": "application/json", "Authorization": f"Bearer {api_key}"}
 
     # syncxxx: use gpt-4 new model
-    payload = {"model": "gpt-4o", "messages": [{"role": "user", "content": prompt}]}
+    payload = {"model": "gpt-4.1-mini", "messages": [{"role": "user", "content": prompt}]}
     # payload = {"model": "gpt-3.5-turbo", "messages": [{"role": "user", "content": prompt}]}
 
     response = requests.post(
@@ -514,7 +514,7 @@ def query_config_resource_mapping(prompt):
 
 def query_page_features(system_prompt, user_prompt, llm="xxx"):
 
-    from pydantic import BaseModel
+    from pydantic import BaseModel, Field
     from openai import OpenAI
 
     class Operation(BaseModel):
@@ -523,6 +523,9 @@ def query_page_features(system_prompt, user_prompt, llm="xxx"):
 
     class FeatureFormat(BaseModel):
         feature: str
+        feature_details: str = Field(
+                description="What is the functionality of this feature"
+            )
         sequence: list[Operation]
 
     class response(BaseModel):
@@ -530,7 +533,7 @@ def query_page_features(system_prompt, user_prompt, llm="xxx"):
 
     client = OpenAI()
     completion = client.beta.chat.completions.parse(
-        model="gpt-4o",
+        model="gpt-4.1-mini",
         messages=[
             {"role": "system", "content": system_prompt},
             {
@@ -547,6 +550,7 @@ def query_page_features(system_prompt, user_prompt, llm="xxx"):
     for r in event.Features:
         task = {
             "Feature": r.feature,
+            "Details": r.feature_details,
             "Sequence": [
                 {
                     "Page ID": o.page,
@@ -573,7 +577,7 @@ def query_page_dependencies(system_prompt, user_prompt, llm="xxx"):
 
     client = OpenAI()
     completion = client.beta.chat.completions.parse(
-        model="gpt-4o",
+        model="gpt-4.1-mini",
         messages=[
             {"role": "system", "content": system_prompt},
             {
@@ -595,7 +599,7 @@ def query_page_dependencies(system_prompt, user_prompt, llm="xxx"):
 
 def query_continuation_features(system_prompt, user_prompt, llm="xxx"):
 
-    from pydantic import BaseModel
+    from pydantic import BaseModel,Field
     from openai import OpenAI
 
     class Operation(BaseModel):
@@ -604,6 +608,9 @@ def query_continuation_features(system_prompt, user_prompt, llm="xxx"):
 
     class FeatureFormat(BaseModel):
         feature: str
+        feature_details: str = Field(
+                description="What is the functionality of this feature"
+            )
         sequence: list[Operation]
         why_sequence: str
 
@@ -613,7 +620,7 @@ def query_continuation_features(system_prompt, user_prompt, llm="xxx"):
 
     client = OpenAI()
     completion = client.beta.chat.completions.parse(
-        model="gpt-4o",
+        model="gpt-4.1-mini",
         messages=[
             {"role": "system", "content": system_prompt},
             {
@@ -631,6 +638,7 @@ def query_continuation_features(system_prompt, user_prompt, llm="xxx"):
         task = {
             "IsContinuationFeature": True,
             "Feature": r.feature,
+            "Details": r.feature_details,
             "Sequence": [
                 {
                     "Page ID": o.page,
@@ -646,6 +654,7 @@ def query_continuation_features(system_prompt, user_prompt, llm="xxx"):
         task = {
             "IsContinuationFeature": False,
             "Feature": r.feature,
+            "Details": r.feature_details,
             "Sequence": [
                 {
                     "Page ID": o.page,
@@ -691,7 +700,7 @@ def query_config_operation_mapping_with_structured_output(
 
     client = OpenAI()
     completion = client.beta.chat.completions.parse(
-        model="gpt-4o",
+        model="gpt-4.1-mini",
         messages=[
             {"role": "system", "content": system_prompt},
             {
@@ -994,7 +1003,7 @@ def query_config_operation_mapping_qwen(system_prompt, user_prompt):
 #     if TestingPhase == Phase.AfterDelegation:
 #         client = OpenAI()
 #         completion = client.beta.chat.completions.parse(
-#             model="gpt-4o",
+#             model="gpt-4.1-mini",
 #             messages=[
 #                 {"role": "system", "content": system_prompt},
 #                 {
@@ -1009,7 +1018,7 @@ def query_config_operation_mapping_qwen(system_prompt, user_prompt):
 #     elif TestingPhase == Phase.DuringUsage:
 #         client = OpenAI()
 #         completion = client.beta.chat.completions.parse(
-#             model="gpt-4o",
+#             model="gpt-4.1-mini",
 #             messages=[
 #                 {"role": "system", "content": system_prompt},
 #                 {
@@ -1021,6 +1030,81 @@ def query_config_operation_mapping_qwen(system_prompt, user_prompt):
 #         )
 #         event = completion.choices[0].message.parsed
 #         return event
+
+
+def query_Conflicts_verification(
+    system_prompt, user_prompt, TestingPhase, llm="xxx"
+):
+    from pydantic import BaseModel, Field
+    from openai import OpenAI
+
+    class Conflict(BaseModel):
+        Administrator_Conflicting_Capability: str = Field(
+                description="The Administrator's specific capability that contributes to the configuration conflict"
+            )
+        Guest_Conflicting_Capability: str = Field(
+                description="The Guest's specific capability that contributes to the configuration conflict"
+            )
+        Shared_Resource: str
+        Why_Conflicting: list[str] = Field(
+                description="1. Why two capablities are different features (if they are the same feature, you should not report this conflict); 2. Why the conflict occurs, each item in the list should represent a step in the logical chain"
+            )
+
+    class response(BaseModel):
+        Answers: list[Conflict]
+
+    client = OpenAI()
+    completion = client.beta.chat.completions.parse(
+        model="o4-mini",
+        messages=[
+            {"role": "system", "content": system_prompt},
+            {
+                "role": "user",
+                "content": user_prompt,
+            },
+        ],
+        response_format=response,
+    )
+    event = completion.choices[0].message.parsed
+    return event
+
+def query_Conflicts_counterexample(
+    system_prompt, user_prompt, TestingPhase, llm="xxx"
+):
+    from pydantic import BaseModel, Field
+    from openai import OpenAI
+
+    class Counterexample(BaseModel):
+        has_counterexample: bool = Field(
+                description='Answer the question: "Is it **possible** for two capablities can coexist **without** creating an unavoidable conflict?"'
+            )
+        Administrator_Conflicting_Capability: str = Field(
+                description="Administrator capablity of the conflict from the Input"
+            )
+        Guest_Conflicting_Capability: str = Field(
+                description="Guest capablity of the conflict from the Input"
+            )
+        Counterexample: list[str] = Field(
+                description="Detail the plausible counterexample if the `has_counterexample` field of your response is True, or set it to an empty list"
+            )
+
+    class response(BaseModel):
+        Answers: list[Counterexample]
+
+    client = OpenAI()
+    completion = client.beta.chat.completions.parse(
+        model="o4-mini",
+        messages=[
+            {"role": "system", "content": system_prompt},
+            {
+                "role": "user",
+                "content": user_prompt,
+            },
+        ],
+        response_format=response,
+    )
+    event = completion.choices[0].message.parsed
+    return event
 
 
 def query_Confiot_identification_ask_questions(
@@ -1043,7 +1127,7 @@ def query_Confiot_identification_ask_questions(
     if TestingPhase == Phase.AfterDelegation:
         client = OpenAI()
         completion = client.beta.chat.completions.parse(
-            model="gpt-4o",
+            model="o4-mini",
             messages=[
                 {"role": "system", "content": system_prompt},
                 {
@@ -1058,7 +1142,7 @@ def query_Confiot_identification_ask_questions(
     elif TestingPhase == Phase.DuringUsage:
         client = OpenAI()
         completion = client.beta.chat.completions.parse(
-            model="gpt-4o",
+            model="o4-mini",
             messages=[
                 {"role": "system", "content": system_prompt},
                 {
@@ -1072,8 +1156,11 @@ def query_Confiot_identification_ask_questions(
         return event
 
 
+
+
+
 def query_Confiot_identification(system_prompt, user_prompt, TestingPhase, llm="xxx"):
-    from pydantic import BaseModel
+    from pydantic import BaseModel, Field
     from openai import OpenAI
 
     class ViolationFormat(BaseModel):
@@ -1097,7 +1184,7 @@ def query_Confiot_identification(system_prompt, user_prompt, TestingPhase, llm="
 
         client = OpenAI()
         completion = client.beta.chat.completions.parse(
-            model="gpt-4o",
+            model="o4-mini",
             messages=[
                 {"role": "system", "content": system_prompt},
                 {
@@ -1113,13 +1200,17 @@ def query_Confiot_identification(system_prompt, user_prompt, TestingPhase, llm="
 
         class response_DuringUsage(BaseModel):
             violations: list[ViolationFormat]
-            Direct_Capability_Changes: list[str]
-            Resource_State_Changes: list[str]
+            Direct_Capability_Changes: str = Field(
+                description="Please responds: When the configuration `[{{CONFIG}}]` executed, what capabilities the user gain/loss"
+            )
+            Resource_State_Changes: str = Field(
+                description="Please responds: When the configuration `[{{CONFIG}}]` executed, what resource created/deleted"
+            )
             Capability_Changes: list[str]
 
         client = OpenAI()
         completion = client.beta.chat.completions.parse(
-            model="gpt-4o",
+            model="o4-mini",
             messages=[
                 {"role": "system", "content": system_prompt},
                 {
@@ -1144,7 +1235,7 @@ def query_Confiot_identification(system_prompt, user_prompt, TestingPhase, llm="
 
         client = OpenAI()
         completion = client.beta.chat.completions.parse(
-            model="gpt-4o",
+            model="o4-mini",
             messages=[
                 {"role": "system", "content": system_prompt},
                 {

@@ -62,6 +62,23 @@ class ConfigurationParser:
         if not os.path.exists(
             settings.UIHierarchy_comparation_output + f"/{configuration}/"
         ):
+            os.makedirs(settings.UIHierarchy_comparation_output + f"/{configuration}/")
+            if configuration == "000":
+                import xml.etree.ElementTree as ET
+                for page in self.PE.pages:
+                    views = self.Agent.state_contents[list(self.PE.pages[page].keys())[0]]
+                    output_file = settings.UIHierarchy_comparation_output + f"/{configuration}/{page}.xml"
+                    root = ET.Element("Hierarchy")
+
+                    for item in views:
+                        entry = ET.SubElement(root, "Node")
+                        for key, value in item.items():
+                            ET.SubElement(entry, key).text = str(value)
+                    tree = ET.ElementTree(root)
+                    tree.write(output_file)
+                return
+
+
             self.device_state_replay(
                 settings.UIHierarchy_comparation_output + f"/{configuration}/"
             )
@@ -154,6 +171,7 @@ class ConfigurationParser:
         if not os.path.exists(save_dir):
             os.makedirs(save_dir)
 
+
         for page in self.operations:
             try:
                 overview = {"PAGE": page, "CONTEXT": {}, "OPERATIONS": {}, "LABELS": {}}
@@ -211,30 +229,30 @@ class ConfigurationParser:
                 op_id += 1
 
             context_operation = ""
-            if page not in self.page_context:
-                continue
-            for context in self.page_context[page]:
-                context_view, context_text = context
-                if context_text == "" or not context_text:
-                    continue
-                else:
-                    op_action = None
-                    if not context_view:
-                        context_operation = f'<"{context_text}">'
-                    else:
-                        if "select" in context_view["class"].lower():
-                            op_action = "Select"
-                        elif "check" in context_view["class"].lower():
-                            op_action = "check"
-                        elif "input" in context_view["class"].lower():
-                            op_action = "Input"
-                        else:
-                            op_action = "Click"
-                        context_operation = f"<{op_action}, {context_view['class']}, \"{context_text}\">"
 
-                ctx_str = context_operation
-                overview["CONTEXT"] = {"ctx_str": ctx_str, "ctx_view": context_view}
-                break
+            if page in self.page_context:
+                for context in self.page_context[page]:
+                    context_view, context_text = context
+                    if context_text == "" or not context_text:
+                        continue
+                    else:
+                        op_action = None
+                        if not context_view:
+                            context_operation = f'<"{context_text}">'
+                        else:
+                            if "select" in context_view["class"].lower():
+                                op_action = "Select"
+                            elif "check" in context_view["class"].lower():
+                                op_action = "check"
+                            elif "input" in context_view["class"].lower():
+                                op_action = "Input"
+                            else:
+                                op_action = "Click"
+                            context_operation = f"<{op_action}, {context_view['class']}, \"{context_text}\">"
+
+                    ctx_str = context_operation
+                    overview["CONTEXT"] = {"ctx_str": ctx_str, "ctx_view": context_view}
+                    break
             # save overview to f{page}.json
             import json
 
@@ -654,7 +672,7 @@ class ConfigurationParser:
                             "Page ID": page,
                             "Feature Content": c["Feature"],
                             "Related operations": c["Sequence"],
-                            "WhySequence": c["WhySequence"],
+                            "WhySequence": c["Details"] + ";" + c["WhySequence"],
                         }
                     )
 

@@ -62,6 +62,7 @@ class Operation(BaseModel):
 class FeatureFormat(BaseModel):
     """Represents a complete user feature."""
     feature: str       # The name of the feature, e.g., "User Login".
+    feature_details: str # What is the functionality of this feature
     sequence: List[Operation]
     # An ordered list of operational steps.
     # Key: This list can contain operations from different pages

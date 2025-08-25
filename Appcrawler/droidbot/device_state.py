@@ -33,8 +33,10 @@ class DeviceState(object):
         self.bk_views = copy.deepcopy(self.views)
         self.view_graph = self._build_view_graph()
         # self._adjust_view_clickability()
-        self.view_tree = {}
-        self.__assemble_view_tree(self.view_tree, self.views)
+        # self.view_tree = {}
+        # self.__assemble_view_tree(self.view_tree, self.views)
+        self.view_tree = copy.deepcopy(self.views[0])
+        self._build_recursive(self.view_tree, set())
         self.__generate_view_strs()
         self.state_str = self.__get_hashed_state_str()
         self.structure_str = self.__get_content_free_state_str()
@@ -101,6 +103,51 @@ class DeviceState(object):
             #     view_dict['resource_id'] = resource_id
             views.append(view_dict)
         return views
+
+    def _build_recursive(self, current_node, visited_nodes):
+        """
+        辅助函数：递归地用实际的视图对象替换子节点的索引，并检测循环。
+
+        :param current_node: 当前正在处理的树节点（是一个字典）。
+        :param visited_nodes: 一个集合，用于存储在当前递归路径上已访问过的节点的唯一ID。
+        """
+        # --- 循环检测 ---
+        # 我们需要一个唯一标识符来跟踪节点。通常是'view_str'或'temp_id'。
+        # 你需要根据你的数据结构确认这个键名。
+        node_id = current_node.get('temp_id')
+
+        # 如果节点ID存在并且已在访问集合中，说明遇到了循环，立即返回以中断。
+        if node_id and node_id in visited_nodes:
+            # 清空此循环节点的子节点，以避免留下无效的索引
+            if "children" in current_node:
+                current_node["children"] = []
+            return
+
+        # --- 递归处理 ---
+        # 如果节点有子节点，则开始处理
+        if "children" in current_node and current_node["children"]:
+            # 将当前节点ID添加到访问集合中
+            if node_id:
+                visited_nodes.add(node_id)
+
+            # 遍历子节点索引列表的副本，因为我们将要修改它
+            for i, child_index in enumerate(current_node["children"]):
+                # 检查索引是否有效
+                if child_index < len(self.views):
+                    # 用视图对象的深拷贝替换索引
+                    child_node = copy.deepcopy(self.views[child_index])
+                    current_node["children"][i] = child_node
+                    # 对新创建的子节点进行递归调用
+                    self._build_recursive(child_node, visited_nodes)
+                else:
+                    # 如果索引无效，替换为一个表示错误的空节点
+                    current_node["children"][i] = {"error": "Invalid view index"}
+
+            # --- 回溯 ---
+            # 在处理完一个节点的所有子分支后，将其从访问集合中移除。
+            # 这很重要，因为它允许其他节点安全地将此节点作为子节点（处理非循环的共享节点）。
+            if node_id:
+                visited_nodes.remove(node_id)
 
     def __assemble_view_tree(self, root_view, views):
         if not len(self.view_tree):  # bootstrap
@@ -319,7 +366,10 @@ class DeviceState(object):
         parent_strs.reverse()
         child_strs = []
         for child_id in self.get_all_children(view_dict):
-            child_strs.append(DeviceState.__get_view_signature(self.views[child_id]))
+            try:
+                child_strs.append(DeviceState.__get_view_signature(self.views[child_id]))
+            except:
+                pass
         child_strs.sort()
         view_str = "Activity:%s\nSelf:%s\nParents:%s\nChildren:%s" % (self.foreground_activity, view_signature,
                                                                       "//".join(parent_strs), "||".join(child_strs))
@@ -421,9 +471,9 @@ class DeviceState(object):
         if not children:
             return set()
         children = set(children)
-        for child in children:
-            children_of_child = self.get_all_children(self.views[child])
-            children = children.union(children_of_child)
+        # for child in children:
+        #     children_of_child = self.get_all_children(self.views[child])
+        #     children = children.union(children_of_child)
         return children
 
     def get_app_activity_depth(self, app):
@@ -859,7 +909,7 @@ class DeviceState(object):
     def get_described_actions(self,
                               prefix='',
                               remove_time_and_ip=False,
-                              merge_buttons=True,
+                              merge_buttons=False,
                               add_edit_box=True,
                               add_check_box=True,
                               add_pure_text=True):
