@@ -335,7 +335,7 @@ def run_Conflicts_identification(options):
     )
 
 
-def run_Appcrawler(task, steplimit=100):
+def run_Appcrawler(task, steplimit=100, event_interval=1):
     from Confiot_main.globalvars import GlobalVars
 
     from Appcrawler.droidbot import input_manager
@@ -352,7 +352,7 @@ def run_Appcrawler(task, steplimit=100):
         env_policy=env_manager.POLICY_NONE,
         policy_name=input_manager.POLICY_AutodroidCrawlerPolicy,
         script_path=None,
-        event_interval=1,
+        event_interval=event_interval,
         timeout=1200,
         event_count=steplimit,
         debug_mode=False,
@@ -492,6 +492,14 @@ def main():
         help="How many operation steps does the app crawler execute before it stops exploring.",
     )
 
+    parser.add_option(
+        "--event-interval",
+        dest="event_interval",
+        type="int",
+        default=1,
+        help="Time interval (in seconds) between events during app crawling. Default: 1",
+    )
+
     # --- Guest Agent Configuration Group ---
     # Parameters specific to the Guest agent (-a)
     guest_group = optparse.OptionGroup(parser, "The agent that capture UI changes")
@@ -622,6 +630,7 @@ def main():
         run_Appcrawler(
             f"Explore the this app to identify and capture all unique pages related to device [{options.device_name}]. Always cancel the configuration. Focus exclusively on functionalities and settings. Avoid enter any advertisements and promotional materials content.",
             int(options.steplimit),
+            event_interval=options.event_interval,
         )
     elif options.conflicts:
         run_Conflicts_identification(options)

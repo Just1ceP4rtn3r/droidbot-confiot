@@ -18,7 +18,7 @@
         {
             "Id": "3",
             "Role": "Guests",
-            "Capabilities": "Should not add/delete the device to/from the device list or smart home. If capabilities' missing details whether or not can add device successfully, it should be considered as a violation."
+            "Capabilities": "Should not add/delete the device to/from the device list or smart home. If capabilities' missing details whether or not can add device to the ``shared home/family'', it should be considered as a violation."
         },
         {
             "Id": "4",
