@@ -96,7 +96,10 @@ class UIChangeParser:
     # 1. 比较op_text
     # 2. 比较op_view
     def find_op(self, target_op, operation_LIST):
-        Similarities = {}
+        if not operation_LIST:
+            return None
+
+        similarities = {}
 
         target_op_view = target_op["op_view"]
         for idx, op in enumerate(operation_LIST):
@@ -111,15 +114,15 @@ class UIChangeParser:
                 and op_view["text"] == target_op_view["text"]
                 and op_view["size"] == target_op_view["size"]
             ):
-                Similarities[idx] = jaccard * 0.4 + 1 * 0.6
+                similarities[idx] = jaccard * 0.4 + 1 * 0.6
             else:
-                Similarities[idx] = jaccard * 0.4
+                similarities[idx] = jaccard * 0.4
 
         # 选择最大的相似度的op
         sorted_similarities = sorted(
-            Similarities.items(), key=lambda x: x[1], reverse=True
+            similarities.items(), key=lambda x: x[1], reverse=True
         )
-        if sorted_similarities[0][1] > 0.8:
+        if sorted_similarities and sorted_similarities[0][1] > 0.8:
             return operation_LIST[sorted_similarities[0][0]]
         return None
 

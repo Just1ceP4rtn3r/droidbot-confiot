@@ -185,10 +185,10 @@ def run_Configuration_testing(options):
         except Exception as e:
             logger.error(e)
             continue
-
+        autodroid_result["finished"] = True
         autodroid_result["worklist_pages"] = set()
         if autodroid_result["finished"]:
-            logger.info(f"Try to capture the UI changes in {options.host_device}")
+            logger.info(f"Try to capture the UI changes in {options.guest_device}")
             settings(
                 options.guest_device,
                 options.guest_app_path,
@@ -628,7 +628,15 @@ def main():
             options.host_device, options.host_app_path, options.host_droidbot_output
         )
         run_Appcrawler(
-            f"Explore the this app to identify and capture all unique pages related to device [{options.device_name}]. Always cancel the configuration. Focus exclusively on functionalities and settings. Avoid enter any advertisements and promotional materials content.",
+            f"You are exploring an IoT companion app. Follow this TWO-PHASE plan:\n"
+            f"[PHASE 1 - Automation/Scene Exploration]: From the home page, look for any 'Automation', 'Scene', 'Routine', or similar buttons. "
+            f"If found, tap into them and explore all automation/scene CREATION-related pages (e.g., 'Create', 'Add', '+' buttons inside). "
+            f"Do NOT actually create or configure anything — just discover the pages. After fully exploring automation pages, go back to the HOME page.\n"
+            f"[PHASE 2 - Device Exploration]: From the home page, find and tap the device card for [{options.device_name}]. "
+            f"Then systematically explore ALL unique pages related to this device — settings, details, info, and any sub-menus. "
+            f"Do NOT perform any actual configuration.\n"
+            f"[REMEMBER]: The first page you see after app launch is the HOME page. Always return here between phases. "
+            f"Avoid advertisements and promotional content.",
             int(options.steplimit),
             event_interval=options.event_interval,
         )
